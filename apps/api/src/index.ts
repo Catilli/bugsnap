@@ -1,0 +1,80 @@
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
+import fastifyJwt from '@fastify/jwt';
+import dotenv from 'dotenv';
+import { prisma } from './lib/prisma';
+import { errorHandler } from './plugins/errorHandler';
+import { authPlugin } from './plugins/auth';
+import { authRoutes } from './routes/auth';
+import { reportRoutes } from './routes/reports';
+import { commentRoutes } from './routes/comments';
+import { projectMemberRoutes } from './routes/projectMembers';
+import { projectRoutes } from './routes/projects';
+
+dotenv.config();
+
+const fastify = Fastify({
+  logger: true,
+});
+
+// Register JWT first (before other plugins that might need it)
+fastify.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
+});
+
+// Register CORS plugin with explicit configuration
+fastify.register(cors, {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+});
+
+fastify.register(multipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+});
+
+fastify.register(errorHandler);
+fastify.register(authPlugin);
+
+// Health check route
+fastify.get('/health', async () => {
+  try {
+    // Check database connection
+    await prisma.$queryRaw`SELECT 1`;
+    return { status: 'ok', database: 'connected', timestamp: new Date().toISOString() };
+  } catch (error) {
+    return { status: 'error', database: 'disconnected', timestamp: new Date().toISOString() };
+  }
+});
+
+// API routes
+fastify.get('/api', async () => {
+  return { message: 'BugSnap API v1.0', version: '1.0.0' };
+});
+
+// Register route modules
+fastify.register(authRoutes, { prefix: '/api/auth' });
+fastify.register(reportRoutes, { prefix: '/api/reports' });
+fastify.register(commentRoutes, { prefix: '/api/comments' });
+fastify.register(projectMemberRoutes, { prefix: '/api' }); // Register this first for /projects endpoint
+fastify.register(projectRoutes, { prefix: '/api' });
+
+const start = async () => {
+  try {
+    const port = parseInt(process.env.PORT || '3001', 10);
+    await fastify.listen({ port, host: '0.0.0.0' });
+    console.log(`🚀 Server running on http://localhost:${port}`);
+  } catch (err) {
+    fastify.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();

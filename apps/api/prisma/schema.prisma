@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("member") // owner, admin, member, viewer
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedProjects    Project[]
+  projectMembers   ProjectMember[]
+  bugReports       BugReport[]
+  comments         Comment[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  websiteUrl  String?  // URL of the website being tracked
+  apiKey      String   @unique @default(uuid())
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  createdBy      User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  members        ProjectMember[]
+  bugReports     BugReport[]
+
+  @@index([createdById])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   @default("member") // owner, admin, member, viewer
+  addedAt   DateTime @default(now())
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId]) // Ensure a user can only be added once per project
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model BugReport {
+  id              String   @id @default(uuid())
+  projectId       String
+  title           String
+  description     String   @db.Text
+  url             String
+  screenshotUrl   String
+  status          String   @default("open") // open, in_progress, resolved, closed
+  priority        String   @default("medium") // low, medium, high, critical
+  environmentData Json
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  annotations Annotation[]
+  comments    Comment[]
+
+  @@index([projectId])
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@map("bug_reports")
+}
+
+model Annotation {
+  id          String   @id @default(uuid())
+  reportId    String
+  type        String // pen, highlighter, rectangle, text, arrow
+  coordinates Json
+  content     String?
+  color       String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  report BugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("annotations")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  reportId  String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  report BugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([userId])
+  @@map("comments")
+}
