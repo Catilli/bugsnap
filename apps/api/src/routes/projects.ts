@@ -4,14 +4,12 @@ import { z } from 'zod';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
-  description: z.string().optional(),
-  websiteUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  websiteUrl: z.string().url('Must be a valid URL'),
 });
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  websiteUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  websiteUrl: z.string().url('Must be a valid URL').optional(),
 });
 
 export async function projectRoutes(fastify: FastifyInstance) {
@@ -32,13 +30,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const { name, description, websiteUrl } = createProjectSchema.parse(request.body);
+      const { name, websiteUrl } = createProjectSchema.parse(request.body);
 
       const project = await prisma.project.create({
         data: {
           name,
-          description,
-          websiteUrl: websiteUrl || null,
+          websiteUrl,
           createdById: userId,
         },
         include: {
@@ -101,11 +98,11 @@ export async function projectRoutes(fastify: FastifyInstance) {
               },
             },
           },
-          _count: {
-            select: {
-              bugReports: true,
-            },
-          },
+          // _count: {
+          //   select: {
+          //     bugReports: true,
+          //   },
+          // },
         },
       });
 
@@ -173,10 +170,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
 
       const updatedProject = await prisma.project.update({
         where: { id: projectId },
-        data: {
-          ...updateData,
-          websiteUrl: updateData.websiteUrl || null,
-        },
+        data: updateData,
         include: {
           createdBy: {
             select: {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { api } from '../lib/api';
+import { syncTokenToExtension, syncLogoutToExtension } from '../lib/extensionSync';
 
 interface User {
   id: string;
@@ -36,6 +37,9 @@ export const useAuthStore = create<AuthState>()(
       
       localStorage.setItem('token', token);
       set({ user, token, isAuthenticated: true, isLoading: false });
+      
+      // Sync token to extension if installed
+      syncTokenToExtension(token);
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -50,6 +54,9 @@ export const useAuthStore = create<AuthState>()(
       
       localStorage.setItem('token', token);
       set({ user, token, isAuthenticated: true, isLoading: false });
+      
+      // Sync token to extension if installed
+      syncTokenToExtension(token);
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -59,6 +66,9 @@ export const useAuthStore = create<AuthState>()(
   logout: () => {
     localStorage.removeItem('token');
     set({ user: null, token: null, isAuthenticated: false });
+    
+    // Sync logout to extension if installed
+    syncLogoutToExtension();
   },
 
   checkAuth: async () => {

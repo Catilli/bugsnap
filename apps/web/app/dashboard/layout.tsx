@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '../../store/authStore';
+import { ProjectProvider, useProject } from './ProjectContext';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, checkAuth, logout } = useAuthStore();
+  const { projectName } = useProject();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
@@ -40,10 +42,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Top Toolbar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50">
         <div className="h-full px-6 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/dashboard" className="text-2xl font-bold text-gray-900">
-            Bug<span className="text-indigo-600">Snap</span>
-          </Link>
+          {/* Logo and Breadcrumb */}
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="text-2xl font-bold text-gray-900">
+              Bug<span className="text-indigo-600">Snap</span>
+            </Link>
+            {projectName && (
+              <>
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                <span className="text-lg font-medium text-gray-700">{projectName}</span>
+              </>
+            )}
+          </div>
 
           {/* Avatar Menu */}
           <div className="relative">
@@ -75,11 +97,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       Dashboard
                     </Link>
                     <Link
-                      href="/dashboard/reports"
+                      href="/dashboard/install-extension"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      Bug Reports
+                      Install Extension
                     </Link>
                   </div>
                   <div className="border-t border-gray-200 py-1">
@@ -105,5 +127,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="p-8">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProjectProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </ProjectProvider>
   );
 }

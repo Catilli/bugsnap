@@ -8,7 +8,6 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     websiteUrl: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,11 +108,12 @@ export default function NewProjectPage() {
           {/* Website URL */}
           <div>
             <label htmlFor="websiteUrl" className="block text-sm font-medium text-gray-700 mb-2">
-              Website URL
+              Website URL <span className="text-red-500">*</span>
             </label>
             <input
               type="url"
               id="websiteUrl"
+              required
               value={formData.websiteUrl}
               onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -124,26 +124,11 @@ export default function NewProjectPage() {
             </p>
           </div>
 
-          {/* Description */}
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-              placeholder="Brief description of your project..."
-            />
-          </div>
-
           {/* Form Actions */}
           <div className="flex gap-4 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || !formData.name}
+              disabled={isSubmitting || !formData.name || !formData.websiteUrl}
               className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {isSubmitting ? (

@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "BugSnap - Visual Bug Tracking",
+  "version": "1.0.0",
+  "description": "Tag and annotate elements on web pages to create visual bug reports and tasks",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://localhost:*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "BugSnap",
+    "default_icon": {
+      "16": "assets/icon-16.svg",
+      "32": "assets/icon-32.svg",
+      "48": "assets/icon-48.svg",
+      "128": "assets/icon-128.svg"
+    }
+  },
+  "icons": {
+    "16": "assets/icon-16.svg",
+    "32": "assets/icon-32.svg",
+    "48": "assets/icon-48.svg",
+    "128": "assets/icon-128.svg"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "commands": {
+    "toggle-annotation-mode": {
+      "suggested_key": {
+        "default": "Alt+B",
+        "mac": "Alt+B"
+      },
+      "description": "Toggle annotation mode"
+    }
+  }
+}

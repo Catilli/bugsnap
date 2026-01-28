@@ -11,12 +11,11 @@ type OrderBy = 'asc' | 'desc';
 interface Project {
   id: string;
   name: string;
-  description?: string;
-  websiteUrl?: string;
+  websiteUrl: string;
   updatedAt: string;
   createdAt: string;
   _count?: {
-    bugReports: number;
+    tasks: number;
   };
 }
 
@@ -320,12 +319,12 @@ export default function DashboardPage() {
                 <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1 truncate">
                   {project.name}
                 </h3>
-                <p className="text-sm text-gray-500 mb-3 line-clamp-2">{project.description || 'No description'}</p>
+                <p className="text-sm text-gray-500 mb-3 truncate">{project.websiteUrl}</p>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>Updated {getRelativeTime(project.updatedAt)}</span>
                   {project._count && (
                     <span className="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                      {project._count.bugReports} bugs
+                      {project._count.tasks} tasks
                     </span>
                   )}
                 </div>
@@ -342,10 +341,10 @@ export default function DashboardPage() {
                   Project
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
+                  Website URL
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Bug Reports
+                  Tasks
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Last Updated
@@ -380,12 +379,12 @@ export default function DashboardPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600 truncate max-w-md">{project.description || 'No description'}</div>
+                    <div className="text-sm text-gray-600 truncate max-w-md">{project.websiteUrl}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {project._count && (
                       <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                        {project._count.bugReports} bugs
+                        {project._count.tasks} tasks
                       </span>
                     )}
                   </td>

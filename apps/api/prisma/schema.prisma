@@ -22,7 +22,8 @@ model User {
   // Relations
   ownedProjects    Project[]
   projectMembers   ProjectMember[]
-  bugReports       BugReport[]
+  createdTasks     Task[]     @relation("TaskCreator")
+  assignedTasks    Task[]     @relation("TaskAssignee")
   comments         Comment[]
 
   @@map("users")
@@ -31,8 +32,7 @@ model User {
 model Project {
   id          String   @id @default(uuid())
   name        String
-  description String?  @db.Text
-  websiteUrl  String?  // URL of the website being tracked
+  websiteUrl  String   // URL of the website being tracked
   apiKey      String   @unique @default(uuid())
   createdById String
   createdAt   DateTime @default(now())
@@ -41,7 +41,7 @@ model Project {
   // Relations
   createdBy      User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
   members        ProjectMember[]
-  bugReports     BugReport[]
+  tasks          Task[]
 
   @@index([createdById])
   @@map("projects")
@@ -64,36 +64,42 @@ model ProjectMember {
   @@map("project_members")
 }
 
-model BugReport {
+model Task {
   id              String   @id @default(uuid())
   projectId       String
+  taskNumber      Int      // Auto-increment per project
   title           String
-  description     String   @db.Text
-  url             String
-  screenshotUrl   String
+  description     String?  @db.Text
+  url             String?
+  screenshotUrl   String?
   status          String   @default("open") // open, in_progress, resolved, closed
   priority        String   @default("medium") // low, medium, high, critical
-  environmentData Json
+  environmentData Json?
+  visibility      String   @default("members") // members, members_and_clients
+  assignedToId    String?
   createdById     String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // Relations
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedTo  User?        @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   annotations Annotation[]
   comments    Comment[]
 
+  @@unique([projectId, taskNumber])
   @@index([projectId])
   @@index([createdById])
+  @@index([assignedToId])
   @@index([status])
   @@index([priority])
-  @@map("bug_reports")
+  @@map("tasks")
 }
 
 model Annotation {
   id          String   @id @default(uuid())
-  reportId    String
+  taskId      String
   type        String // pen, highlighter, rectangle, text, arrow
   coordinates Json
   content     String?
@@ -101,25 +107,25 @@ model Annotation {
   createdAt   DateTime @default(now())
 
   // Relations
-  report BugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  @@index([reportId])
+  @@index([taskId])
   @@map("annotations")
 }
 
 model Comment {
   id        String   @id @default(uuid())
-  reportId  String
+  taskId    String
   userId    String
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  report BugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([reportId])
+  @@index([taskId])
   @@index([userId])
   @@map("comments")
 }
