@@ -24,10 +24,8 @@ export function syncTokenToExtension(token: string) {
       },
       '*'
     );
-
-    console.log('Token sync message sent to extension');
   } catch (error) {
-    console.error('Failed to sync token to extension:', error);
+    // Silently fail if extension communication fails
   }
 }
 
@@ -50,10 +48,8 @@ export function syncLogoutToExtension() {
       },
       '*'
     );
-
-    console.log('Logout sync message sent to extension');
   } catch (error) {
-    console.error('Failed to sync logout to extension:', error);
+    // Silently fail if extension communication fails
   }
 }
 

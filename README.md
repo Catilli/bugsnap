@@ -17,6 +17,7 @@ bugsnap/
 │   └── api/          # Fastify backend API
 ├── packages/
 │   └── shared/       # Shared types and schemas
+├── extension/        # Browser extension for bug capture
 └── ...config files
 ```
 
@@ -51,14 +52,29 @@ bugsnap/
    ```
 
 4. **Run the development servers**
-   ```bash
-   # From the root directory
-   npm run dev
-   ```
+    ```bash
+    # From the root directory
+    npm run dev
+    ```
 
-   This will start:
-   - Web app: http://localhost:3000
-   - API server: http://localhost:3001
+    This will start:
+    - Web app: http://localhost:3000
+    - API server: http://localhost:3001
+
+### Browser Extension
+
+The BugSnap browser extension allows users to capture bugs directly from any website:
+
+1. **Install the extension**
+   - Download the extension from the dashboard at `/dashboard/install-extension`
+   - Load the extension in Chrome/Edge (Developer Mode)
+   - Or install from the Chrome Web Store (when published)
+
+2. **Use the extension**
+   - Navigate to any website
+   - Click the BugSnap extension icon
+   - Capture screenshots and report bugs
+   - Reports are automatically sent to your BugSnap project
 
 ## 📦 Tech Stack
 
@@ -66,14 +82,19 @@ bugsnap/
 - **Framework**: Next.js 14 with App Router
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
-- **State Management**: React Query (planned)
+- **State Management**: Zustand
 
 ### Backend (API)
 - **Framework**: Fastify
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: JWT
-- **File Storage**: Cloudinary (planned)
 - **Language**: TypeScript
+- **Testing**: Vitest
+
+### Browser Extension
+- **Platform**: Chrome Extension (Manifest V3)
+- **Language**: JavaScript
+- **Integration**: PostMessage API for web app communication
 
 ### Shared
 - **Validation**: Zod schemas
@@ -89,23 +110,42 @@ From the root directory:
 - `npm run format` - Format code with Prettier
 - `npm run type-check` - Run TypeScript type checking
 
+From the API directory:
+
+- `npm run test` - Run all tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+
+### Quick Start Scripts
+
+For Windows users, you can use the provided batch files:
+
+- `start-dev.bat` - Start both API and web servers
+- `clean-restart.bat` - Clean cache and restart servers
+
 ## 📋 Features
 
 ### Current
 - ✅ Monorepo structure with Turborepo
-- ✅ Next.js web application
+- ✅ Next.js 14 web application with App Router
 - ✅ Fastify API server
 - ✅ Shared types and schemas
 - ✅ TypeScript configuration
 - ✅ ESLint and Prettier setup
+- ✅ User authentication and authorization (JWT)
+- ✅ Project management
+- ✅ Project member management
+- ✅ Dashboard with project listing
+- ✅ Project creation and editing
+- ✅ Task management (basic structure)
+- ✅ Browser extension integration
+- ✅ PostgreSQL database with Prisma ORM
+- ✅ Comprehensive test suite (82+ test cases)
 
 ### Planned
-- 🔲 User authentication and authorization
-- 🔲 Team management
 - 🔲 Bug report creation with screenshot upload
 - 🔲 Annotation tools (pen, highlighter, shapes, text)
 - 🔲 Environment data collection
-- 🔲 Bug report dashboard
 - 🔲 Comments and collaboration
 - 🔲 Status and priority management
 - 🔲 Shareable report links
@@ -114,15 +154,15 @@ From the root directory:
 
 ## 🗄️ Database Schema
 
-The database schema will include:
-- Users
-- Teams
-- TeamMembers
-- BugReports
-- Annotations
-- Comments
+The database schema includes:
+- Users (with authentication)
+- Projects (bug tracking projects)
+- ProjectMembers (project access control)
+- Tasks (bug reports/issues)
+- Annotations (visual annotations on tasks)
+- Comments (task comments and collaboration)
 
-(Prisma schema to be implemented in Phase 1, Step 2)
+See [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma) for the complete schema definition.
 
 ## 🔐 Environment Variables
 
@@ -164,6 +204,8 @@ This project is private and proprietary.
 
 ---
 
-**Status**: Phase 1 - Project Setup Complete ✅
+**Status**: Active Development ✅
 
-**Next Steps**: Proceed with Phase 1, Step 2 - Design Database Schema
+**Current Version**: v0.1.0
+
+**Next Steps**: Implement bug report creation with screenshot upload and annotation tools

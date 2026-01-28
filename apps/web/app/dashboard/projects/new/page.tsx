@@ -42,12 +42,10 @@ export default function NewProjectPage() {
       }
 
       const project = await response.json();
-      console.log('Project created:', project);
-      
+
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (error: any) {
-      console.error('Error creating project:', error);
       setError(error.message || 'Failed to create project');
     } finally {
       setIsSubmitting(false);

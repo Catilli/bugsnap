@@ -20,7 +20,6 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Login error:', err);
       const errorMessage = err.response?.data?.error?.message || err.message || 'Login failed. Please check your credentials and try again.';
       setError(errorMessage);
     }

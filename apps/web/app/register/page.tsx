@@ -33,7 +33,6 @@ export default function RegisterPage() {
       await register(email, password, name);
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Registration error:', err);
       const errorMessage = err.response?.data?.error?.message || err.message || 'Registration failed. Please try again.';
       setError(errorMessage);
     }

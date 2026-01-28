@@ -46,7 +46,7 @@ export default function ProjectDetailPage() {
           setProjectName(data.name);
         }
       } catch (error) {
-        console.error('Error fetching project:', error);
+        // Silently fail on error
       }
     };
 
@@ -98,7 +98,6 @@ export default function ProjectDetailPage() {
         setProjectName(updatedProject.name);
       }
     } catch (error) {
-      console.error('Error updating project name:', error);
       setEditedName(project?.name || '');
     } finally {
       setIsSavingName(false);

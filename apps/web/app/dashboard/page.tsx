@@ -45,7 +45,7 @@ export default function DashboardPage() {
           setProjects(data);
         }
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        // Silently fail on error
       } finally {
         setIsLoading(false);
       }
