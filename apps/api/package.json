@@ -7,10 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
-    "type-check": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -25,13 +22,9 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.11.0",
-    "@types/supertest": "^6.0.2",
-    "@vitest/coverage-v8": "^4.0.18",
     "prisma": "^5.8.1",
-    "supertest": "^6.3.4",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3",
-    "vitest": "^4.0.18"
+    "typescript": "^5.3.3"
   },
   "overrides": {
     "tar": "^7.5.4"

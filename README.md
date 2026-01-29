@@ -89,7 +89,6 @@ The BugSnap browser extension allows users to capture bugs directly from any web
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: JWT
 - **Language**: TypeScript
-- **Testing**: Vitest
 
 ### Browser Extension
 - **Platform**: Chrome Extension (Manifest V3)
@@ -112,9 +111,10 @@ From the root directory:
 
 From the API directory:
 
-- `npm run test` - Run all tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage report
+- `npm run build` - Build TypeScript to JavaScript
+- `npm run start` - Start production server
+- `npm run lint` - Lint TypeScript files
+- `npm run type-check` - Run TypeScript type checking
 
 ### Quick Start Scripts
 
@@ -142,7 +142,6 @@ For Windows users, you can use the provided batch files:
 - ✅ Task filtering and sorting (by date, priority, status)
 - ✅ Browser extension integration
 - ✅ PostgreSQL database with Prisma ORM
-- ✅ Comprehensive test suite (82+ test cases)
 - ✅ Task creation with custom titles and auto-numbering
 - ✅ Screenshot capture and annotation tools
 - ✅ Environment data collection
@@ -189,9 +188,8 @@ CLOUDINARY_API_SECRET=your-api-secret
 1. Create a new branch for your feature
 2. Make your changes
 3. Run `npm run lint` and `npm run type-check`
-4. Test your changes
-5. Commit and push
-6. Create a pull request
+4. Commit and push
+5. Create a pull request
 
 ## 🤝 Contributing
 
