@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { ZodSchema } from 'zod';
 
 export const validateBody = (schema: ZodSchema) => {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
+  return async (request: FastifyRequest, _reply: FastifyReply) => {
     try {
       request.body = schema.parse(request.body);
     } catch (error) {
@@ -12,7 +12,7 @@ export const validateBody = (schema: ZodSchema) => {
 };
 
 export const validateQuery = (schema: ZodSchema) => {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
+  return async (request: FastifyRequest, _reply: FastifyReply) => {
     try {
       request.query = schema.parse(request.query);
     } catch (error) {
@@ -22,7 +22,7 @@ export const validateQuery = (schema: ZodSchema) => {
 };
 
 export const validateParams = (schema: ZodSchema) => {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
+  return async (request: FastifyRequest, _reply: FastifyReply) => {
     try {
       request.params = schema.parse(request.params);
     } catch (error) {

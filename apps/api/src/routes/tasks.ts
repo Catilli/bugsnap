@@ -61,7 +61,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
       }
 
       const isOwner = project.createdById === userId;
-      const isMember = project.members.some((member) => member.userId === userId);
+      const isMember = project.members.some((member: any) => member.userId === userId);
 
       if (!isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
@@ -121,7 +121,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
       }
 
       const isOwner = project.createdById === userId;
-      const isMember = project.members.some((member) => member.userId === userId);
+      const isMember = project.members.some((member: any) => member.userId === userId);
 
       if (!isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
@@ -225,7 +225,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
       }
 
       const isOwner = project.createdById === userId;
-      const isMember = project.members.some((member) => member.userId === userId);
+      const isMember = project.members.some((member: any) => member.userId === userId);
 
       if (!isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });

@@ -1,21 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { checkExtensionInstalled } from '@/lib/extensionSync';
+import { useState } from 'react';
 
 export default function InstallExtensionPage() {
-  const [isExtensionInstalled, setIsExtensionInstalled] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    // Check if extension is installed
-    const checkExtension = async () => {
-      const installed = await checkExtensionInstalled();
-      setIsExtensionInstalled(installed);
-    };
-
-    checkExtension();
-  }, []);
+  const [isExtensionInstalled] = useState<boolean | null>(null);
 
   return (
     <div className="max-w-4xl mx-auto">

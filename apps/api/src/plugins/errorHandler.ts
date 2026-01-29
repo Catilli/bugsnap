@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { AppError } from '../utils/errors';
 
 export const errorHandler: FastifyPluginAsync = async (fastify) => {
-  fastify.setErrorHandler((error: FastifyError | AppError | ZodError, request, reply) => {
+  fastify.setErrorHandler((error: FastifyError | AppError | ZodError, _request, reply) => {
     // Log error
     fastify.log.error(error);
 

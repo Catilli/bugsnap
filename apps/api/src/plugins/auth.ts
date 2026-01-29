@@ -19,7 +19,7 @@ declare module '@fastify/jwt' {
 
 export const authPlugin: FastifyPluginAsync = async (fastify) => {
   // Create authenticate decorator
-  fastify.decorate('authenticate', async function (request, reply) {
+  fastify.decorate('authenticate', async function (request, _reply) {
     try {
       await request.jwtVerify();
     } catch (err) {

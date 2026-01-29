@@ -1,5 +1,4 @@
 import { FastifyPluginAsync } from 'fastify';
-import { validateBody } from '../middleware/validate';
 import { loginSchema, registerSchema } from '@bugsnap/shared';
 import { authService } from '../services/authService';
 
@@ -55,7 +54,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // POST /api/auth/logout
-  fastify.post('/logout', async (request, reply) => {
+  fastify.post('/logout', async (_request, reply) => {
     // In a stateless JWT system, logout is handled client-side by removing the token
     // For additional security, you could implement a token blacklist here
     return reply.status(200).send({

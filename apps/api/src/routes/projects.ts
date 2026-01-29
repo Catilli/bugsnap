@@ -112,7 +112,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
 
       // Check if user has access (is owner or member)
       const isOwner = project.createdById === userId;
-      const isMember = project.members.some((member) => member.userId === userId);
+      const isMember = project.members.some((member: any) => member.userId === userId);
 
       if (!isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
@@ -159,7 +159,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
 
       const isOwner = project.createdById === userId;
       const isAdmin = project.members.some(
-        (member) => member.userId === userId && (member.role === 'admin' || member.role === 'owner')
+        (member: any) => member.userId === userId && (member.role === 'admin' || member.role === 'owner')
       );
 
       if (!isOwner && !isAdmin) {
