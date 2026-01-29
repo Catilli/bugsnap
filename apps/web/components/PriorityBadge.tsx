@@ -23,7 +23,7 @@ export function PriorityBadge({ priority, size = 'md' }: PriorityBadgeProps) {
     <span
       className={`inline-flex items-center rounded-full font-medium ${getPriorityStyles()} ${sizeClasses[size]}`}
     >
-      {priority.toUpperCase()} PRIORITY
+      {priority.toUpperCase()}
     </span>
   );
 }

@@ -12,6 +12,12 @@ const createTaskSchema = z.object({
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
   environmentData: z.any().optional(),
+  annotations: z.array(z.object({
+    type: z.enum(['pen', 'rectangle', 'arrow', 'text']),
+    coordinates: z.any(),
+    content: z.string().optional(),
+    color: z.string().optional(),
+  })).optional(),
 });
 
 const updateTaskSchema = z.object({
@@ -24,6 +30,65 @@ const updateTaskSchema = z.object({
 });
 
 export async function taskRoutes(fastify: FastifyInstance) {
+  // Get next task number for a project
+  fastify.get('/projects/:projectId/next-task-number', {
+    preHandler: async (request, reply) => {
+      try {
+        await request.jwtVerify();
+      } catch (err) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
+    try {
+      const { projectId } = request.params as { projectId: string };
+      const userId = (request.user as any)?.id;
+
+      if (!userId) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      // Verify user has access to project
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          members: true,
+        },
+      });
+
+      if (!project) {
+        return reply.status(404).send({ error: 'Project not found' });
+      }
+
+      const isOwner = project.createdById === userId;
+      const isMember = project.members.some((member) => member.userId === userId);
+
+      if (!isOwner && !isMember) {
+        return reply.status(403).send({ error: 'You do not have access to this project' });
+      }
+
+      // Get the last task to determine next number
+      const lastTask = await prisma.task.findFirst({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      let nextTaskNumber = 1;
+      if (lastTask) {
+        // Extract number from "Task #X ..." format
+        const match = lastTask.title.match(/Task #(\d+)/);
+        if (match) {
+          nextTaskNumber = parseInt(match[1]) + 1;
+        }
+      }
+
+      return reply.send({ nextTaskNumber });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Failed to get next task number' });
+    }
+  });
+
   // Create a new task
   fastify.post('/tasks', {
     preHandler: async (request, reply) => {
@@ -65,16 +130,23 @@ export async function taskRoutes(fastify: FastifyInstance) {
       // Get next task number for this project
       const lastTask = await prisma.task.findFirst({
         where: { projectId: data.projectId },
-        orderBy: { taskNumber: 'desc' },
+        orderBy: { createdAt: 'desc' },
       });
 
-      const taskNumber = lastTask ? lastTask.taskNumber + 1 : 1;
+      let newTaskNumber = 1;
+      if (lastTask) {
+        // Extract number from "Task #X ..." format
+        const match = lastTask.title.match(/Task #(\d+)/);
+        if (match) {
+          newTaskNumber = parseInt(match[1]) + 1;
+        }
+      }
 
-      // Create task
+      // Create task with title as task number
       const task = await prisma.task.create({
         data: {
           projectId: data.projectId,
-          title: data.title,
+          title: `Task #${newTaskNumber} - ${data.title}`,
           description: data.description,
           url: data.url,
           screenshotUrl: data.screenshotUrl,
@@ -82,8 +154,16 @@ export async function taskRoutes(fastify: FastifyInstance) {
           visibility: data.visibility,
           assignedToId: data.assignedToId,
           environmentData: data.environmentData,
-          taskNumber,
           createdById: userId,
+          // Create annotations if provided
+          annotations: data.annotations ? {
+            create: data.annotations.map((annotation: any) => ({
+              type: annotation.type,
+              coordinates: annotation.coordinates,
+              content: annotation.content,
+              color: annotation.color || '#ef4444', // Default red color
+            }))
+          } : undefined,
         },
         include: {
           createdBy: {
@@ -100,6 +180,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
               email: true,
             },
           },
+          annotations: true,
         },
       });
 
@@ -174,7 +255,11 @@ export async function taskRoutes(fastify: FastifyInstance) {
             },
           },
         },
-        orderBy: { taskNumber: 'desc' },
+        orderBy: [
+          {
+            title: 'asc',
+          },
+        ],
       });
 
       return reply.send(tasks);

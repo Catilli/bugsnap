@@ -17,6 +17,7 @@ dotenv.config();
 
 const fastify = Fastify({
   logger: true,
+  bodyLimit: 50 * 1024 * 1024, // 50MB to handle large screenshots
 });
 
 // Register JWT first (before other plugins that might need it)
@@ -26,7 +27,30 @@ fastify.register(fastifyJwt, {
 
 // Register CORS plugin with explicit configuration
 fastify.register(cors, {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow production domain
+    if (origin.includes('leidback.viewourdesign.info')) {
+      return callback(null, true);
+    }
+    
+    // Allow chrome-extension:// origins for the extension
+    if (origin.startsWith('chrome-extension://')) {
+      return callback(null, true);
+    }
+    
+    // Allow all origins for extension to work on any website
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

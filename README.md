@@ -137,20 +137,26 @@ For Windows users, you can use the provided batch files:
 - ✅ Project member management
 - ✅ Dashboard with project listing
 - ✅ Project creation and editing
-- ✅ Task management (basic structure)
+- ✅ Task management with full CRUD operations
+- ✅ Task display with grid and list views
+- ✅ Task filtering and sorting (by date, priority, status)
 - ✅ Browser extension integration
 - ✅ PostgreSQL database with Prisma ORM
 - ✅ Comprehensive test suite (82+ test cases)
+- ✅ Task creation with custom titles and auto-numbering
+- ✅ Screenshot capture and annotation tools
+- ✅ Environment data collection
+- ✅ Comments and collaboration
+- ✅ Status and priority management
 
 ### Planned
-- 🔲 Bug report creation with screenshot upload
-- 🔲 Annotation tools (pen, highlighter, shapes, text)
-- 🔲 Environment data collection
-- 🔲 Comments and collaboration
-- 🔲 Status and priority management
-- 🔲 Shareable report links
+- 🔲 Shareable task links
 - 🔲 Real-time updates
 - 🔲 Third-party integrations (Jira, Linear, GitHub)
+- 🔲 Task assignment workflow
+- 🔲 Advanced filtering and search
+- 🔲 Task templates
+- 🔲 Email notifications
 
 ## 🗄️ Database Schema
 
@@ -201,11 +207,26 @@ This project is private and proprietary.
 - [Fastify Documentation](https://www.fastify.io/)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [Turborepo Documentation](https://turbo.build/repo/docs)
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Complete guide for deploying to production
+- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) - Step-by-step deployment checklist
 
 ---
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.1.0
+**Current Version**: v0.2.0
 
-**Next Steps**: Implement bug report creation with screenshot upload and annotation tools
+**Next Steps**: Implement shareable task links and real-time updates
+
+## 🚀 Production Deployment
+
+For deploying BugSnap to production, see the comprehensive [Deployment Guide](./DEPLOYMENT_GUIDE.md) and [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md).
+
+### Quick Deployment Summary
+
+1. **Database**: Set up PostgreSQL (Supabase, Neon, or Railway)
+2. **Backend API**: Deploy to Railway, Render, or Fly.io
+3. **Frontend**: Deploy to Vercel
+4. **Extension**: Update configuration and publish to Chrome Web Store
+
+See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.

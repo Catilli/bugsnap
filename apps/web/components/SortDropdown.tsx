@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Grid2x2, Check } from 'lucide-react';
 
 type SortOption = {
   label: string;
@@ -52,26 +53,12 @@ export default function SortDropdown({
       {/* Dropdown Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors bg-white text-sm font-medium text-gray-700"
+        className="flex items-center gap-2 pl-4 pr-[0.75rem] py-[0.625rem] border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors bg-white text-sm font-medium text-gray-700"
       >
         <span>{selectedSortLabel}</span>
-        <svg
+        <ChevronDown
           className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-        {/* Grid icon */}
-        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-          />
-        </svg>
+        />
       </button>
 
       {/* Dropdown Menu */}
@@ -92,14 +79,7 @@ export default function SortDropdown({
                   className="flex items-center w-full px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
                 >
                   {selectedSort === option.value && (
-                    <svg
-                      className="w-4 h-4 mr-2 text-gray-700"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-4 h-4 mr-2 text-gray-700" />
                   )}
                   <span className={selectedSort === option.value ? '' : 'ml-6'}>{option.label}</span>
                 </button>
@@ -125,14 +105,7 @@ export default function SortDropdown({
                   className="flex items-center w-full px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
                 >
                   {selectedOrder === option.value && (
-                    <svg
-                      className="w-4 h-4 mr-2 text-gray-700"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-4 h-4 mr-2 text-gray-700" />
                   )}
                   <span className={selectedOrder === option.value ? '' : 'ml-6'}>{option.label}</span>
                 </button>

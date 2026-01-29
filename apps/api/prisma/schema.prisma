@@ -67,7 +67,6 @@ model ProjectMember {
 model Task {
   id              String   @id @default(uuid())
   projectId       String
-  taskNumber      Int      // Auto-increment per project
   title           String
   description     String?  @db.Text
   url             String?
@@ -88,7 +87,6 @@ model Task {
   annotations Annotation[]
   comments    Comment[]
 
-  @@unique([projectId, taskNumber])
   @@index([projectId])
   @@index([createdById])
   @@index([assignedToId])

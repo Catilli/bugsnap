@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import SortDropdown from '@/components/SortDropdown';
+import FilterControls from '@/components/FilterControls';
+import { Plus, RefreshCw, FileText, Search, Trash2 } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'name' | 'date' | 'status' | 'lastViewed';
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [orderBy, setOrderBy] = useState<OrderBy>('desc');
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; projectId: string | null }>({ show: false, projectId: null });
 
   // Fetch projects from API
   useEffect(() => {
@@ -53,6 +55,29 @@ export default function DashboardPage() {
 
     fetchProjects();
   }, []);
+
+  // Handle project deletion
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Remove the deleted project from the list
+        setProjects(projects.filter(p => p.id !== projectId));
+        setDeleteConfirm({ show: false, projectId: null });
+      }
+    } catch (error) {
+      // Silently fail on error
+    }
+  };
 
   // Sort options for dropdown
   const sortOptions = [
@@ -113,136 +138,39 @@ export default function DashboardPage() {
             href="/dashboard/projects/new"
             className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
           >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus className="w-5 h-5 mr-2" />
             New Project
           </Link>
         </div>
 
         {/* Search and View Controls */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search Bar */}
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-              <svg
-                className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Sort and Order Controls */}
-          <div className="flex gap-2">
-            <SortDropdown
-              sortOptions={sortOptions}
-              orderOptions={orderOptions}
-              selectedSort={sortBy}
-              selectedOrder={orderBy}
-              onSortChange={(value) => setSortBy(value as SortBy)}
-              onOrderChange={(value) => setOrderBy(value as OrderBy)}
-            />
-
-            {/* View Mode Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-3 py-2 ${
-                  viewMode === 'grid'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                } transition-colors`}
-                title="Grid View"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-2 ${
-                  viewMode === 'list'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                } transition-colors`}
-                title="List View"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        <FilterControls
+          searchPlaceholder="Search projects..."
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortOptions={sortOptions}
+          orderOptions={orderOptions}
+          selectedSort={sortBy}
+          selectedOrder={orderBy}
+          onSortChange={(value) => setSortBy(value as SortBy)}
+          onOrderChange={(value) => setOrderBy(value as OrderBy)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
       </div>
 
       {/* Loading State */}
       {isLoading ? (
         <div className="bg-white p-12 rounded-lg shadow-sm border border-gray-200 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <svg
-              className="w-8 h-8 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
+            <RefreshCw className="w-8 h-8 text-gray-400" />
           </div>
           <p className="text-gray-600">Loading projects...</p>
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="bg-white p-12 rounded-lg shadow-sm border border-gray-200 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            <Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {searchQuery ? 'No projects found' : 'No projects yet'}
@@ -264,11 +192,23 @@ export default function DashboardPage() {
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProjects.map((project) => (
-            <Link
+            <div
               key={project.id}
-              href={`/dashboard/projects/${project.id}`}
-              className="group bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all overflow-hidden"
+              className="group bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all overflow-hidden relative"
             >
+              {/* Delete Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDeleteConfirm({ show: true, projectId: project.id });
+                }}
+                className="absolute top-2 right-2 z-10 p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-600"
+                title="Delete project"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+
               {/* Project Thumbnail */}
               <div className="aspect-video bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center relative overflow-hidden">
                 {project.websiteUrl ? (
@@ -283,34 +223,10 @@ export default function DashboardPage() {
                         e.currentTarget.nextElementSibling?.classList.remove('hidden');
                       }}
                     />
-                    <svg
-                      className="w-12 h-12 text-indigo-300 hidden"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
+                    <FileText className="w-12 h-12 text-indigo-300 hidden" />
                   </>
                 ) : (
-                  <svg
-                    className="w-12 h-12 text-indigo-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
+                  <FileText className="w-12 h-12 text-indigo-300" />
                 )}
               </div>
 
@@ -329,7 +245,13 @@ export default function DashboardPage() {
                   )}
                 </div>
               </div>
-            </Link>
+
+              {/* Link wrapper for the card content */}
+              <Link
+                href={`/dashboard/projects/${project.id}`}
+                className="absolute inset-0 z-0"
+              />
+            </div>
           ))}
         </div>
       ) : (
@@ -356,24 +278,11 @@ export default function DashboardPage() {
                 <tr
                   key={project.id}
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => (window.location.href = `/dashboard/projects/${project.id}`)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded flex items-center justify-center mr-3">
-                        <svg
-                          className="w-5 h-5 text-indigo-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
+                        <FileText className="w-5 h-5 text-indigo-600" />
                       </div>
                       <div className="text-sm font-medium text-gray-900">{project.name}</div>
                     </div>
@@ -391,10 +300,56 @@ export default function DashboardPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getRelativeTime(project.updatedAt)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm({ show: true, projectId: project.id });
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete project"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Project</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this project? All associated tasks and data will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirm({ show: false, projectId: null })}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteConfirm.projectId && handleDeleteProject(deleteConfirm.projectId)}
+                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
