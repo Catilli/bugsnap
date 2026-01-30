@@ -127,11 +127,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="py-1">
                     <Link
-                      href="/dashboard"
+                      href="/dashboard/account"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      Dashboard
+                      My Account
                     </Link>
                     <Link
                       href="/dashboard/install-extension"

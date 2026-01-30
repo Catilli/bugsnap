@@ -17,6 +17,10 @@ interface Project {
   createdAt: string;
   _count?: {
     tasks: number;
+    open?: number;
+    in_progress?: number;
+    resolved?: number;
+    closed?: number;
   };
 }
 
@@ -143,6 +147,27 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {/* Status Legend */}
+        <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
+          <span className="font-medium">Task Status:</span>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+            <span>Open</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+            <span>In Progress</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-green-500"></span>
+            <span>Resolved</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+            <span>Closed</span>
+          </div>
+        </div>
+
         {/* Search and View Controls */}
         <FilterControls
           searchPlaceholder="Search projects..."
@@ -238,11 +263,28 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500 mb-3 truncate">{project.websiteUrl}</p>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>Updated {getRelativeTime(project.updatedAt)}</span>
-                  {project._count && (
-                    <span className="px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                      {project._count.tasks} tasks
-                    </span>
-                  )}
+                  <div className="flex gap-1">
+                    {project._count?.open && project._count.open > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                        {project._count.open}
+                      </span>
+                    )}
+                    {project._count?.in_progress && project._count.in_progress > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                        {project._count.in_progress}
+                      </span>
+                    )}
+                    {project._count?.resolved && project._count.resolved > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                        {project._count.resolved}
+                      </span>
+                    )}
+                    {project._count?.closed && project._count.closed > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-medium">
+                        {project._count.closed}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -291,11 +333,28 @@ export default function DashboardPage() {
                     <div className="text-sm text-gray-600 truncate max-w-md">{project.websiteUrl}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {project._count && (
-                      <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                        {project._count.tasks} tasks
-                      </span>
-                    )}
+                    <div className="flex gap-1">
+                      {project._count?.open && project._count.open > 0 && (
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium text-xs">
+                          {project._count.open}
+                        </span>
+                      )}
+                      {project._count?.in_progress && project._count.in_progress > 0 && (
+                        <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium text-xs">
+                          {project._count.in_progress}
+                        </span>
+                      )}
+                      {project._count?.resolved && project._count.resolved > 0 && (
+                        <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium text-xs">
+                          {project._count.resolved}
+                        </span>
+                      )}
+                      {project._count?.closed && project._count.closed > 0 && (
+                        <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 font-medium text-xs">
+                          {project._count.closed}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getRelativeTime(project.updatedAt)}

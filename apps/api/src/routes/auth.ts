@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { loginSchema, registerSchema } from '@bugsnap/shared';
 import { authService } from '../services/authService';
+import { z } from 'zod';
 
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/auth/register
@@ -75,6 +76,82 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         error: {
           code: 'UNAUTHORIZED',
           message: 'Invalid or expired token',
+        },
+      });
+    }
+  });
+
+  // PUT /api/auth/profile
+  fastify.put('/profile', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+      const userId = request.user.id;
+
+      const profileSchema = z.object({
+        name: z.string().min(1, 'Name is required'),
+        email: z.string().email('Invalid email address'),
+      });
+
+      const validated = profileSchema.parse(request.body);
+      const user = await authService.updateProfile(userId, validated);
+
+      return reply.status(200).send(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.errors[0].message,
+          },
+        });
+      }
+      return reply.status(500).send({
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to update profile',
+        },
+      });
+    }
+  });
+
+  // PUT /api/auth/password
+  fastify.put('/password', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+      const userId = request.user.id;
+
+      const passwordSchema = z.object({
+        currentPassword: z.string().min(1, 'Current password is required'),
+        newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+      });
+
+      const validated = passwordSchema.parse(request.body);
+      await authService.updatePassword(userId, validated.currentPassword, validated.newPassword);
+
+      return reply.status(200).send({
+        message: 'Password updated successfully',
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.errors[0].message,
+          },
+        });
+      }
+      if (error instanceof Error && error.message === 'Invalid current password') {
+        return reply.status(400).send({
+          error: {
+            code: 'INVALID_PASSWORD',
+            message: 'Current password is incorrect',
+          },
+        });
+      }
+      return reply.status(500).send({
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to update password',
         },
       });
     }

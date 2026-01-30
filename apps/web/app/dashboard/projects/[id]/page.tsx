@@ -8,7 +8,7 @@ import FilterControls from '@/components/FilterControls';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PriorityBadge } from '@/components/PriorityBadge';
 import TaskDrawer from '@/components/TaskDrawer';
-import { Pencil, ExternalLink, FileText, Search, RefreshCw, MessageSquare } from 'lucide-react';
+import { Pencil, ExternalLink, FileText, Search, RefreshCw, MessageSquare, Trash2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -25,7 +25,7 @@ interface Task {
   url: string | null;
   screenshotUrl: string | null;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'medium' | 'high' | 'critical' | null;
   createdAt: string;
   updatedAt: string;
   createdBy: {
@@ -66,6 +66,7 @@ export default function ProjectDetailPage() {
   // Task drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; taskId: string | null }>({ show: false, taskId: null });
   
   const openTaskDrawer = (taskId: string) => {
     setSelectedTaskId(taskId);
@@ -75,6 +76,32 @@ export default function ProjectDetailPage() {
   const closeTaskDrawer = () => {
     setIsDrawerOpen(false);
     setSelectedTaskId(null);
+  };
+
+  // Handle task deletion
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Remove the deleted task from the list
+        setTasks(tasks.filter(t => t.id !== taskId));
+        setDeleteConfirm({ show: false, taskId: null });
+      }
+    } catch (error) {
+      // Silently fail on error
+    }
   };
 
   // Fetch project data
@@ -241,7 +268,9 @@ export default function ProjectDetailPage() {
       if (taskSortBy === 'date') {
         comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       } else if (taskSortBy === 'priority') {
-        comparison = priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder];
+        const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] : 999;
+        const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] : 999;
+        comparison = aPriority - bPriority;
       } else if (taskSortBy === 'status') {
         comparison = statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
       }
@@ -355,11 +384,23 @@ export default function ProjectDetailPage() {
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
-                onClick={() => openTaskDrawer(task.id)}
-                className={`group rounded-lg border hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden cursor-pointer ${getPriorityCardColor(task.priority)}`}
+                className={`group rounded-lg border hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden cursor-pointer relative ${task.priority ? getPriorityCardColor(task.priority) : 'bg-gray-50 border-gray-200'}`}
               >
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteConfirm({ show: true, taskId: task.id });
+                  }}
+                  className="absolute top-2 right-2 z-10 p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-600"
+                  title="Delete task"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
                 {/* Task Info */}
-                <div className="p-4">
+                <div className="p-4" onClick={() => openTaskDrawer(task.id)}>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-2">
                       {task.title}
@@ -415,10 +456,9 @@ export default function ProjectDetailPage() {
                 {filteredTasks.map((task) => (
                   <tr
                     key={task.id}
-                    onClick={() => openTaskDrawer(task.id)}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={() => openTaskDrawer(task.id)}>
                       <div>
                         <div className="text-sm font-medium text-gray-900 line-clamp-1">
                           {task.title}
@@ -430,16 +470,16 @@ export default function ProjectDetailPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap" onClick={() => openTaskDrawer(task.id)}>
                       <StatusBadge status={task.status} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap" onClick={() => openTaskDrawer(task.id)}>
                       <PriorityBadge priority={task.priority} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" onClick={() => openTaskDrawer(task.id)}>
                       {getRelativeTime(task.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" onClick={() => openTaskDrawer(task.id)}>
                       {task._count.comments > 0 ? (
                         <span className="flex items-center gap-1">
                           <MessageSquare className="w-3 h-3" />
@@ -448,6 +488,18 @@ export default function ProjectDetailPage() {
                       ) : (
                         '-'
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm({ show: true, taskId: task.id });
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -463,6 +515,40 @@ export default function ProjectDetailPage() {
         isOpen={isDrawerOpen}
         onClose={closeTaskDrawer}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Task</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this task? All associated data will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirm({ show: false, taskId: null })}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteConfirm.taskId && handleDeleteTask(deleteConfirm.taskId)}
+                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

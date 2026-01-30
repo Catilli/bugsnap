@@ -1,14 +1,15 @@
 import { FastifyInstance } from 'fastify';
 import { ProjectMemberService } from '../services/projectMemberService';
+import { prisma } from '../lib/prisma';
 import { z } from 'zod';
 
 const addMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['owner', 'admin', 'member', 'viewer']).optional(),
+  role: z.enum(['MANAGER', 'DEVELOPER', 'VIEWER']).optional(),
 });
 
 const updateRoleSchema = z.object({
-  role: z.enum(['owner', 'admin', 'member', 'viewer']),
+  role: z.enum(['MANAGER', 'DEVELOPER', 'VIEWER']),
 });
 
 export async function projectMemberRoutes(fastify: FastifyInstance) {
@@ -47,11 +48,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       }
 
       // Check if user has admin rights
-      const hasAdminAccess = await ProjectMemberService.hasRole(userId, projectId, 'admin');
+      const hasAdminAccess = await ProjectMemberService.hasRole(userId, projectId, 'MANAGER');
       if (!hasAdminAccess) {
         return reply
           .status(403)
-          .send({ error: 'You need admin permissions to add members' });
+          .send({ error: 'You need MANAGER permissions to add members' });
       }
 
       const { email, role } = addMemberSchema.parse(request.body);
@@ -84,11 +85,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       }
 
       // Check if user has admin rights
-      const hasAdminAccess = await ProjectMemberService.hasRole(userId, projectId, 'admin');
+      const hasAdminAccess = await ProjectMemberService.hasRole(userId, projectId, 'MANAGER');
       if (!hasAdminAccess) {
         return reply
           .status(403)
-          .send({ error: 'You need admin permissions to update member roles' });
+          .send({ error: 'You need MANAGER permissions to update member roles' });
       }
 
       const { role } = updateRoleSchema.parse(request.body);
@@ -118,11 +119,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       }
 
       // Check if user has admin rights
-      const hasAdminAccess = await ProjectMemberService.hasRole(userId, projectId, 'admin');
+      const hasAdminAccess = await ProjectMemberService.hasRole(userId, projectId, 'MANAGER');
       if (!hasAdminAccess) {
         return reply
           .status(403)
-          .send({ error: 'You need admin permissions to remove members' });
+          .send({ error: 'You need MANAGER permissions to remove members' });
       }
 
       await ProjectMemberService.removeMember(projectId, targetUserId);
@@ -154,7 +155,40 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       }
 
       const projects = await ProjectMemberService.getUserProjects(userId);
-      return reply.send(projects);
+
+      // Add task counts by status to each project
+      const projectsWithCounts = await Promise.all(
+        projects.map(async (project: any) => {
+          const tasks = await prisma.task.findMany({
+            where: { projectId: project.id },
+            select: { status: true },
+          });
+
+          const taskCounts = {
+            open: 0,
+            in_progress: 0,
+            resolved: 0,
+            closed: 0,
+          };
+
+          tasks.forEach((task: any) => {
+            if (task.status === 'open') taskCounts.open++;
+            else if (task.status === 'in_progress') taskCounts.in_progress++;
+            else if (task.status === 'resolved') taskCounts.resolved++;
+            else if (task.status === 'closed') taskCounts.closed++;
+          });
+
+          return {
+            ...project,
+            _count: {
+              tasks: tasks.length,
+              ...taskCounts,
+            },
+          };
+        })
+      );
+
+      return reply.send(projectsWithCounts);
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Failed to fetch projects' });

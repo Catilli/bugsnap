@@ -1,6 +1,6 @@
 export type BugReportStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type BugReportPriority = 'low' | 'medium' | 'high' | 'critical';
-export type UserRole = 'owner' | 'admin' | 'member' | 'viewer';
+export type UserRole = 'MANAGER' | 'DEVELOPER' | 'VIEWER';
 
 export interface User {
   id: string;

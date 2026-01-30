@@ -18,6 +18,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
   
+  if (request.action === 'fetchProjectMembers') {
+    fetchProjectMembers(request.token, request.projectId)
+      .then(sendResponse)
+      .catch(error => sendResponse({ error: error.message }));
+    return true; // Keep message channel open for async response
+  }
+  
   if (request.action === 'createTask') {
     createTask(request.token, request.payload)
       .then(sendResponse)
@@ -60,6 +67,32 @@ async function fetchNextTaskNumber(token, projectId) {
 
     const data = await response.json();
     return { nextTaskNumber: data.nextTaskNumber };
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function fetchProjectMembers(token, projectId) {
+  try {
+    const response = await fetch(`http://localhost:3001/api/projects/${projectId}/members`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch project members: ${response.status}`);
+    }
+
+    const members = await response.json();
+    // Transform members to include user data
+    const membersList = members.map(member => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email
+    }));
+    return { members: membersList };
   } catch (error) {
     throw error;
   }

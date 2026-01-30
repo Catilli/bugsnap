@@ -10,6 +10,8 @@ class BugSnapUI {
     this.annotations = [];
     this.selectedAnnotationIndex = null;
     this.currentTool = 'rectangle';
+    this.projectMembers = [];
+    this.selectedAssignees = [];
     this.init();
   }
 
@@ -484,8 +486,7 @@ class BugSnapUI {
     };
 
     document.getElementById('bugsnap-save-annotation').onclick = () => {
-      document.body.style.overflow = ''; // Re-enable scrolling
-      modal.remove();
+      // Keep the annotation modal open, just show task form
       this.showTaskForm();
     };
 
@@ -609,27 +610,57 @@ class BugSnapUI {
             background: white;
             cursor: pointer;
             box-sizing: border-box;
+            color: #9ca3af;
           ">
-            <option value="">Priority</option>
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
+            <option value="" disabled selected hidden style="color: #9ca3af;">Priority</option>
+            <option value="" style="color: #374151;">Not Set</option>
+            <option value="low" style="color: #374151;">Low</option>
+            <option value="medium" style="color: #374151;">Medium</option>
+            <option value="high" style="color: #374151;">High</option>
+            <option value="critical" style="color: #374151;">Critical</option>
           </select>
           
-          <select id="bugsnap-task-assignee" style="
-            flex: 1;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
-            cursor: pointer;
-            box-sizing: border-box;
-          ">
-            <option value="">Assignee(s)</option>
-          </select>
+          <div style="flex: 1; position: relative;">
+            <input
+              id="bugsnap-task-assignee"
+              type="text"
+              placeholder="Assignee(s)"
+              autocomplete="off"
+              style="
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
+                background: white;
+                box-sizing: border-box;
+              ">
+            <div id="bugsnap-assignee-dropdown" style="
+              display: none;
+              position: absolute;
+              top: 100%;
+              left: 0;
+              right: 0;
+              background: white;
+              border: 1px solid #d1d5db;
+              border-top: none;
+              border-radius: 0 0 6px 6px;
+              max-height: 200px;
+              overflow-y: auto;
+              z-index: 1000;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            "></div>
+          </div>
         </div>
+
+        <!-- Selected Assignees -->
+        <div id="bugsnap-selected-assignees" style="
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 16px;
+          min-height: 20px;
+        "></div>
 
         <!-- Create Button -->
         <button id="bugsnap-submit-task" style="
@@ -673,23 +704,174 @@ class BugSnapUI {
     modal.appendChild(form);
     document.body.appendChild(modal);
 
+    // Fetch project members
+    this.fetchProjectMembers();
+
+    // Setup assignee autocomplete
+    const assigneeInput = document.getElementById('bugsnap-task-assignee');
+    const assigneeDropdown = document.getElementById('bugsnap-assignee-dropdown');
+    
+    assigneeInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      if (query.length === 0) {
+        assigneeDropdown.style.display = 'none';
+        return;
+      }
+      
+      const filtered = this.projectMembers.filter(member =>
+        member.name.toLowerCase().includes(query) ||
+        member.email.toLowerCase().includes(query)
+      );
+      
+      if (filtered.length > 0) {
+        assigneeDropdown.innerHTML = filtered.map(member => `
+          <div data-user-id="${member.id}" style="
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+          " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
+            <div style="
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: #f97316;
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 11px;
+              font-weight: 500;
+            ">${member.name.substring(0, 2).toUpperCase()}</div>
+            <span style="font-size: 14px; color: #374151;">${member.name}</span>
+          </div>
+        `).join('');
+        assigneeDropdown.style.display = 'block';
+        
+        // Add click handlers
+        assigneeDropdown.querySelectorAll('div[data-user-id]').forEach(item => {
+          item.onclick = () => {
+            const userId = item.dataset.userId;
+            const member = this.projectMembers.find(m => m.id === userId);
+            if (member && !this.selectedAssignees.find(a => a.id === userId)) {
+              this.selectedAssignees.push(member);
+              this.renderSelectedAssignees();
+            }
+            assigneeInput.value = '';
+            assigneeDropdown.style.display = 'none';
+          };
+        });
+      } else {
+        assigneeDropdown.style.display = 'none';
+      }
+    });
+    
+    assigneeInput.addEventListener('focus', () => {
+      if (assigneeInput.value && assigneeDropdown.children.length > 0) {
+        assigneeDropdown.style.display = 'block';
+      }
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!assigneeInput.contains(e.target) && !assigneeDropdown.contains(e.target)) {
+        assigneeDropdown.style.display = 'none';
+      }
+    });
+
     // Setup buttons
     document.getElementById('bugsnap-close-task').onclick = () => {
       modal.remove();
       this.reset();
     };
 
+    // Change priority select color when option is selected
+    const prioritySelect = document.getElementById('bugsnap-task-priority');
+    prioritySelect.addEventListener('change', (e) => {
+      if (e.target.value === '') {
+        e.target.style.color = '#9ca3af';
+      } else {
+        e.target.style.color = '#374151';
+      }
+    });
+
     document.getElementById('bugsnap-submit-task').onclick = () => {
       const title = document.getElementById('bugsnap-task-title').value;
       const description = document.getElementById('bugsnap-task-description').value;
-      const assignee = document.getElementById('bugsnap-task-assignee').value;
       const priority = document.getElementById('bugsnap-task-priority').value;
       
-      this.submitTask(title, description, assignee, priority);
+      this.submitTask(title, description, priority);
     };
   }
 
-  async submitTask(title, description, assignee, priority) {
+  fetchProjectMembers() {
+    chrome.storage.local.get(['token'], (result) => {
+      const token = result.token;
+      chrome.runtime.sendMessage({
+        action: 'fetchProjectMembers',
+        token,
+        projectId: this.project.id
+      }, (response) => {
+        if (!chrome.runtime.lastError && response && !response.error) {
+          this.projectMembers = response.members || [];
+        }
+      });
+    });
+  }
+
+  renderSelectedAssignees() {
+    const container = document.getElementById('bugsnap-selected-assignees');
+    if (!container) return;
+    
+    container.innerHTML = this.selectedAssignees.map(assignee => `
+      <div style="
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 13px;
+      ">
+        <div style="
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #f97316;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: 500;
+        ">${assignee.name.substring(0, 2).toUpperCase()}</div>
+        <span style="color: #374151;">${assignee.name}</span>
+        <button data-user-id="${assignee.id}" style="
+          background: none;
+          border: none;
+          color: #9ca3af;
+          cursor: pointer;
+          padding: 0;
+          margin-left: 4px;
+          font-size: 16px;
+          line-height: 1;
+        " title="Remove">×</button>
+      </div>
+    `).join('');
+    
+    // Add remove handlers
+    container.querySelectorAll('button[data-user-id]').forEach(btn => {
+      btn.onclick = () => {
+        const userId = btn.dataset.userId;
+        this.selectedAssignees = this.selectedAssignees.filter(a => a.id !== userId);
+        this.renderSelectedAssignees();
+      };
+    });
+  }
+
+  async submitTask(title, description, priority) {
     const submitBtn = document.getElementById('bugsnap-submit-task');
     submitBtn.textContent = 'Creating...';
     submitBtn.disabled = true;
@@ -709,8 +891,8 @@ class BugSnapUI {
           description: description,
           url: window.location.href,
           screenshotUrl: this.screenshot,
-          priority: priority || 'medium',
-          assignedToId: assignee === 'current-user' ? undefined : assignee || undefined,
+          priority: priority || undefined,
+          assignedToId: this.selectedAssignees.length > 0 ? this.selectedAssignees[0].id : undefined,
           environmentData: {
             browser: navigator.userAgent,
             os: navigator.platform,
@@ -756,8 +938,16 @@ class BugSnapUI {
   }
 
   showSuccess() {
-    const modal = document.getElementById('bugsnap-task-modal');
-    if (modal) modal.remove();
+    // Close task form modal
+    const taskModal = document.getElementById('bugsnap-task-modal');
+    if (taskModal) taskModal.remove();
+    
+    // Close annotation modal
+    const annotationModal = document.getElementById('bugsnap-annotation-modal');
+    if (annotationModal) {
+      document.body.style.overflow = ''; // Re-enable scrolling
+      annotationModal.remove();
+    }
 
     const success = document.createElement('div');
     success.style.cssText = `
@@ -789,6 +979,7 @@ class BugSnapUI {
     this.annotations = [];
     this.selectedAnnotationIndex = null;
     this.isTagging = false;
+    this.selectedAssignees = [];
     
     // Clean up MarkMyImage instance
     if (this.markMyImage) {

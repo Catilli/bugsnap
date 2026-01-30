@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Maximize2, MapPin, ExternalLink } from 'lucide-react';
+import { X, MapPin, ExternalLink } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
+import ButtonDropdown from './ButtonDropdown';
 
 interface TaskDrawerProps {
   taskId: string | null;
@@ -18,7 +19,7 @@ interface Task {
   url: string | null;
   screenshotUrl: string | null;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'medium' | 'high' | 'critical' | null;
   createdAt: string;
   updatedAt: string;
   createdBy: {
@@ -59,6 +60,47 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isScreenshotEnlarged, setIsScreenshotEnlarged] = useState(false);
+
+  // Extract task number from title
+  const getTaskNumber = (title: string) => {
+    const match = title.match(/^Task #(\d+)/);
+    return match ? match[1] : null;
+  };
+
+  // Remove task number prefix from title
+  const getCleanTitle = (title: string) => {
+    return title.replace(/^Task #\d+\s*-\s*/, '');
+  };
+
+  // Format status for display (capitalize and replace underscores)
+  const formatStatus = (status: string) => {
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  // Format date as "Jan 30, 2026 at 3:27am"
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = monthNames[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    
+    return `${month} ${day}, ${year} at ${hours}:${minutes}${ampm}`;
+  };
+
+  const statusOptions = [
+    { value: 'open', label: 'Open' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' },
+  ];
 
   // Fetch task details when drawer opens
   useEffect(() => {
@@ -159,18 +201,14 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
       {/* Drawer */}
       <div className="fixed right-0 top-0 h-full w-full md:w-[600px] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">Task #{taskId?.substring(0, 8)}</span>
+            <span className="text-sm text-gray-500">
+              Task #{task?.title ? getTaskNumber(task.title) || '1' : '...'}
+            </span>
             {task?.status && <StatusBadge status={task.status} />}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
-              title="Expand"
-            >
-              <Maximize2 className="w-5 h-5 text-gray-600" />
-            </button>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded transition-colors"
@@ -190,11 +228,17 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
             <div>
               <input
                 type="text"
-                value={task.title}
+                value={getCleanTitle(task.title)}
                 onChange={(e) => {
-                  setTask({ ...task, title: e.target.value });
+                  const taskNumber = getTaskNumber(task.title);
+                  const newTitle = taskNumber ? `Task #${taskNumber} - ${e.target.value}` : e.target.value;
+                  setTask({ ...task, title: newTitle });
                 }}
-                onBlur={(e) => updateTask('title', e.target.value)}
+                onBlur={(e) => {
+                  const taskNumber = getTaskNumber(task.title);
+                  const newTitle = taskNumber ? `Task #${taskNumber} - ${e.target.value}` : e.target.value;
+                  updateTask('title', newTitle);
+                }}
                 className="text-2xl font-semibold text-gray-900 w-full border-none focus:outline-none focus:ring-0 px-0"
                 placeholder="Task title"
               />
@@ -216,17 +260,12 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={task.status}
-                onChange={(e) => updateTask('status', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
+              <ButtonDropdown
+                label={`Mark as ${formatStatus(task.status)}`}
+                options={statusOptions}
+                selectedValue={task.status}
+                onChange={(value) => updateTask('status', value)}
+              />
             </div>
 
             {/* Screenshot */}
@@ -234,16 +273,21 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">Screenshot</label>
-                  <button className="px-3 py-1 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors">
-                    FOCUS
-                  </button>
                 </div>
-                <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                <div
+                  className="relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer group h-96"
+                  onClick={() => setIsScreenshotEnlarged(true)}
+                >
                   <img
                     src={task.screenshotUrl}
                     alt="Screenshot"
-                    className="w-full h-auto"
+                    className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
+                    <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click to enlarge
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -267,12 +311,13 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
 
             {/* Priority */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Priority (Optional)</label>
               <select
-                value={task.priority}
-                onChange={(e) => updateTask('priority', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={task.priority || ''}
+                onChange={(e) => updateTask('priority', e.target.value || null)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
               >
+                <option value="">Not Set</option>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -303,7 +348,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
             {/* Metadata */}
             <div className="border-t border-gray-200 pt-6">
               <p className="text-xs text-gray-500">
-                Reported {new Date(task.createdAt).toLocaleString()}, by {task.createdBy.name}
+                Reported {formatDateTime(task.createdAt)}, by {task.createdBy.name}
               </p>
             </div>
 
@@ -355,6 +400,29 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
           </div>
         )}
       </div>
+
+      {/* Screenshot Enlarged Modal */}
+      {isScreenshotEnlarged && task?.screenshotUrl && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4"
+          onClick={() => setIsScreenshotEnlarged(false)}
+        >
+          <div className="relative max-w-7xl max-h-full">
+            <button
+              onClick={() => setIsScreenshotEnlarged(false)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <img
+              src={task.screenshotUrl}
+              alt="Screenshot (enlarged)"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }

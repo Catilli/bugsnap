@@ -1,5 +1,5 @@
 interface PriorityBadgeProps {
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'medium' | 'high' | 'critical' | null | undefined;
   size?: 'sm' | 'md';
 }
 
@@ -10,8 +10,9 @@ export function PriorityBadge({ priority, size = 'md' }: PriorityBadgeProps) {
       medium: 'bg-blue-100 text-blue-800',
       high: 'bg-orange-100 text-orange-800',
       critical: 'bg-red-100 text-red-800',
+      none: 'bg-gray-50 text-gray-500',
     };
-    return styles[priority];
+    return styles[priority || 'none'];
   };
 
   const sizeClasses = {
@@ -19,11 +20,13 @@ export function PriorityBadge({ priority, size = 'md' }: PriorityBadgeProps) {
     md: 'px-3 py-1 text-sm',
   };
 
+  const displayText = priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : 'None';
+
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium ${getPriorityStyles()} ${sizeClasses[size]}`}
     >
-      {priority.toUpperCase()}
+      {displayText}
     </span>
   );
 }

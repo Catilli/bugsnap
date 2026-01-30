@@ -8,7 +8,7 @@ const createTaskSchema = z.object({
   description: z.string().optional(),
   url: z.string().optional(),
   screenshotUrl: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
   environmentData: z.any().optional(),

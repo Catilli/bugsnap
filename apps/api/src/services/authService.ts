@@ -21,13 +21,12 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Create user
+    // Create user (role defaults to MANAGER from schema)
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        role: 'member',
       },
       select: {
         id: true,
@@ -95,7 +94,7 @@ export class AuthService {
   /**
    * Update user profile
    */
-  async updateProfile(userId: string, data: { name?: string }) {
+  async updateProfile(userId: string, data: { name?: string; email?: string }) {
     const user = await prisma.user.update({
       where: { id: userId },
       data,
@@ -141,6 +140,13 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  /**
+   * Alias for changePassword
+   */
+  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
+    return this.changePassword(userId, currentPassword, newPassword);
   }
 }
 

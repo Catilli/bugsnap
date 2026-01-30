@@ -116,7 +116,7 @@ export class ProjectMemberService {
   static async addMember(
     projectId: string,
     userEmail: string,
-    role: 'owner' | 'admin' | 'member' | 'viewer' = 'member'
+    role: 'MANAGER' | 'DEVELOPER' | 'VIEWER' = 'DEVELOPER'
   ) {
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -190,7 +190,7 @@ export class ProjectMemberService {
   static async updateMemberRole(
     projectId: string,
     userId: string,
-    role: 'owner' | 'admin' | 'member' | 'viewer'
+    role: 'MANAGER' | 'DEVELOPER' | 'VIEWER'
   ) {
     const membership = await prisma.projectMember.findUnique({
       where: {
@@ -272,13 +272,12 @@ export class ProjectMemberService {
   static async hasRole(
     userId: string,
     projectId: string,
-    requiredRole: 'owner' | 'admin' | 'member' | 'viewer'
+    requiredRole: 'MANAGER' | 'DEVELOPER' | 'VIEWER'
   ): Promise<boolean> {
     const roleHierarchy = {
-      viewer: 0,
-      member: 1,
-      admin: 2,
-      owner: 3,
+      VIEWER: 0,
+      DEVELOPER: 1,
+      MANAGER: 2,
     };
 
     // Check if owner
@@ -305,7 +304,7 @@ export class ProjectMemberService {
       return false;
     }
 
-    const userRole = membership.role as 'owner' | 'admin' | 'member' | 'viewer';
+    const userRole = membership.role as 'MANAGER' | 'DEVELOPER' | 'VIEWER';
     return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
   }
 }

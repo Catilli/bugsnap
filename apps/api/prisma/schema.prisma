@@ -10,12 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  MANAGER   // Project managers -> manage projects and project members
+  DEVELOPER // Developers/Designers/Project Members -> invited by MANAGER, will fix reports
+  VIEWER    // Clients/Guests -> PUBLIC Shareable link, viewing only
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
   name      String
-  role      String   @default("member") // owner, admin, member, viewer
+  role      UserRole @default(MANAGER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -51,7 +57,7 @@ model ProjectMember {
   id        String   @id @default(uuid())
   projectId String
   userId    String
-  role      String   @default("member") // owner, admin, member, viewer
+  role      UserRole @default(DEVELOPER)
   addedAt   DateTime @default(now())
 
   // Relations
@@ -72,7 +78,7 @@ model Task {
   url             String?
   screenshotUrl   String?
   status          String   @default("open") // open, in_progress, resolved, closed
-  priority        String   @default("medium") // low, medium, high, critical
+  priority        String?  // low, medium, high, critical (optional, no default)
   environmentData Json?
   visibility      String   @default("members") // members, members_and_clients
   assignedToId    String?

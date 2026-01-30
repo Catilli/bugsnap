@@ -2,6 +2,42 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import {
+  CheckCircle2,
+  AlertCircle,
+  Download,
+  Zap,
+  Layout,
+  Settings,
+  FolderOpen,
+  LogOut,
+  Folder,
+  Plus,
+  MousePointer2,
+  Eye,
+  Camera,
+  Users,
+  Flag,
+  Keyboard,
+  ShieldCheck,
+  HelpCircle,
+  Globe,
+  Server,
+  Code,
+  ArrowRight,
+  ChevronRight,
+  X,
+  RefreshCw,
+  Puzzle,
+  Pin,
+  FileText,
+  Check,
+  Info,
+  AlertTriangle,
+  ExternalLink,
+  Copy,
+  Terminal,
+} from 'lucide-react';
 
 export default function InstallExtensionPage() {
   const [isExtensionInstalled] = useState<boolean | null>(null);
@@ -21,9 +57,7 @@ export default function InstallExtensionPage() {
           <div className="flex items-center gap-3">
             {isExtensionInstalled ? (
               <>
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
                 <div>
                   <h3 className="font-bold text-green-900">Extension Installed ✓</h3>
                   <p className="text-sm text-green-800">BugSnap extension is active and ready to use!</p>
@@ -31,9 +65,7 @@ export default function InstallExtensionPage() {
               </>
             ) : (
               <>
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <AlertCircle className="w-8 h-8 text-blue-600" />
                 <div>
                   <h3 className="font-bold text-blue-900">Extension Not Detected</h3>
                   <p className="text-sm text-blue-800">Follow the instructions below to install the BugSnap extension</p>
@@ -56,16 +88,12 @@ export default function InstallExtensionPage() {
             download
             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+            <Download className="w-5 h-5" />
             Download Extension
           </a>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <CheckCircle2 className="w-5 h-5 text-green-600" />
           <span className="text-gray-700 font-medium">Auto-login enabled - No need to login again!</span>
         </div>
         <p className="text-sm text-gray-500 mt-2">Version 1.0.0 • Updated just now</p>
@@ -74,7 +102,7 @@ export default function InstallExtensionPage() {
       {/* Quick Start Card */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg p-6 mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">⚡</span>
+          <Zap className="w-8 h-8 text-indigo-600" />
           Quick Start - 3 Steps
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -147,8 +175,9 @@ export default function InstallExtensionPage() {
               <li>Click "Select Folder"</li>
             </ul>
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-              <p className="text-sm text-green-800">
-                ✓ The BugSnap extension will now appear in your extensions list
+              <p className="text-sm text-green-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                The BugSnap extension will now appear in your extensions list
               </p>
             </div>
           </div>
@@ -177,9 +206,7 @@ export default function InstallExtensionPage() {
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <ShieldCheck className="w-6 h-6 text-green-600 mt-0.5" />
             <div>
               <h4 className="font-semibold text-green-900 mb-1">Automatic Login</h4>
               <p className="text-sm text-green-800">
@@ -194,9 +221,7 @@ export default function InstallExtensionPage() {
           {/* Login */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-              </svg>
+              <LogOut className="w-6 h-6 text-gray-400" />
               <h3 className="text-lg font-semibold text-gray-400 line-through">Login to Extension</h3>
               <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Auto-synced</span>
             </div>
@@ -210,9 +235,7 @@ export default function InstallExtensionPage() {
           {/* Select Project */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
+              <Folder className="w-6 h-6 text-indigo-600" />
               <h3 className="text-lg font-semibold text-gray-900">Select Project</h3>
             </div>
             <div className="ml-8">
@@ -226,9 +249,7 @@ export default function InstallExtensionPage() {
           {/* Create Task */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-6 h-6 text-indigo-600" />
               <h3 className="text-lg font-semibold text-gray-900">Create Your First Task</h3>
             </div>
             <div className="ml-8">
@@ -250,57 +271,59 @@ export default function InstallExtensionPage() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Extension Features</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <MousePointer2 className="w-5 h-5 text-green-600 mt-0.5" />
             <div>
               <h4 className="font-semibold text-gray-900">Element Selection</h4>
               <p className="text-sm text-gray-600">Click any element on any webpage to annotate</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <Eye className="w-5 h-5 text-green-600 mt-0.5" />
             <div>
               <h4 className="font-semibold text-gray-900">Visual Highlighting</h4>
               <p className="text-sm text-gray-600">Elements highlight on hover for easy targeting</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <Camera className="w-5 h-5 text-green-600 mt-0.5" />
             <div>
               <h4 className="font-semibold text-gray-900">Screenshot Capture</h4>
               <p className="text-sm text-gray-600">Automatic screenshot of selected elements</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <Zap className="w-5 h-5 text-green-600 mt-0.5" />
             <div>
               <h4 className="font-semibold text-gray-900">Instant Task Creation</h4>
               <p className="text-sm text-gray-600">Create tasks without leaving the webpage</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <Users className="w-5 h-5 text-green-600 mt-0.5" />
+            <div>
+              <h4 className="font-semibold text-gray-900">Assignee Selection</h4>
+              <p className="text-sm text-gray-600">Search and assign team members with autocomplete</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Flag className="w-5 h-5 text-green-600 mt-0.5" />
+            <div>
+              <h4 className="font-semibold text-gray-900">Priority Levels</h4>
+              <p className="text-sm text-gray-600">Set task priority: Not Set, Low, Medium, High, Critical</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Keyboard className="w-5 h-5 text-green-600 mt-0.5" />
             <div>
               <h4 className="font-semibold text-gray-900">Keyboard Shortcuts</h4>
               <p className="text-sm text-gray-600">Press Alt + B to toggle annotation mode</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <ShieldCheck className="w-5 h-5 text-green-600 mt-0.5" />
             <div>
-              <h4 className="font-semibold text-gray-900">Project Integration</h4>
-              <p className="text-sm text-gray-600">Seamlessly works with your BugSnap projects</p>
+              <h4 className="font-semibold text-gray-900">Auto-Login</h4>
+              <p className="text-sm text-gray-600">Automatically syncs with your web app session</p>
             </div>
           </div>
         </div>
@@ -308,29 +331,44 @@ export default function InstallExtensionPage() {
 
       {/* Troubleshooting */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Common Issues</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <HelpCircle className="w-6 h-6" />
+          Common Issues
+        </h2>
         <div className="space-y-4">
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1">Extension icon not showing?</h4>
+            <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <Puzzle className="w-4 h-4" />
+              Extension icon not showing?
+            </h4>
             <p className="text-sm text-gray-600">
               Click the puzzle piece icon in Chrome toolbar, find "BugSnap", and click the pin icon to keep it visible.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1">Can't login?</h4>
+            <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Can't login?
+            </h4>
             <p className="text-sm text-gray-600">
               Make sure your API server is running at <code className="bg-gray-100 px-2 py-1 rounded text-xs">http://localhost:3001</code>. 
               Check network connectivity and credentials.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1">Can't annotate elements?</h4>
+            <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <MousePointer2 className="w-4 h-4" />
+              Can't annotate elements?
+            </h4>
             <p className="text-sm text-gray-600">
               Ensure you're logged in, have selected a project, and clicked "Start Annotating". Try refreshing the webpage.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1">Extension not working after update?</h4>
+            <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Extension not working after update?
+            </h4>
             <p className="text-sm text-gray-600">
               Go to <code className="bg-gray-100 px-2 py-1 rounded text-xs">chrome://extensions/</code> and click the refresh icon on the BugSnap extension.
             </p>
@@ -340,24 +378,33 @@ export default function InstallExtensionPage() {
 
       {/* Technical Requirements */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Requirements</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Settings className="w-6 h-6" />
+          Requirements
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h4 className="font-semibold text-gray-900 mb-2">Supported Browsers</h4>
+            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              Supported Browsers
+            </h4>
             <ul className="space-y-1 text-sm text-gray-700">
-              <li>✓ Google Chrome 88+</li>
-              <li>✓ Microsoft Edge 88+</li>
-              <li>✓ Brave Browser</li>
-              <li>✓ Other Chromium-based browsers</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Google Chrome 88+</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Microsoft Edge 88+</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Brave Browser</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Other Chromium-based browsers</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-2">System Requirements</h4>
+            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              System Requirements
+            </h4>
             <ul className="space-y-1 text-sm text-gray-700">
-              <li>✓ Active BugSnap account</li>
-              <li>✓ Internet connection</li>
-              <li>✓ BugSnap API running (development)</li>
-              <li>✓ Chrome Developer mode enabled</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Active BugSnap account</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Internet connection</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> BugSnap API running (development)</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Chrome Developer mode enabled</li>
             </ul>
           </div>
         </div>
@@ -365,7 +412,10 @@ export default function InstallExtensionPage() {
 
       {/* Keyboard Shortcuts */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Keyboard Shortcuts</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Keyboard className="w-6 h-6" />
+          Keyboard Shortcuts
+        </h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between py-2 border-b border-gray-200">
             <span className="text-gray-700">Toggle annotation mode</span>
@@ -384,27 +434,24 @@ export default function InstallExtensionPage() {
 
       {/* Next Steps */}
       <div className="bg-indigo-600 text-white rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4">Ready to Get Started?</h2>
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Zap className="w-6 h-6" />
+          Ready to Get Started?
+        </h2>
         <p className="mb-4">
           Once the extension is installed, you can start creating tasks directly from any webpage.
         </p>
         <ul className="space-y-2 mb-6">
           <li className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle2 className="w-5 h-5" />
             Click the BugSnap icon to login
           </li>
           <li className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle2 className="w-5 h-5" />
             Select your project
           </li>
           <li className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle2 className="w-5 h-5" />
             Start annotating web pages!
           </li>
         </ul>
@@ -413,12 +460,16 @@ export default function InstallExtensionPage() {
           className="inline-flex items-center px-6 py-3 bg-white text-indigo-600 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
         >
           Back to Dashboard
+          <ArrowRight className="w-4 h-4 ml-2" />
         </Link>
       </div>
 
       {/* Technical Details */}
       <div className="bg-gray-50 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-3">For Developers</h3>
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Code className="w-5 h-5" />
+          For Developers
+        </h3>
         <p className="text-sm text-gray-700 mb-3">
           Extension location: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">/extension</code>
         </p>
