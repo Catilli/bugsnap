@@ -7,6 +7,7 @@ import { useProject } from '../../ProjectContext';
 import FilterControls from '@/components/FilterControls';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PriorityBadge } from '@/components/PriorityBadge';
+import TaskDrawer from '@/components/TaskDrawer';
 import { Pencil, ExternalLink, FileText, Search, RefreshCw, MessageSquare } from 'lucide-react';
 
 interface Project {
@@ -61,6 +62,20 @@ export default function ProjectDetailPage() {
   const [taskSortBy, setTaskSortBy] = useState('date');
   const [taskOrderBy, setTaskOrderBy] = useState('desc');
   const [taskViewMode, setTaskViewMode] = useState<'grid' | 'list'>('grid');
+  
+  // Task drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  
+  const openTaskDrawer = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setIsDrawerOpen(true);
+  };
+  
+  const closeTaskDrawer = () => {
+    setIsDrawerOpen(false);
+    setSelectedTaskId(null);
+  };
 
   // Fetch project data
   useEffect(() => {
@@ -338,10 +353,10 @@ export default function ProjectDetailPage() {
         ) : taskViewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredTasks.map((task) => (
-              <Link
+              <div
                 key={task.id}
-                href={`/dashboard/tasks/${task.id}`}
-                className={`group rounded-lg border hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden ${getPriorityCardColor(task.priority)}`}
+                onClick={() => openTaskDrawer(task.id)}
+                className={`group rounded-lg border hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden cursor-pointer ${getPriorityCardColor(task.priority)}`}
               >
                 {/* Task Info */}
                 <div className="p-4">
@@ -371,7 +386,7 @@ export default function ProjectDetailPage() {
                     )}
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (
@@ -400,6 +415,7 @@ export default function ProjectDetailPage() {
                 {filteredTasks.map((task) => (
                   <tr
                     key={task.id}
+                    onClick={() => openTaskDrawer(task.id)}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     <td className="px-6 py-4">
@@ -440,6 +456,13 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Task Drawer */}
+      <TaskDrawer
+        taskId={selectedTaskId}
+        isOpen={isDrawerOpen}
+        onClose={closeTaskDrawer}
+      />
     </div>
   );
 }

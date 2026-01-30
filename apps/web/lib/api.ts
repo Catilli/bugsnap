@@ -28,9 +28,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only clear token and redirect if this is not a checkAuth call
+      // This prevents logging out users on page refresh if API is temporarily unavailable
+      const isCheckAuthCall = error.config?.url === '/api/auth/me';
+      if (!isCheckAuthCall) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

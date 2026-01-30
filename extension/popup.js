@@ -27,17 +27,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Fetch projects
     try {
-      const response = await fetch('http://localhost:3001/api/projects', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Send message to background script to fetch projects (avoids CORS issues)
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ action: 'fetchProjects', token }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response);
+          }
+        });
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects');
-      }
-      
-      const projects = await response.json();
+      const projects = response.projects;
       const matchingProject = projects.find(project => {
         if (!project.websiteUrl) return false;
         try {
@@ -54,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="header">
               <span class="project-label">Current Project</span>
               <button class="reload-btn" id="reloadBtn">
-                <span>🔄</span>
+                <i data-lucide="refresh-cw" width="16" height="16"></i>
                 <span>Reload</span>
               </button>
             </div>
@@ -63,6 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="user-info">Logged in as ${userEmail || 'user@example.com'}</div>
           </div>
         `;
+        
+        lucide.createIcons();
         
         document.getElementById('viewBtn').addEventListener('click', () => {
           chrome.tabs.create({ url: `http://localhost:3000/dashboard/projects/${matchingProject.id}` });
@@ -87,7 +92,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
       appDiv.innerHTML = `
         <div class="inactive">
           <div class="inactive-title">BugSnap</div>

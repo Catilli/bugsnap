@@ -8,19 +8,56 @@ import { ProjectProvider, useProject } from './ProjectContext';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, checkAuth, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, checkAuth, logout, token } = useAuthStore();
   const { projectName } = useProject();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Wait for zustand persist middleware to hydrate
+  useEffect(() => {
+    // Check if zustand has hydrated by checking if we have persisted state
+    const checkHydration = () => {
+      const persistedState = localStorage.getItem('auth-storage');
+      if (persistedState) {
+        try {
+          const parsed = JSON.parse(persistedState);
+          if (parsed.state) {
+            setIsHydrated(true);
+            return true;
+          }
+        } catch (e) {
+          // Silently handle parsing errors
+        }
+      }
+      return false;
+    };
+
+    // Try immediately, then retry if needed
+    if (!checkHydration()) {
+      const timer = setTimeout(() => {
+        checkHydration();
+        setIsHydrated(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    // Only check auth after hydration and if we don't have a persisted token
+    if (isHydrated && !hasCheckedAuth && !token) {
+      checkAuth().finally(() => setHasCheckedAuth(true));
+    } else if (isHydrated && !hasCheckedAuth && token) {
+      // We have a persisted token, mark as checked
+      setHasCheckedAuth(true);
+    }
+  }, [checkAuth, token, hasCheckedAuth, isHydrated]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated && hasCheckedAuth && isHydrated) {
       router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, hasCheckedAuth, isHydrated]);
 
   if (isLoading) {
     return (

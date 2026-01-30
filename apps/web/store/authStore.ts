@@ -86,8 +86,10 @@ export const useAuthStore = create<AuthState>()(
       const response = await api.get('/api/auth/me');
       set({ user: response.data, token, isAuthenticated: true, isLoading: false });
     } catch (error) {
-      localStorage.removeItem('token');
-      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+      // Don't clear the token on error - preserve the existing auth state
+      // This prevents logging out users on page refresh if API is temporarily unavailable
+      // The zustand persist middleware will restore the state from localStorage
+      set({ isLoading: false });
     }
   },
     }),
@@ -99,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      skipHydration: false,
     }
   )
 );
