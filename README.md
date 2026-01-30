@@ -216,6 +216,11 @@ This project is private and proprietary.
 
 **Next Steps**: Implement shareable task links and real-time updates
 
+**Recent Updates**:
+- Fixed Vercel deployment configuration (git command syntax in vercel.json)
+- Updated deployment documentation with comprehensive guides
+- Enhanced project structure and build configuration
+
 ## 🚀 Production Deployment
 
 For deploying BugSnap to production, see the comprehensive [Deployment Guide](./DEPLOYMENT_GUIDE.md) and [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md).
@@ -227,4 +232,25 @@ For deploying BugSnap to production, see the comprehensive [Deployment Guide](./
 3. **Frontend**: Deploy to Vercel
 4. **Extension**: Update configuration and publish to Chrome Web Store
 
+### Important Deployment Notes
+
+- Ensure [`vercel.json`](vercel.json) is properly configured with correct git command syntax
+- The `ignoreCommand` must use `--` separator: `git diff --quiet HEAD^ HEAD -- ./apps/web`
+- See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions and troubleshooting
+
 See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+
+## 📝 Changelog
+
+### v0.2.0 (January 30, 2026)
+- ✅ Fixed Vercel deployment configuration (git command syntax in [`vercel.json`](vercel.json:7))
+- ✅ Updated deployment documentation with comprehensive guides
+- ✅ Enhanced project structure and build configuration
+- ✅ Added troubleshooting for common deployment issues
+
+### v0.1.0 (January 2026)
+- ✅ Initial release with core bug tracking functionality
+- ✅ User authentication and authorization
+- ✅ Project and task management
+- ✅ Browser extension integration
+- ✅ Screenshot capture and annotation

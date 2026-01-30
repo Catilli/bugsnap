@@ -10,6 +10,8 @@ Use this checklist to ensure you've completed all necessary steps for production
 - [ ] TypeScript compilation succeeds (`npm run type-check`)
 - [ ] No console errors in development
 - [ ] Environment variables are documented
+- [ ] `vercel.json` configuration is correct (check git command syntax)
+- [ ] Build command works locally (`npm run build`)
 
 ### Security
 - [ ] JWT_SECRET is changed from default
@@ -154,6 +156,7 @@ If something goes wrong:
    - Check Vercel deployment logs
    - Rollback to previous deployment in Vercel dashboard
    - Verify environment variables
+   - Check `vercel.json` configuration (ensure git commands use `--` separator)
 
 2. **Backend Issues**
    - Check Railway/Render logs
@@ -171,6 +174,13 @@ If something goes wrong:
    - Check browser console for errors
    - Verify API is accessible
    - Check CORS configuration
+
+5. **Build Failures**
+   - Check git command syntax in `vercel.json`
+   - Ensure `--` separator is used between revisions and paths
+   - Example: `git diff --quiet HEAD^ HEAD -- ./apps/web`
+   - Verify all dependencies are installed
+   - Run `npm run build` locally to test
 
 ## Support Resources
 
@@ -196,5 +206,9 @@ Track your monthly costs:
 
 ---
 
-**Last Updated**: January 2026
-**Version**: 1.0.0
+**Last Updated**: January 30, 2026
+**Version**: 1.1.0
+
+**Changelog**:
+- v1.1.0 (Jan 30, 2026): Added vercel.json configuration checks, git command troubleshooting
+- v1.0.0 (Jan 2026): Initial deployment checklist

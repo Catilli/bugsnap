@@ -123,6 +123,11 @@ We'll deploy both the frontend and API to Vercel. The frontend will be a Next.js
    git push origin main
    ```
 
+2. **Verify `vercel.json` configuration**:
+   - Check that the `ignoreCommand` uses proper git syntax
+   - Ensure `--` separator is used between revisions and paths
+   - Example: `"ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./apps/web"`
+
 ### Step 2: Deploy Frontend to Vercel
 
 1. **Go to [vercel.com](https://vercel.com)** and sign in
@@ -444,6 +449,31 @@ Compress-Archive -Path extension\* -DestinationPath bugsnap-extension.zip
 
 ## Troubleshooting
 
+### Issue: Vercel Build Fails with Git Command Error
+
+**Problem**: Build fails with error:
+```
+Command failed with exit code 128: git diff --quiet HEAD^ HEAD ./apps/web
+fatal: ambiguous argument './apps/web': unknown revision or path not in the working tree.
+```
+
+**Solution**:
+1. Open `vercel.json` in your project root
+2. Locate the `ignoreCommand` line
+3. Add `--` separator between revisions and paths:
+   ```json
+   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./apps/web"
+   ```
+4. Commit and push the change:
+   ```bash
+   git add vercel.json
+   git commit -m "Fix git command syntax in vercel.json"
+   git push origin main
+   ```
+5. Redeploy in Vercel
+
+**Why this happens**: Git interprets `./apps/web` as a revision instead of a path without the `--` separator. The `--` tells git that everything after it is a file path.
+
 ### Issue: Vercel Build Fails with "command exited (2)"
 
 **Problem**: Deployment fails with API build errors or "command exited (2)"
@@ -662,5 +692,9 @@ If you encounter issues:
 
 ---
 
-**Last Updated**: January 2026
-**Version**: 1.0.0
+**Last Updated**: January 30, 2026
+**Version**: 1.1.0
+
+**Changelog**:
+- v1.1.0 (Jan 30, 2026): Added git command troubleshooting, updated vercel.json configuration guidance
+- v1.0.0 (Jan 2026): Initial deployment guide

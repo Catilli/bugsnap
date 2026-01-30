@@ -4,5 +4,5 @@
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./apps/web"
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./apps/web"
 }
