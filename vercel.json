@@ -3,6 +3,5 @@
   "buildCommand": "turbo run build --filter=web",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./apps/web"
+  "installCommand": "npm install"
 }
