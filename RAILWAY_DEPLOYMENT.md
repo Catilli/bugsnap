@@ -20,12 +20,16 @@ This guide will help you deploy the BugSnap API to Railway.
 
 ### 2. Configure Build Settings
 
-Railway should automatically detect the workspace structure. If not:
+**Important:** The API depends on the `@bugsnap/shared` package from this monorepo. You must build from the **repository root**, not from `apps/api`.
 
 1. Go to **Settings** → **Build**
-2. Set **Root Directory**: `apps/api`
-3. Set **Build Command**: `npm install && npm run build`
-4. Set **Start Command**: `npm start`
+2. Leave **Root Directory** empty (repo root). Do **not** set it to `apps/api`, or the build will fail with missing `@bugsnap/shared`.
+3. Use one of these options:
+   - **Option A (recommended):** Use the repo’s `railway.json` — no need to set build/start in the dashboard. It runs:
+     - Build: `npm ci && npm run build --workspace=apps/api`
+     - Start: `npm run start --workspace=apps/api`
+   - **Option B:** Railway will use the root **Dockerfile** if present (it already builds only the API).
+   - **Option C (manual):** Set **Build Command**: `npm ci && npm run build --workspace=apps/api` and **Start Command**: `npm run start --workspace=apps/api`
 
 ### 3. Add Environment Variables
 
@@ -115,6 +119,15 @@ curl https://your-app.railway.app/health
 ```
 
 ## Troubleshooting
+
+### Build fails: "process \"sh -c npm install && npm run build\" did not complete successfully: exit code 2"
+
+**Cause:** The API uses the shared package `@bugsnap/shared` from `packages/shared`. If **Root Directory** is set to `apps/api`, that package is not available and the build fails.
+
+**Solution:**
+1. In Railway **Settings** → **Build**, clear **Root Directory** (leave it empty so the service uses the repo root).
+2. Commit and push the repo’s `railway.json` so Railway uses the correct build/start commands from the root.
+3. Redeploy. The build will run `npm ci && npm run build --workspace=apps/api` from the repo root, so the shared package is included.
 
 ### Error: "Environment variable not found: DATABASE_URL"
 
