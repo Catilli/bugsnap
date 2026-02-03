@@ -22,8 +22,3 @@ EXPOSE 3001
 
 # Start ONLY the API workspace
 CMD ["npm", "run", "start", "--workspace=apps/api"]
-
-
-
-
-
