@@ -18,8 +18,8 @@ RUN npm ci --ignore-scripts
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 
-# Build ONLY the API workspace
-RUN npm run build --workspace=apps/api
+# Build shared package first (API depends on it), then the API
+RUN npm run build --workspace=@bugsnap/shared && npm run build --workspace=apps/api
 
 # Expose port
 EXPOSE 3001
