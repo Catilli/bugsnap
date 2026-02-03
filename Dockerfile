@@ -5,9 +5,8 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy package files (all workspaces required for npm ci lockfile)
-# Explicit package.json + package-lock.json so lockfile is always present; Node 20 has npm 10 (matches packageManager)
-COPY package.json package-lock.json ./
+# Copy package files and root tsconfig (api's tsconfig extends ../../tsconfig.json)
+COPY package.json package-lock.json tsconfig.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
