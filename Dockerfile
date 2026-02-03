@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+# Prisma needs OpenSSL on Alpine
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy package files (all workspaces required for npm ci lockfile)
@@ -9,8 +12,8 @@ COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install dependencies (workspace-aware)
-RUN npm ci
+# Install dependencies without running postinstall (api's postinstall runs prisma generate, but schema isn't copied yet)
+RUN npm ci --ignore-scripts
 
 # Copy source files
 COPY apps/api ./apps/api
