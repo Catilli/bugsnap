@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bug, Puzzle } from 'lucide-react';
+import { Bug, Puzzle, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectProvider, useProject } from './ProjectContext';
 
@@ -14,6 +14,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [extensionInstalled, setExtensionInstalled] = useState<boolean | null>(null);
+  const [bubbleDismissed, setBubbleDismissed] = useState(false);
 
   // Wait for zustand persist middleware to hydrate
   useEffect(() => {
@@ -59,6 +61,24 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router, hasCheckedAuth, isHydrated]);
+
+  useEffect(() => {
+    if (localStorage.getItem('bugsnap_extension_bubble_dismissed') === 'true') {
+      setBubbleDismissed(true);
+    }
+
+    const timer = setTimeout(() => {
+      const hasExtension = document.documentElement.hasAttribute('data-bugsnap-extension');
+      setExtensionInstalled(hasExtension);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismissExtensionBubble = () => {
+    setBubbleDismissed(true);
+    localStorage.setItem('bugsnap_extension_bubble_dismissed', 'true');
+  };
 
   if (isLoading) {
     return (
@@ -117,13 +137,36 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </Link>
 
             {/* Install Extension Button */}
-            <Link
-              href="/dashboard/install-extension"
-              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Install Extension"
-            >
-              <Puzzle className="w-5 h-5" />
-            </Link>
+            <div className="relative">
+              <Link
+                href="/dashboard/install-extension"
+                className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Install Extension"
+              >
+                <Puzzle className="w-5 h-5" />
+              </Link>
+
+              {extensionInstalled === false && !bubbleDismissed && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-indigo-600 text-white rounded-lg shadow-lg p-3 z-50">
+                  <div className="absolute -top-2 right-3 w-4 h-4 bg-indigo-600 rotate-45" />
+                  <div className="relative">
+                    <button
+                      onClick={(e) => { e.preventDefault(); dismissExtensionBubble(); }}
+                      className="absolute -top-1 -right-1 text-indigo-200 hover:text-white"
+                      aria-label="Dismiss"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <Link href="/dashboard/install-extension" onClick={dismissExtensionBubble}>
+                      <p className="text-sm font-medium pr-4">Install the BugSnap Extension</p>
+                      <p className="text-xs text-indigo-200 mt-1">
+                        Required to capture bugs directly on websites.
+                      </p>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Avatar Menu */}
             <div className="relative">

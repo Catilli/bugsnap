@@ -1,3 +1,6 @@
+// Signal extension presence to the web app
+document.documentElement.setAttribute('data-bugsnap-extension', 'true');
+
 // Sync localStorage to Chrome storage periodically
 function syncToChromeStorage() {
   try {
