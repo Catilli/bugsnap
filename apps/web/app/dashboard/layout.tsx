@@ -63,7 +63,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, isLoading, router, hasCheckedAuth, isHydrated]);
 
   useEffect(() => {
-    if (localStorage.getItem('bugsnap_extension_bubble_dismissed') === 'true') {
+    if (sessionStorage.getItem('bugsnap_extension_bubble_dismissed') === 'true') {
       setBubbleDismissed(true);
     }
 
@@ -77,7 +77,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const dismissExtensionBubble = () => {
     setBubbleDismissed(true);
-    localStorage.setItem('bugsnap_extension_bubble_dismissed', 'true');
+    sessionStorage.setItem('bugsnap_extension_bubble_dismissed', 'true');
   };
 
   if (isLoading) {
