@@ -32,22 +32,32 @@ fastify.register(cors, {
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // Allow localhost for development
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
-    
+
     // Allow production domain
     if (origin.includes('leidback.viewourdesign.info')) {
       return callback(null, true);
     }
-    
+
+    // Allow Vercel deployment domains (*.vercel.app)
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow Render deployment domains (*.onrender.com)
+    if (origin.includes('.onrender.com')) {
+      return callback(null, true);
+    }
+
     // Allow chrome-extension:// origins for the extension
     if (origin.startsWith('chrome-extension://')) {
       return callback(null, true);
     }
-    
+
     // Allow all origins for extension to work on any website
     return callback(null, true);
   },
