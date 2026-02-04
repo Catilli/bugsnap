@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, MapPin, ExternalLink } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
+import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 
 interface TaskDrawerProps {
@@ -20,6 +21,7 @@ interface Task {
   screenshotUrl: string | null;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical' | null;
+  type?: 'BUG' | 'FEATURE' | 'TASK';
   createdAt: string;
   updatedAt: string;
   createdBy: {
@@ -62,15 +64,21 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
   const [isSaving, setIsSaving] = useState(false);
   const [isScreenshotEnlarged, setIsScreenshotEnlarged] = useState(false);
 
-  // Extract task number from title
+  // Extract task/bug/feature number from title
   const getTaskNumber = (title: string) => {
-    const match = title.match(/^Task #(\d+)/);
-    return match ? match[1] : null;
+    const match = title.match(/^(Bug|Feature|Task) #(\d+)/);
+    return match ? match[2] : null;
+  };
+
+  // Get type prefix from title
+  const getTypePrefix = (title: string) => {
+    const match = title.match(/^(Bug|Feature|Task) #/);
+    return match ? match[1] : 'Task';
   };
 
   // Remove task number prefix from title
   const getCleanTitle = (title: string) => {
-    return title.replace(/^Task #\d+\s*-\s*/, '');
+    return title.replace(/^(Bug|Feature|Task) #\d+\s*-\s*/, '');
   };
 
   // Format status for display (capitalize and replace underscores)
@@ -204,8 +212,9 @@ export default function TaskDrawer({ taskId, isOpen, onClose }: TaskDrawerProps)
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
-              Task #{task?.title ? getTaskNumber(task.title) || '1' : '...'}
+              {task?.title ? `${getTypePrefix(task.title)} #${getTaskNumber(task.title) || '1'}` : '...'}
             </span>
+            {task?.type && task.type !== 'TASK' && <TypeBadge type={task.type} size="sm" />}
             {task?.status && <StatusBadge status={task.status} />}
           </div>
           <div className="flex items-center gap-2">

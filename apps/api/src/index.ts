@@ -11,6 +11,7 @@ import { commentRoutes } from './routes/comments';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { projectRoutes } from './routes/projects';
 import { taskRoutes } from './routes/tasks';
+import { feedbackRoutes } from './routes/feedback';
 
 dotenv.config();
 
@@ -89,6 +90,7 @@ fastify.register(commentRoutes, { prefix: '/api/comments' });
 fastify.register(projectMemberRoutes, { prefix: '/api' }); // Register this first for /projects endpoint
 fastify.register(projectRoutes, { prefix: '/api' });
 fastify.register(taskRoutes, { prefix: '/api' });
+fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
 
 const start = async () => {
   try {

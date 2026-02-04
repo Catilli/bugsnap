@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Bug } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectProvider, useProject } from './ProjectContext';
 
@@ -104,57 +105,69 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* Avatar Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          {/* Right side - Bug icon and Avatar Menu */}
+          <div className="flex items-center gap-3">
+            {/* Bug Report Button */}
+            <Link
+              href="/dashboard/feedback"
+              className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Bug Reports & Feature Requests"
             >
-              {user?.name?.charAt(0).toUpperCase()}
-            </button>
+              <Bug className="w-5 h-5" />
+            </Link>
 
-            {/* Dropdown Menu */}
-            {showUserMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowUserMenu(false)}
-                />
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-                  <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            {/* Avatar Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                {user?.name?.charAt(0).toUpperCase()}
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        href="/dashboard/account"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        My Account
+                      </Link>
+                      <Link
+                        href="/dashboard/install-extension"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        Install Extension
+                      </Link>
+                    </div>
+                    <div className="border-t border-gray-200 py-1">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          logout();
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        Sign out
+                      </button>
+                    </div>
                   </div>
-                  <div className="py-1">
-                    <Link
-                      href="/dashboard/account"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      My Account
-                    </Link>
-                    <Link
-                      href="/dashboard/install-extension"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Install Extension
-                    </Link>
-                  </div>
-                  <div className="border-t border-gray-200 py-1">
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        logout();
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

@@ -16,6 +16,24 @@ enum UserRole {
   VIEWER    // Clients/Guests -> PUBLIC Shareable link, viewing only
 }
 
+enum TaskType {
+  BUG
+  FEATURE
+  TASK      // Default for backwards compatibility
+}
+
+enum FeedbackType {
+  BUG
+  FEATURE
+}
+
+enum FeedbackStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -31,6 +49,8 @@ model User {
   createdTasks     Task[]     @relation("TaskCreator")
   assignedTasks    Task[]     @relation("TaskAssignee")
   comments         Comment[]
+  feedback         Feedback[]
+  feedbackComments FeedbackComment[]
 
   @@map("users")
 }
@@ -79,6 +99,7 @@ model Task {
   screenshotUrl   String?
   status          String   @default("open") // open, in_progress, resolved, closed
   priority        String?  // low, medium, high, critical (optional, no default)
+  type            TaskType @default(TASK)   // BUG, FEATURE, TASK
   environmentData Json?
   visibility      String   @default("members") // members, members_and_clients
   assignedToId    String?
@@ -98,6 +119,7 @@ model Task {
   @@index([assignedToId])
   @@index([status])
   @@index([priority])
+  @@index([type])
   @@map("tasks")
 }
 
@@ -132,4 +154,42 @@ model Comment {
   @@index([taskId])
   @@index([userId])
   @@map("comments")
+}
+
+model Feedback {
+  id          String         @id @default(uuid())
+  type        FeedbackType
+  title       String
+  description String?        @db.Text
+  status      FeedbackStatus @default(OPEN)
+  priority    String?        // low, medium, high, critical
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  createdBy User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  comments  FeedbackComment[]
+
+  @@index([createdById])
+  @@index([status])
+  @@index([type])
+  @@map("feedback")
+}
+
+model FeedbackComment {
+  id         String   @id @default(uuid())
+  feedbackId String
+  userId     String
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackId])
+  @@index([userId])
+  @@map("feedback_comments")
 }

@@ -9,6 +9,7 @@ const createTaskSchema = z.object({
   url: z.string().optional(),
   screenshotUrl: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  type: z.enum(['BUG', 'FEATURE', 'TASK']).default('TASK'),
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
   environmentData: z.any().optional(),
@@ -25,6 +26,7 @@ const updateTaskSchema = z.object({
   description: z.string().optional(),
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).optional(),
   assignedToId: z.string().uuid().optional(),
 });
@@ -67,18 +69,25 @@ export async function taskRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
-      // Get the last task to determine next number
+      // Get the type from query params (default to TASK)
+      const { type } = request.query as { type?: string };
+      const taskType = type || 'TASK';
+
+      // Get the last task of this type to determine next number
       const lastTask = await prisma.task.findFirst({
-        where: { projectId },
+        where: {
+          projectId,
+          type: taskType as any,
+        },
         orderBy: { createdAt: 'desc' },
       });
 
       let nextTaskNumber = 1;
       if (lastTask) {
-        // Extract number from "Task #X ..." format
-        const match = lastTask.title.match(/Task #(\d+)/);
+        // Extract number from "Type #X ..." format (Bug #X, Feature #X, Task #X)
+        const match = lastTask.title.match(/(Bug|Feature|Task) #(\d+)/);
         if (match) {
-          nextTaskNumber = parseInt(match[1]) + 1;
+          nextTaskNumber = parseInt(match[2]) + 1;
         }
       }
 
@@ -127,26 +136,34 @@ export async function taskRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
-      // Get next task number for this project
+      // Get next task number for this project and type
+      const taskType = data.type || 'TASK';
       const lastTask = await prisma.task.findFirst({
-        where: { projectId: data.projectId },
+        where: {
+          projectId: data.projectId,
+          type: taskType,
+        },
         orderBy: { createdAt: 'desc' },
       });
 
+      // Get type prefix for title
+      const typePrefix = { BUG: 'Bug', FEATURE: 'Feature', TASK: 'Task' }[taskType];
+
       let newTaskNumber = 1;
       if (lastTask) {
-        // Extract number from "Task #X ..." format
-        const match = lastTask.title.match(/Task #(\d+)/);
+        // Extract number from "Type #X ..." format (Bug #X, Feature #X, Task #X)
+        const match = lastTask.title.match(/(Bug|Feature|Task) #(\d+)/);
         if (match) {
-          newTaskNumber = parseInt(match[1]) + 1;
+          newTaskNumber = parseInt(match[2]) + 1;
         }
       }
 
-      // Create task with title as task number
+      // Create task with type-aware title prefix
       const task = await prisma.task.create({
         data: {
           projectId: data.projectId,
-          title: `Task #${newTaskNumber} - ${data.title}`,
+          title: `${typePrefix} #${newTaskNumber} - ${data.title}`,
+          type: taskType,
           description: data.description,
           url: data.url,
           screenshotUrl: data.screenshotUrl,
@@ -231,9 +248,52 @@ export async function taskRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
+      // Parse query params for filtering
+      const { type, status, priority, search } = request.query as {
+        type?: string;
+        status?: string;
+        priority?: string;
+        search?: string;
+      };
+
+      // Build where clause with filters
+      const whereClause: any = { projectId };
+
+      // Filter by type (comma-separated, e.g., "BUG,FEATURE")
+      if (type) {
+        const types = type.split(',').filter(Boolean);
+        if (types.length > 0) {
+          whereClause.type = { in: types };
+        }
+      }
+
+      // Filter by status (comma-separated)
+      if (status) {
+        const statuses = status.split(',').filter(Boolean);
+        if (statuses.length > 0) {
+          whereClause.status = { in: statuses };
+        }
+      }
+
+      // Filter by priority (comma-separated)
+      if (priority) {
+        const priorities = priority.split(',').filter(Boolean);
+        if (priorities.length > 0) {
+          whereClause.priority = { in: priorities };
+        }
+      }
+
+      // Search in title and description
+      if (search) {
+        whereClause.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
       // Get tasks
       const tasks = await prisma.task.findMany({
-        where: { projectId },
+        where: whereClause,
         include: {
           createdBy: {
             select: {
