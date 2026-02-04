@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
-# Prisma needs OpenSSL on Alpine
-RUN apk add --no-cache openssl
+# Prisma needs OpenSSL; bcrypt needs build tools for native bindings
+RUN apk add --no-cache openssl && apk add --no-cache --virtual .build-deps python3 make g++
 
 WORKDIR /app
 
@@ -11,8 +11,11 @@ COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install dependencies without running postinstall (api's postinstall runs prisma generate, but schema isn't copied yet)
-RUN npm ci --ignore-scripts
+# Copy Prisma schema so postinstall (prisma generate) can run
+COPY apps/api/prisma ./apps/api/prisma
+
+# Install dependencies (scripts run: prisma generate + bcrypt native build)
+RUN npm ci && apk del .build-deps
 
 # Copy source files
 COPY apps/api ./apps/api
