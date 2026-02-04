@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bug } from 'lucide-react';
+import { Bug, Puzzle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectProvider, useProject } from './ProjectContext';
 
@@ -116,6 +116,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <Bug className="w-5 h-5" />
             </Link>
 
+            {/* Install Extension Button */}
+            <Link
+              href="/dashboard/install-extension"
+              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Install Extension"
+            >
+              <Puzzle className="w-5 h-5" />
+            </Link>
+
             {/* Avatar Menu */}
             <div className="relative">
               <button
@@ -144,13 +153,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         onClick={() => setShowUserMenu(false)}
                       >
                         My Account
-                      </Link>
-                      <Link
-                        href="/dashboard/install-extension"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setShowUserMenu(false)}
-                      >
-                        Install Extension
                       </Link>
                     </div>
                     <div className="border-t border-gray-200 py-1">
