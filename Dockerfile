@@ -15,7 +15,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/prisma ./apps/api/prisma
 
 # Install dependencies (scripts run: prisma generate + bcrypt native build)
-RUN npm ci && apk del .build-deps
+RUN npm install && apk del .build-deps
 
 # Copy source files
 COPY apps/api ./apps/api
