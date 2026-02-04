@@ -6,7 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
     "migrate": "prisma migrate deploy",
-    "start": "prisma migrate deploy && node dist/index.js",
+    "start": "node -e \"if(!process.env.DATABASE_URL){console.error('ERROR: DATABASE_URL environment variable is not set. Please configure it in Render dashboard.');process.exit(1)}\" && prisma migrate deploy && node dist/index.js",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
     "postinstall": "prisma generate"

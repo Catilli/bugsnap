@@ -8,11 +8,13 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: false  # Must be set manually in dashboard (contains secrets)
       - key: JWT_SECRET
         generateValue: true
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3001
+      - key: FRONTEND_URL
+        value: https://bugsnap.vercel.app  # Update if using different frontend domain
     healthCheckPath: /health
