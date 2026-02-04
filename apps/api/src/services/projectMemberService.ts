@@ -57,11 +57,6 @@ export class ProjectMemberService {
             },
           },
         },
-        // _count: {
-        //   select: {
-        //     tasks: true,
-        //   },
-        // },
       },
     });
 
@@ -93,11 +88,6 @@ export class ProjectMemberService {
             },
           },
         },
-        // _count: {
-        //   select: {
-        //     tasks: true,
-        //   },
-        // },
       },
     });
 

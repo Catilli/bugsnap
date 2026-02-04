@@ -7,7 +7,6 @@ import { prisma } from './lib/prisma';
 import { errorHandler } from './plugins/errorHandler';
 import { authPlugin } from './plugins/auth';
 import { authRoutes } from './routes/auth';
-import { commentRoutes } from './routes/comments';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { projectRoutes } from './routes/projects';
 import { taskRoutes } from './routes/tasks';
@@ -96,7 +95,6 @@ fastify.get('/api', async () => {
 
 // Register route modules
 fastify.register(authRoutes, { prefix: '/api/auth' });
-fastify.register(commentRoutes, { prefix: '/api/comments' });
 fastify.register(projectMemberRoutes, { prefix: '/api' }); // Register this first for /projects endpoint
 fastify.register(projectRoutes, { prefix: '/api' });
 fastify.register(taskRoutes, { prefix: '/api' });

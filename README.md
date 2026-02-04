@@ -13,7 +13,7 @@ This is a monorepo managed with Turborepo containing:
 ```
 bugsnap/
 ├── apps/
-│   ├── web/          # Next.js 14 web application
+│   ├── web/          # Next.js 16 web application
 │   └── api/          # Fastify backend API
 ├── packages/
 │   └── shared/       # Shared types and schemas
@@ -79,7 +79,7 @@ The BugSnap browser extension allows users to capture bugs directly from any web
 ## 📦 Tech Stack
 
 ### Frontend (Web App)
-- **Framework**: Next.js 14 with App Router
+- **Framework**: Next.js 16 with App Router
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
 - **State Management**: Zustand
@@ -127,7 +127,7 @@ For Windows users, you can use the provided batch files:
 
 ### Current
 - ✅ Monorepo structure with Turborepo
-- ✅ Next.js 14 web application with App Router
+- ✅ Next.js 16 web application with App Router
 - ✅ Fastify API server
 - ✅ Shared types and schemas
 - ✅ TypeScript configuration
@@ -212,14 +212,14 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.2.0
+**Current Version**: v0.3.0
 
 **Next Steps**: Implement shareable task links and real-time updates
 
 **Recent Updates**:
-- Fixed Vercel deployment configuration (git command syntax in vercel.json)
-- Updated deployment documentation with comprehensive guides
-- Enhanced project structure and build configuration
+- Codebase cleanup: removed unused files, dead code, and stale stubs
+- Fixed wrong cross-dependencies (next in API, fastify in web)
+- Updated README with accurate tech stack versions
 
 ## 🚀 Production Deployment
 
@@ -234,13 +234,21 @@ For deploying BugSnap to production, see the comprehensive [Deployment Guide](./
 
 ### Important Deployment Notes
 
-- Ensure [`vercel.json`](vercel.json) is properly configured with correct git command syntax
-- The `ignoreCommand` must use `--` separator: `git diff --quiet HEAD^ HEAD -- ./apps/web`
+- `.vercelignore` excludes `turbo.json` to prevent Vercel's turbo auto-detection from breaking builds
+- Root Directory must be set to `apps/web` in the Vercel dashboard
+- Build Command: `next build`, Install Command: `cd ../.. && npm install`
 - See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions and troubleshooting
 
 See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
 
 ## 📝 Changelog
+
+### v0.3.0 (February 2026)
+- ✅ Codebase cleanup: removed unused files, dead code, and stale stubs
+- ✅ Fixed wrong cross-dependencies (next in API, fastify in web)
+- ✅ Removed commented-out code and unused imports
+- ✅ Updated README with accurate tech stack versions (Next.js 16)
+- ✅ Version bump to 0.3.0 across all packages
 
 ### v0.2.0 (January 30, 2026)
 - ✅ Fixed Vercel deployment configuration (git command syntax in [`vercel.json`](vercel.json:7))

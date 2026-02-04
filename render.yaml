@@ -16,5 +16,5 @@ services:
       - key: PORT
         value: 3001
       - key: FRONTEND_URL
-        value: https://bugsnap.vercel.app  # Update if using different frontend domain
+        value: https://bugsnap-web-dun.vercel.app
     healthCheckPath: /health

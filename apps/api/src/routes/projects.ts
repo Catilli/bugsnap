@@ -98,11 +98,6 @@ export async function projectRoutes(fastify: FastifyInstance) {
               },
             },
           },
-          // _count: {
-          //   select: {
-          //     bugReports: true,
-          //   },
-          // },
         },
       });
 

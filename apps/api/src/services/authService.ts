@@ -111,9 +111,9 @@ export class AuthService {
   }
 
   /**
-   * Change user password
+   * Update user password
    */
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
     // Get user with password
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -142,12 +142,6 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
-  /**
-   * Alias for changePassword
-   */
-  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
-    return this.changePassword(userId, currentPassword, newPassword);
-  }
 }
 
 export const authService = new AuthService();

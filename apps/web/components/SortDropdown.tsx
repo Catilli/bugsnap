@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Grid2x2, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 
 type SortOption = {
   label: string;
