@@ -56,12 +56,24 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     '/reset-password',
     authRateLimit,
     async (request, reply) => {
-      const { token, password } = resetPasswordSchema.parse(request.body);
-      await authService.resetPassword(token, password);
+      try {
+        const { token, password } = resetPasswordSchema.parse(request.body);
+        await authService.resetPassword(token, password);
 
-      return reply.status(200).send({
-        message: 'Password has been reset successfully.',
-      });
+        return reply.status(200).send({
+          message: 'Password has been reset successfully.',
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: error.errors[0].message,
+            },
+          });
+        }
+        throw error;
+      }
     }
   );
 
