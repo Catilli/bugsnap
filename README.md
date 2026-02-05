@@ -6,6 +6,19 @@
 
 BugSnap is a web-based application that helps teams capture, annotate, and manage bug reports with rich context. Users can upload screenshots, add annotations, and provide detailed environment information to help developers fix issues faster.
 
+## 📚 Documentation
+
+<details>
+<summary>📖 Documentation index</summary>
+
+- [Core Features Audit](./CORE_FEATURES_AUDIT.md) — Read-only codebase analysis
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) — Production deployment instructions
+- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) — Step-by-step deployment checklist
+- [Railway Deployment](./RAILWAY_DEPLOYMENT.md) — Railway-specific deployment guide
+- [Technical Architecture](./TECH_ARCHITECTURE.md) — Architecture overview and audit
+
+</details>
+
 ## 🏗️ Project Structure
 
 This is a monorepo managed with Turborepo containing:
@@ -205,21 +218,20 @@ This project is private and proprietary.
 - [Fastify Documentation](https://www.fastify.io/)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [Turborepo Documentation](https://turbo.build/repo/docs)
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Complete guide for deploying to production
-- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) - Step-by-step deployment checklist
 
 ---
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.3.0
+**Current Version**: v0.3.1
 
 **Next Steps**: Implement shareable task links and real-time updates
 
 **Recent Updates**:
-- Codebase cleanup: removed unused files, dead code, and stale stubs
-- Fixed wrong cross-dependencies (next in API, fastify in web)
-- Updated README with accurate tech stack versions
+- Migrated authentication from custom JWT to Clerk
+- Removed @fastify/jwt, @fastify/oauth2, resend, zustand
+- Added Clerk components (SignIn, SignUp, UserProfile, UserButton)
+- Token bridge pattern for Clerk async tokens
 
 ## 🚀 Production Deployment
 
@@ -242,6 +254,14 @@ For deploying BugSnap to production, see the comprehensive [Deployment Guide](./
 See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
 
 ## 📝 Changelog
+
+### v0.3.1 (February 2026)
+- ✅ Migrated authentication from custom JWT to Clerk
+- ✅ Added Clerk auth plugin with account linking (clerkId/email)
+- ✅ Replaced login/register pages with Clerk components
+- ✅ Added ClerkProvider, middleware, ClerkTokenSync
+- ✅ Removed authStore, oauth routes, emailService, forgot/reset-password pages
+- ✅ Uninstalled @fastify/jwt, @fastify/oauth2, resend, zustand
 
 ### v0.3.0 (February 2026)
 - ✅ Codebase cleanup: removed unused files, dead code, and stale stubs
