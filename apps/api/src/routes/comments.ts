@@ -12,7 +12,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
   fastify.post('/tasks/:taskId/comments', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -81,7 +81,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
   fastify.get('/tasks/:taskId/comments', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -139,7 +139,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
   fastify.patch('/comments/:commentId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -195,7 +195,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
   fastify.delete('/comments/:commentId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }

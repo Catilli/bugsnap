@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getClerkToken } from './clerkTokenBridge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -12,7 +13,7 @@ export const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getClerkToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,11 +29,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Only clear token and redirect if this is not a checkAuth call
-      // This prevents logging out users on page refresh if API is temporarily unavailable
+      // Clerk middleware handles redirects, but clear stale tokens
       const isCheckAuthCall = error.config?.url === '/api/auth/me';
       if (!isCheckAuthCall) {
-        localStorage.removeItem('token');
         window.location.href = '/login';
       }
     }

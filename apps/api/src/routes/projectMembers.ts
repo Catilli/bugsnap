@@ -142,7 +142,7 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   fastify.get('/projects', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }

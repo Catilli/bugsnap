@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
-import { buildApp, getTestToken } from './helpers/buildApp';
+import { buildApp, TEST_TOKEN } from './helpers/buildApp';
+
+// Mock @clerk/backend before any imports that use it
+vi.mock('@clerk/backend', () => ({
+  verifyToken: vi.fn().mockResolvedValue({
+    sub: 'clerk-test-user-id',
+    email: 'test@example.com',
+    name: 'Test User',
+  }),
+}));
 
 // Mock Prisma before any imports that use it
 vi.mock('../lib/prisma', () => ({
@@ -30,18 +39,6 @@ vi.mock('../lib/prisma', () => ({
   },
 }));
 
-// Mock bcrypt — use vi.hoisted so mocks are available when vi.mock factory runs
-const { mockHash, mockCompare } = vi.hoisted(() => ({
-  mockHash: vi.fn().mockResolvedValue('$2b$10$hashedpassword'),
-  mockCompare: vi.fn().mockResolvedValue(true),
-}));
-
-vi.mock('bcrypt', () => ({
-  default: { hash: mockHash, compare: mockCompare },
-  hash: mockHash,
-  compare: mockCompare,
-}));
-
 // Mock eventBus to avoid side effects
 vi.mock('../lib/eventBus', () => ({
   emitTaskEvent: vi.fn(),
@@ -52,11 +49,11 @@ import { prisma } from '../lib/prisma';
 const mockPrisma = vi.mocked(prisma);
 
 let app: FastifyInstance;
-let token: string;
 
 beforeAll(async () => {
+  // Set CLERK_SECRET_KEY for the plugin (mocked verifyToken won't actually use it)
+  process.env.CLERK_SECRET_KEY = 'sk_test_mock';
   app = await buildApp();
-  token = getTestToken(app);
 });
 
 afterAll(async () => {
@@ -65,6 +62,26 @@ afterAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+
+  // Re-apply default: Clerk token resolves to test user
+  const { verifyToken } = require('@clerk/backend');
+  verifyToken.mockResolvedValue({
+    sub: 'clerk-test-user-id',
+    email: 'test@example.com',
+    name: 'Test User',
+  });
+
+  // syncClerkUserToDatabase will look up user by clerkId
+  mockPrisma.user.findUnique.mockImplementation(async (args: any) => {
+    if (args?.where?.clerkId === 'clerk-test-user-id') {
+      return {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        role: 'MANAGER',
+      } as any;
+    }
+    return null;
+  });
 });
 
 describe('POST /api/projects', () => {
@@ -82,7 +99,7 @@ describe('POST /api/projects', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/projects',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
       payload: {
         name: 'Test Project',
         websiteUrl: 'https://example.com',
@@ -112,7 +129,7 @@ describe('POST /api/projects', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/projects',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
       payload: {
         name: 'Test Project',
         websiteUrl: 'not-a-url',
@@ -126,7 +143,7 @@ describe('POST /api/projects', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/projects',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
       payload: {
         websiteUrl: 'https://example.com',
       },
@@ -138,6 +155,7 @@ describe('POST /api/projects', () => {
 
 describe('GET /api/projects/:projectId', () => {
   it('should return project if user is owner', async () => {
+    // Override findUnique to handle both clerkId and projectId lookups
     mockPrisma.project.findUnique.mockResolvedValue({
       id: 'project-1',
       name: 'Test Project',
@@ -150,7 +168,7 @@ describe('GET /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/projects/project-1',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(200);
@@ -171,7 +189,7 @@ describe('GET /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/projects/project-1',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(200);
@@ -188,7 +206,7 @@ describe('GET /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/projects/project-1',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(403);
@@ -200,7 +218,7 @@ describe('GET /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/projects/nonexistent',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(404);
@@ -227,7 +245,7 @@ describe('DELETE /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'DELETE',
       url: '/api/projects/project-1',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(200);
@@ -244,7 +262,7 @@ describe('DELETE /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'DELETE',
       url: '/api/projects/project-1',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(403);
@@ -256,7 +274,7 @@ describe('DELETE /api/projects/:projectId', () => {
     const response = await app.inject({
       method: 'DELETE',
       url: '/api/projects/nonexistent',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
     });
 
     expect(response.statusCode).toBe(404);

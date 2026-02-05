@@ -1,147 +1,12 @@
 import { FastifyPluginAsync } from 'fastify';
-import { loginSchema, registerSchema } from '@bugsnap/shared';
 import { authService } from '../services/authService';
 import { z } from 'zod';
 
-// Stricter rate limit config for auth routes (10 req/min vs global 100)
-const authRateLimit = {
-  config: {
-    rateLimit: {
-      max: 10,
-      timeWindow: '1 minute',
-    },
-  },
-};
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
-});
-
-const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Token is required'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
-
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
-  // POST /api/auth/forgot-password
-  fastify.post(
-    '/forgot-password',
-    authRateLimit,
-    async (request, reply) => {
-      try {
-        const { email } = forgotPasswordSchema.parse(request.body);
-        await authService.requestPasswordReset(email);
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: error.errors[0].message,
-            },
-          });
-        }
-        // Log but don't expose internal errors
-        fastify.log.error(error, 'Password reset request failed');
-      }
-
-      // Always return 200 to prevent email enumeration
-      return reply.status(200).send({
-        message: 'If an account with that email exists, we sent a password reset link.',
-      });
-    }
-  );
-
-  // POST /api/auth/reset-password
-  fastify.post(
-    '/reset-password',
-    authRateLimit,
-    async (request, reply) => {
-      try {
-        const { token, password } = resetPasswordSchema.parse(request.body);
-        await authService.resetPassword(token, password);
-
-        return reply.status(200).send({
-          message: 'Password has been reset successfully.',
-        });
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: error.errors[0].message,
-            },
-          });
-        }
-        throw error;
-      }
-    }
-  );
-
-  // POST /api/auth/register
-  fastify.post(
-    '/register',
-    authRateLimit,
-    async (request, reply) => {
-      // Validate request body
-      const validated = registerSchema.parse(request.body);
-      const { email, password, name } = validated;
-
-      const user = await authService.register(email, password, name);
-      const token = fastify.jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        },
-        { expiresIn: '7d' }
-      );
-
-      return reply.status(201).send({
-        user,
-        token,
-      });
-    }
-  );
-
-  // POST /api/auth/login
-  fastify.post(
-    '/login',
-    authRateLimit,
-    async (request, reply) => {
-      // Validate request body
-      const validated = loginSchema.parse(request.body);
-      const { email, password } = validated;
-
-      const user = await authService.login(email, password);
-      const token = fastify.jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        },
-        { expiresIn: '7d' }
-      );
-
-      return reply.status(200).send({
-        user,
-        token,
-      });
-    }
-  );
-
-  // POST /api/auth/logout
-  fastify.post('/logout', async (_request, reply) => {
-    // In a stateless JWT system, logout is handled client-side by removing the token
-    // For additional security, you could implement a token blacklist here
-    return reply.status(200).send({
-      message: 'Logged out successfully',
-    });
-  });
-
   // GET /api/auth/me
   fastify.get('/me', async (request, reply) => {
     try {
-      await request.jwtVerify();
+      await fastify.authenticate(request, reply);
       const userId = request.user.id;
       const user = await authService.getUserById(userId);
 
@@ -159,7 +24,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // PUT /api/auth/profile
   fastify.put('/profile', async (request, reply) => {
     try {
-      await request.jwtVerify();
+      await fastify.authenticate(request, reply);
       const userId = request.user.id;
 
       const profileSchema = z.object({
@@ -184,49 +49,6 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         error: {
           code: 'INTERNAL_ERROR',
           message: 'Failed to update profile',
-        },
-      });
-    }
-  });
-
-  // PUT /api/auth/password
-  fastify.put('/password', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-      const userId = request.user.id;
-
-      const passwordSchema = z.object({
-        currentPassword: z.string().min(1, 'Current password is required'),
-        newPassword: z.string().min(6, 'Password must be at least 6 characters'),
-      });
-
-      const validated = passwordSchema.parse(request.body);
-      await authService.updatePassword(userId, validated.currentPassword, validated.newPassword);
-
-      return reply.status(200).send({
-        message: 'Password updated successfully',
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: error.errors[0].message,
-          },
-        });
-      }
-      if (error instanceof Error && error.message === 'Invalid current password') {
-        return reply.status(400).send({
-          error: {
-            code: 'INVALID_PASSWORD',
-            message: 'Current password is incorrect',
-          },
-        });
-      }
-      return reply.status(500).send({
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to update password',
         },
       });
     }

@@ -5,6 +5,7 @@ import { X, Bug, Lightbulb } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
+import { getClerkToken } from '../lib/clerkTokenBridge';
 
 interface FeedbackDrawerProps {
   feedbackId: string | null;
@@ -119,7 +120,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getClerkToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}`,
         {
@@ -145,7 +146,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getClerkToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}`,
         {

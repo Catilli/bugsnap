@@ -7,6 +7,7 @@ import { PriorityBadge } from './PriorityBadge';
 import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
+import { getClerkToken } from '../lib/clerkTokenBridge';
 
 interface TaskDrawerProps {
   taskId: string | null;
@@ -112,7 +113,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
     
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getClerkToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
         {
@@ -138,7 +139,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
     
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getClerkToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
         {

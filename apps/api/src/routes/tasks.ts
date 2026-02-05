@@ -38,7 +38,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
   fastify.get('/projects/:projectId/next-task-number', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -104,7 +104,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
   fastify.post('/tasks', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -219,7 +219,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
   fastify.get('/projects/:projectId/tasks', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -337,7 +337,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
   fastify.get('/tasks/:taskId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -412,7 +412,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
   fastify.patch('/tasks/:taskId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -489,7 +489,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
   fastify.delete('/tasks/:taskId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }

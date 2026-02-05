@@ -18,7 +18,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   fastify.post('/projects', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -67,7 +67,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   fastify.get('/projects/:projectId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -128,7 +128,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   fastify.patch('/projects/:projectId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -198,7 +198,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
   fastify.delete('/projects/:projectId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }

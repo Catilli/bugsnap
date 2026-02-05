@@ -1,17 +1,18 @@
 import Fastify, { FastifyInstance, FastifyError } from 'fastify';
 import cors from '@fastify/cors';
-import fastifyJwt from '@fastify/jwt';
 import { AppError } from '../../utils/errors';
-import { authPlugin } from '../../plugins/auth';
+import { clerkAuthPlugin } from '../../plugins/clerkAuth';
 import { authRoutes } from '../../routes/auth';
 import { projectRoutes } from '../../routes/projects';
 import { taskRoutes } from '../../routes/tasks';
 
 /**
  * Build a Fastify instance for testing.
- * Registers JWT, CORS, error handler, auth plugin, and route modules.
+ * Registers CORS, error handler, Clerk auth plugin, and route modules.
  * Rate limiting is NOT registered to avoid interference with tests.
  * Error handler is set directly on root (not via register) to avoid encapsulation.
+ *
+ * Tests should mock @clerk/backend verifyToken to return test payloads.
  */
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
@@ -60,12 +61,8 @@ export async function buildApp(): Promise<FastifyInstance> {
     });
   });
 
-  app.register(fastifyJwt, {
-    secret: process.env.JWT_SECRET || 'test-secret-key-for-vitest',
-  });
-
   app.register(cors, { origin: true });
-  app.register(authPlugin);
+  app.register(clerkAuthPlugin);
   app.register(authRoutes, { prefix: '/api/auth' });
   app.register(projectRoutes, { prefix: '/api' });
   app.register(taskRoutes, { prefix: '/api' });
@@ -75,11 +72,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 }
 
 /**
- * Generate a valid JWT token for a test user.
+ * A dummy token string for tests. Tests must mock @clerk/backend verifyToken
+ * to resolve to a valid payload when this token is passed.
  */
-export function getTestToken(app: FastifyInstance, payload?: { id: string; email: string; role: string }) {
-  return app.jwt.sign(
-    payload || { id: 'test-user-id', email: 'test@example.com', role: 'MANAGER' },
-    { expiresIn: '1h' }
-  );
-}
+export const TEST_TOKEN = 'test-clerk-token';

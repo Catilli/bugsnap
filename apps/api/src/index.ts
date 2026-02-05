@@ -2,7 +2,6 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
-import fastifyJwt from '@fastify/jwt';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,22 +12,21 @@ initSentry();
 
 import { prisma } from './lib/prisma';
 import { errorHandler } from './plugins/errorHandler';
-import { authPlugin } from './plugins/auth';
+import { clerkAuthPlugin } from './plugins/clerkAuth';
 import { authRoutes } from './routes/auth';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { projectRoutes } from './routes/projects';
 import { taskRoutes } from './routes/tasks';
 import { feedbackRoutes } from './routes/feedback';
 import { uploadRoutes } from './routes/uploads';
-import { oauthRoutes } from './routes/oauth';
 import { eventRoutes } from './routes/events';
 import { commentRoutes } from './routes/comments';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
 
-// Item 3: Fail hard if JWT_SECRET is not set
-if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET environment variable is required');
+// Fail hard if CLERK_SECRET_KEY is not set
+if (!process.env.CLERK_SECRET_KEY) {
+  console.error('FATAL: CLERK_SECRET_KEY environment variable is required');
   process.exit(1);
 }
 
@@ -52,11 +50,6 @@ const fastify = Fastify({
         // JSON output in production (pino default)
       },
   bodyLimit: 50 * 1024 * 1024, // 50MB to handle large screenshots
-});
-
-// Register JWT first (before other plugins that might need it)
-fastify.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET,
 });
 
 // Item 5: CORS with explicit origin allowlist
@@ -102,7 +95,7 @@ fastify.register(multipart, {
 });
 
 fastify.register(errorHandler);
-fastify.register(authPlugin);
+fastify.register(clerkAuthPlugin);
 
 // Health check route
 fastify.get('/health', async () => {
@@ -127,7 +120,6 @@ fastify.register(projectRoutes, { prefix: '/api' });
 fastify.register(taskRoutes, { prefix: '/api' });
 fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
 fastify.register(uploadRoutes, { prefix: '/api' });
-fastify.register(oauthRoutes, { prefix: '/api/auth' });
 fastify.register(eventRoutes, { prefix: '/api' });
 fastify.register(commentRoutes, { prefix: '/api' });
 

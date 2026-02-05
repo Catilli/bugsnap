@@ -11,7 +11,7 @@ export default defineConfig({
       exclude: ['src/__tests__/**', 'src/index.ts'],
     },
     env: {
-      JWT_SECRET: 'test-secret-key-for-vitest',
+      CLERK_SECRET_KEY: 'sk_test_vitest',
       NODE_ENV: 'test',
     },
   },

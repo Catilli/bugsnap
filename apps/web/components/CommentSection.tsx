@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Check, X } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import { getClerkToken } from '../lib/clerkTokenBridge';
+import { useCurrentUser } from '../lib/useCurrentUser';
 
 interface Comment {
   id: string;
@@ -27,7 +28,7 @@ export default function CommentSection({ taskId, feedbackId, onCommentCountChang
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const { user } = useAuthStore();
+  const user = useCurrentUser();
 
   const entityId = taskId || feedbackId;
   const basePath = taskId ? `tasks/${taskId}` : `feedback/${feedbackId}`;
@@ -39,7 +40,7 @@ export default function CommentSection({ taskId, feedbackId, onCommentCountChang
   }, [entityId]);
 
   const getHeaders = () => {
-    const token = localStorage.getItem('token');
+    const token = getClerkToken();
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,

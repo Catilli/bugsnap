@@ -26,7 +26,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.post('/', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -90,7 +90,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.get('/', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -174,7 +174,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.get('/:feedbackId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -228,7 +228,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.patch('/:feedbackId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -280,7 +280,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.delete('/:feedbackId', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -322,7 +322,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.post('/:feedbackId/comments', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
@@ -377,7 +377,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
   fastify.get('/:feedbackId/comments', {
     preHandler: async (request, reply) => {
       try {
-        await request.jwtVerify();
+        await fastify.authenticate(request, reply);
       } catch (err) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
