@@ -182,8 +182,13 @@ export class AuthService {
       },
     });
 
-    // Send email with raw token
-    await emailService.sendPasswordResetEmail(email, rawToken, user.name);
+    // Send email with raw token — if it fails, clean up the token
+    try {
+      await emailService.sendPasswordResetEmail(email, rawToken, user.name);
+    } catch (error) {
+      await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+      throw error;
+    }
   }
 
   /**
