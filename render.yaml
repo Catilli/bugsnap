@@ -18,7 +18,7 @@ services:
       - key: FRONTEND_URL
         value: https://bugsnap-web-dun.vercel.app
       - key: ALLOWED_ORIGINS
-        value: https://bugsnap-web-dun.vercel.app,https://leidback.viewourdesign.info
+        value: https://bugsnap-web-dun.vercel.app
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

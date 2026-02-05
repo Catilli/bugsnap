@@ -91,7 +91,7 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Error Tracking (Sentry) | Implemented | `@sentry/node` (API) + `@sentry/nextjs` (web) — `apps/api/src/lib/sentry.ts`, `apps/web/sentry.*.config.ts` |
 | Automated Tests | Implemented | Vitest 4.x, 25 unit tests (auth + projects) — `apps/api/src/__tests__/`, `apps/api/vitest.config.ts` |
 | SSL/TLS | Implemented | Handled by Vercel (frontend) and Render (backend) platform-level TLS |
-| Domain Configuration | Partial | Default platform subdomains (`bugsnap-web-dun.vercel.app`, `bugsnap-xgfd.onrender.com`). Custom domain `leidback.viewourdesign.info` referenced in CORS. |
+| Domain Configuration | Partial | Default platform subdomains (`bugsnap-web-dun.vercel.app`, `bugsnap-xgfd.onrender.com`). No custom domain configured yet. |
 
 ---
 
