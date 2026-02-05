@@ -544,6 +544,13 @@ export default function ProjectDetailPage() {
         taskId={selectedTaskId}
         isOpen={isDrawerOpen}
         onClose={closeTaskDrawer}
+        onCommentCountChange={(taskId, count) => {
+          setTasks((prev) =>
+            prev.map((t) =>
+              t.id === taskId ? { ...t, _count: { ...t._count, comments: count } } : t
+            )
+          );
+        }}
       />
 
       {/* Delete Confirmation Modal */}

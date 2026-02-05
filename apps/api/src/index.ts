@@ -22,6 +22,7 @@ import { feedbackRoutes } from './routes/feedback';
 import { uploadRoutes } from './routes/uploads';
 import { oauthRoutes } from './routes/oauth';
 import { eventRoutes } from './routes/events';
+import { commentRoutes } from './routes/comments';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
 
@@ -124,6 +125,7 @@ fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
 fastify.register(uploadRoutes, { prefix: '/api' });
 fastify.register(oauthRoutes, { prefix: '/api/auth' });
 fastify.register(eventRoutes, { prefix: '/api' });
+fastify.register(commentRoutes, { prefix: '/api' });
 
 const start = async () => {
   try {
