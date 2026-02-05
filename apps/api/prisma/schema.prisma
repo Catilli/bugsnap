@@ -52,7 +52,6 @@ model User {
   assignedTasks    Task[]     @relation("TaskAssignee")
   comments         Comment[]
   feedback         Feedback[]
-  feedbackComments FeedbackComment[]
 
   @@unique([oauthProvider, oauthId])
   @@map("users")
@@ -143,18 +142,21 @@ model Annotation {
 }
 
 model Comment {
-  id        String   @id @default(uuid())
-  taskId    String
-  userId    String
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  taskId     String?
+  feedbackId String?
+  userId     String
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  // Relations
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations — exactly one of task/feedback is set (enforced by DB CHECK constraint)
+  task     Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
+  @@index([feedbackId])
   @@index([userId])
   @@map("comments")
 }
@@ -171,8 +173,8 @@ model Feedback {
   updatedAt   DateTime       @updatedAt
 
   // Relations
-  createdBy User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  comments  FeedbackComment[]
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  comments  Comment[]
 
   @@index([createdById])
   @@index([status])
@@ -180,19 +182,3 @@ model Feedback {
   @@map("feedback")
 }
 
-model FeedbackComment {
-  id         String   @id @default(uuid())
-  feedbackId String
-  userId     String
-  content    String   @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([feedbackId])
-  @@index([userId])
-  @@map("feedback_comments")
-}

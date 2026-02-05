@@ -222,6 +222,10 @@ export async function commentRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Comment not found' });
       }
 
+      if (!comment.task) {
+        return reply.status(400).send({ error: 'This comment is not associated with a task' });
+      }
+
       const isAuthor = comment.userId === userId;
       const isProjectOwner = comment.task.project.createdById === userId;
 

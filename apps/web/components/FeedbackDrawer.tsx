@@ -31,7 +31,7 @@ interface Feedback {
   };
 }
 
-interface FeedbackComment {
+interface Comment {
   id: string;
   content: string;
   createdAt: string;
@@ -44,7 +44,7 @@ interface FeedbackComment {
 
 export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }: FeedbackDrawerProps) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [comments, setComments] = useState<FeedbackComment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newComment, setNewComment] = useState('');

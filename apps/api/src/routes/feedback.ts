@@ -346,7 +346,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Feedback not found' });
       }
 
-      const comment = await prisma.feedbackComment.create({
+      const comment = await prisma.comment.create({
         data: {
           feedbackId,
           userId,
@@ -399,7 +399,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Feedback not found' });
       }
 
-      const comments = await prisma.feedbackComment.findMany({
+      const comments = await prisma.comment.findMany({
         where: { feedbackId },
         include: {
           user: {
