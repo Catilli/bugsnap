@@ -46,12 +46,13 @@ model User {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  ownedProjects    Project[]
-  projectMembers   ProjectMember[]
-  createdTasks     Task[]     @relation("TaskCreator")
-  assignedTasks    Task[]     @relation("TaskAssignee")
-  comments         Comment[]
-  feedback         Feedback[]
+  ownedProjects       Project[]
+  projectMembers      ProjectMember[]
+  createdTasks        Task[]     @relation("TaskCreator")
+  assignedTasks       Task[]     @relation("TaskAssignee")
+  comments            Comment[]
+  feedback            Feedback[]
+  passwordResetTokens PasswordResetToken[]
 
   @@unique([oauthProvider, oauthId])
   @@map("users")
@@ -180,5 +181,19 @@ model Feedback {
   @@index([status])
   @@index([type])
   @@map("feedback")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 

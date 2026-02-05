@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { prisma } from '../lib/prisma';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../utils/errors';
+import { emailService } from './emailService';
 
 const SALT_ROUNDS = 10;
 
@@ -150,6 +152,66 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  /**
+   * Request a password reset email
+   */
+  async requestPasswordReset(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Silently return for non-existent users (prevent enumeration)
+    if (!user) return;
+
+    // Silently return for OAuth-only users (no password set)
+    if (!user.password) return;
+
+    // Delete any existing tokens for this user
+    await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+
+    // Generate token and hash it for storage
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    // Store hashed token with 1-hour expiry
+    await prisma.passwordResetToken.create({
+      data: {
+        tokenHash,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    // Send email with raw token
+    await emailService.sendPasswordResetEmail(email, rawToken, user.name);
+  }
+
+  /**
+   * Reset password using a token
+   */
+  async resetPassword(rawToken: string, newPassword: string) {
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new UnauthorizedError('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Update password and delete all tokens for this user in a transaction
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      }),
+      prisma.passwordResetToken.deleteMany({
+        where: { userId: resetToken.userId },
+      }),
+    ]);
   }
 
   /**

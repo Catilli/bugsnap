@@ -13,7 +13,58 @@ const authRateLimit = {
   },
 };
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
+  // POST /api/auth/forgot-password
+  fastify.post(
+    '/forgot-password',
+    authRateLimit,
+    async (request, reply) => {
+      try {
+        const { email } = forgotPasswordSchema.parse(request.body);
+        await authService.requestPasswordReset(email);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: error.errors[0].message,
+            },
+          });
+        }
+        // Log but don't expose internal errors
+        fastify.log.error(error, 'Password reset request failed');
+      }
+
+      // Always return 200 to prevent email enumeration
+      return reply.status(200).send({
+        message: 'If an account with that email exists, we sent a password reset link.',
+      });
+    }
+  );
+
+  // POST /api/auth/reset-password
+  fastify.post(
+    '/reset-password',
+    authRateLimit,
+    async (request, reply) => {
+      const { token, password } = resetPasswordSchema.parse(request.body);
+      await authService.resetPassword(token, password);
+
+      return reply.status(200).send({
+        message: 'Password has been reset successfully.',
+      });
+    }
+  );
+
   // POST /api/auth/register
   fastify.post(
     '/register',
