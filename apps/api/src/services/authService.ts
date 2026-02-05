@@ -53,6 +53,11 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
+    // OAuth-only users cannot login with password
+    if (!user.password) {
+      throw new UnauthorizedError('This account uses social login. Please sign in with Google or GitHub.');
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -123,6 +128,11 @@ export class AuthService {
       throw new NotFoundError('User');
     }
 
+    // OAuth-only users cannot change password
+    if (!user.password) {
+      throw new UnauthorizedError('This account uses social login and has no password to update.');
+    }
+
     // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
@@ -142,6 +152,46 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
+  /**
+   * Find or create user from OAuth provider data
+   */
+  async findOrCreateOAuthUser(provider: string, oauthId: string, email: string, name: string) {
+    // First check if user exists by OAuth provider + ID
+    let user = await prisma.user.findFirst({
+      where: { oauthProvider: provider, oauthId },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    if (user) return user;
+
+    // Check if user exists by email (link accounts)
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      // Link OAuth to existing account
+      user = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { oauthProvider: provider, oauthId },
+        select: { id: true, email: true, name: true, role: true },
+      });
+      return user;
+    }
+
+    // Create new OAuth user (no password)
+    user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        oauthProvider: provider,
+        oauthId,
+      },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    return user;
+  }
 }
 
 export const authService = new AuthService();

@@ -35,13 +35,15 @@ enum FeedbackStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      UserRole @default(MANAGER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String?  // Optional for OAuth-only users
+  name           String
+  role           UserRole @default(MANAGER)
+  oauthProvider  String?  // "google" or "github"
+  oauthId        String?  // Provider's user ID
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   ownedProjects    Project[]
@@ -52,6 +54,7 @@ model User {
   feedback         Feedback[]
   feedbackComments FeedbackComment[]
 
+  @@unique([oauthProvider, oauthId])
   @@map("users")
 }
 

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ProjectMemberService } from '../services/projectMemberService';
 import { prisma } from '../lib/prisma';
+import { cacheGet } from '../lib/redis';
 import { z } from 'zod';
 
 const addMemberSchema = z.object({
@@ -154,38 +155,43 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const projects = await ProjectMemberService.getUserProjects(userId);
+      const projectsWithCounts = await cacheGet(
+        `user:${userId}:projects`,
+        60, // 60 second TTL
+        async () => {
+          const projects = await ProjectMemberService.getUserProjects(userId);
 
-      // Add task counts by status to each project
-      const projectsWithCounts = await Promise.all(
-        projects.map(async (project: any) => {
-          const tasks = await prisma.task.findMany({
-            where: { projectId: project.id },
-            select: { status: true },
-          });
+          return Promise.all(
+            projects.map(async (project: any) => {
+              const tasks = await prisma.task.findMany({
+                where: { projectId: project.id },
+                select: { status: true },
+              });
 
-          const taskCounts = {
-            open: 0,
-            in_progress: 0,
-            resolved: 0,
-            closed: 0,
-          };
+              const taskCounts = {
+                open: 0,
+                in_progress: 0,
+                resolved: 0,
+                closed: 0,
+              };
 
-          tasks.forEach((task: any) => {
-            if (task.status === 'open') taskCounts.open++;
-            else if (task.status === 'in_progress') taskCounts.in_progress++;
-            else if (task.status === 'resolved') taskCounts.resolved++;
-            else if (task.status === 'closed') taskCounts.closed++;
-          });
+              tasks.forEach((task: any) => {
+                if (task.status === 'open') taskCounts.open++;
+                else if (task.status === 'in_progress') taskCounts.in_progress++;
+                else if (task.status === 'resolved') taskCounts.resolved++;
+                else if (task.status === 'closed') taskCounts.closed++;
+              });
 
-          return {
-            ...project,
-            _count: {
-              tasks: tasks.length,
-              ...taskCounts,
-            },
-          };
-        })
+              return {
+                ...project,
+                _count: {
+                  tasks: tasks.length,
+                  ...taskCounts,
+                },
+              };
+            })
+          );
+        }
       );
 
       return reply.send(projectsWithCounts);

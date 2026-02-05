@@ -17,4 +17,26 @@ services:
         value: 3001
       - key: FRONTEND_URL
         value: https://bugsnap-web-dun.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://bugsnap-web-dun.vercel.app,https://leidback.viewourdesign.info
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: API_URL
+        value: https://bugsnap-xgfd.onrender.com
+      - key: REDIS_URL
+        sync: false
     healthCheckPath: /health

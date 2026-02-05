@@ -139,6 +139,36 @@ export default function ProjectDetailPage() {
     };
   }, [projectId, setProjectName]);
 
+  // SSE: Subscribe to real-time task updates
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || !projectId) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const eventSource = new EventSource(
+      `${apiUrl}/api/projects/${projectId}/events?token=${encodeURIComponent(token)}`,
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'task:created') {
+          setTasks((prev) => [data.data, ...prev]);
+        } else if (data.type === 'task:updated') {
+          setTasks((prev) => prev.map((t) => (t.id === data.data.id ? { ...t, ...data.data } : t)));
+        } else if (data.type === 'task:deleted') {
+          setTasks((prev) => prev.filter((t) => t.id !== data.data.id));
+        }
+      } catch {
+        // Ignore parse errors (keepalive, connected events)
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [projectId]);
+
   // Fetch tasks for the project
   useEffect(() => {
     const fetchTasks = async () => {

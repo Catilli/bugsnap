@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
+import { cacheInvalidate } from '../lib/redis';
 import { z } from 'zod';
 
 const createProjectSchema = z.object({
@@ -48,6 +49,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
           },
         },
       });
+
+      // Invalidate project list cache for this user
+      await cacheInvalidate(`user:${userId}:projects`);
 
       return reply.status(201).send(project);
     } catch (error: any) {
@@ -177,6 +181,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // Invalidate project list cache for all members
+      await cacheInvalidate('user:*:projects');
+
       return reply.send(updatedProject);
     } catch (error: any) {
       fastify.log.error(error);
@@ -221,6 +228,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
       await prisma.project.delete({
         where: { id: projectId },
       });
+
+      // Invalidate project list cache for all members
+      await cacheInvalidate('user:*:projects');
 
       return reply.send({ message: 'Project deleted successfully' });
     } catch (error) {

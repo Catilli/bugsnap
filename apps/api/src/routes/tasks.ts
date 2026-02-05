@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { z } from 'zod';
+import { emitTaskEvent } from '../lib/eventBus';
+import { cacheInvalidate } from '../lib/redis';
 
 const createTaskSchema = z.object({
   projectId: z.string().uuid(),
@@ -201,6 +203,8 @@ export async function taskRoutes(fastify: FastifyInstance) {
         },
       });
 
+      emitTaskEvent({ type: 'task:created', projectId: data.projectId, data: task as any });
+      await cacheInvalidate('user:*:projects');
       return reply.status(201).send(task);
     } catch (error: any) {
       fastify.log.error(error);
@@ -469,6 +473,8 @@ export async function taskRoutes(fastify: FastifyInstance) {
         },
       });
 
+      emitTaskEvent({ type: 'task:updated', projectId: task.projectId, data: updatedTask as any });
+      await cacheInvalidate('user:*:projects');
       return reply.send(updatedTask);
     } catch (error: any) {
       fastify.log.error(error);
@@ -518,6 +524,8 @@ export async function taskRoutes(fastify: FastifyInstance) {
         where: { id: taskId },
       });
 
+      emitTaskEvent({ type: 'task:deleted', projectId: task.projectId, data: { id: taskId } });
+      await cacheInvalidate('user:*:projects');
       return reply.send({ message: 'Task deleted successfully' });
     } catch (error) {
       fastify.log.error(error);

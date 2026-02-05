@@ -3,10 +3,21 @@ import { loginSchema, registerSchema } from '@bugsnap/shared';
 import { authService } from '../services/authService';
 import { z } from 'zod';
 
+// Stricter rate limit config for auth routes (10 req/min vs global 100)
+const authRateLimit = {
+  config: {
+    rateLimit: {
+      max: 10,
+      timeWindow: '1 minute',
+    },
+  },
+};
+
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/auth/register
   fastify.post(
     '/register',
+    authRateLimit,
     async (request, reply) => {
       // Validate request body
       const validated = registerSchema.parse(request.body);
@@ -32,6 +43,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/auth/login
   fastify.post(
     '/login',
+    authRateLimit,
     async (request, reply) => {
       // Validate request body
       const validated = loginSchema.parse(request.body);

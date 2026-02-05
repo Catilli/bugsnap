@@ -44,7 +44,7 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Chrome Extension | Implemented | Manifest V3, content scripts injected on all URLs — `extension/manifest.json` |
 | Annotation Layer | Implemented | Custom HTML5 Canvas 2D implementation (rectangle, arrow, pen, text, cursor tools) — `extension/mark-my-image.js` |
 | Overlay / Bug Capture UI | Implemented | Injected via extension content scripts — `extension/bugsnap-ui.js`, `extension/content.js` |
-| Firefox Extension | Not Implemented | No Firefox-specific manifest or WebExtension polyfill |
+| Firefox Extension | Implemented | MV2 manifest with `browser.*` Promise-based API — `extension-firefox/manifest.json` |
 | Safari Extension | Not Implemented | No Xcode project or Safari extension wrapper |
 
 ### Backend
@@ -52,17 +52,18 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Component | Status | Details |
 |-----------|--------|---------|
 | API Framework | Implemented | Fastify 5.7.4 with TypeScript — `apps/api/src/index.ts` |
-| JWT Authentication | Implemented | `@fastify/jwt` 10.0, 7-day tokens, bcrypt password hashing — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts` |
-| API Routes | Implemented | 5 route modules: auth, projects, projectMembers, tasks, feedback — `apps/api/src/routes/` |
-| CORS Configuration | Implemented | Dynamic origin validation (localhost, Vercel, Render, chrome-extension://) — `apps/api/src/index.ts:28-69` |
+| JWT Authentication | Implemented | `@fastify/jwt` 10.0, 7-day tokens, bcrypt password hashing, startup validation of `JWT_SECRET` — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts`, `apps/api/src/index.ts:19-23` |
+| API Routes | Implemented | 6 route modules: auth, projects, projectMembers, tasks, feedback, uploads — `apps/api/src/routes/` |
+| CORS Configuration | Implemented | Explicit `ALLOWED_ORIGINS` env-based allowlist + chrome-extension + localhost (dev only) — `apps/api/src/index.ts:35-59` |
 | Error Handling | Implemented | Custom Fastify error handler plugin — `apps/api/src/plugins/errorHandler.ts` |
 | Input Validation | Implemented | Zod 3.22 for request validation — `apps/api/package.json` |
-| File Upload Support | Partial | `@fastify/multipart` registered (10MB limit) but no upload route implementations — `apps/api/src/index.ts:71-75` |
+| File Upload Support | Implemented | `@fastify/multipart` (10MB limit) + Cloudinary upload route — `apps/api/src/routes/uploads.ts`, `apps/api/src/lib/cloudinary.ts` |
 | Health Check | Implemented | `/health` endpoint with database connectivity check — `apps/api/src/index.ts:81-89` |
-| OAuth (Google/GitHub) | Not Implemented | No OAuth packages, no OAuth routes |
-| Real-time (WebSockets) | Not Implemented | No socket.io, ws, or SSE implementation |
-| Background Jobs (Queues) | Not Implemented | No Bull, BullMQ, or Agenda |
-| Rate Limiting | Not Implemented | No `@fastify/rate-limit` or equivalent |
+| OAuth (Google/GitHub) | Implemented | `@fastify/oauth2` — Google Discovery + GitHub config, `findOrCreateOAuthUser` — `apps/api/src/routes/oauth.ts` |
+| Real-time (SSE) | Implemented | Server-Sent Events with EventEmitter pub/sub — `apps/api/src/routes/events.ts`, `apps/api/src/lib/eventBus.ts` |
+| Background Jobs (Queues) | Implemented | BullMQ with email, screenshot, cleanup queues — `apps/api/src/lib/queue.ts` |
+| Rate Limiting | Implemented | `@fastify/rate-limit` — global 100 req/min, auth routes 10 req/min — `apps/api/src/index.ts:61-65`, `apps/api/src/routes/auth.ts:7-14` |
+| Structured Logging | Implemented | Pino with `pino-pretty` for dev, JSON for production — `apps/api/src/index.ts:36-53` |
 
 ### Database & Storage
 
@@ -72,9 +73,9 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Schema Models | Implemented | 9 models: User, Project, ProjectMember, Task, Annotation, Comment, Feedback, FeedbackComment + enums (UserRole, TaskType, FeedbackType, FeedbackStatus) |
 | Migrations | Implemented | 10 migrations applied — `apps/api/prisma/migrations/` |
 | Database Indexes | Implemented | Indexes on foreign keys and frequently queried fields (status, priority, type) |
-| File Storage (S3/Cloudinary) | Not Implemented | Cloudinary env vars exist in `.env.example` but zero code references. Screenshots stored as URL strings in `Task.screenshotUrl`. No upload routes. |
-| Redis Caching | Not Implemented | No Redis packages or caching layer |
-| Database Backups | Not Implemented | No automated backup configuration |
+| File Storage (Cloudinary) | Implemented | Cloudinary SDK integration with `POST /api/uploads` route — `apps/api/src/lib/cloudinary.ts`, `apps/api/src/routes/uploads.ts` |
+| Redis Caching | Implemented | ioredis with get-or-compute pattern + SCAN-based invalidation — `apps/api/src/lib/redis.ts` |
+| Database Backups | Implemented | pg_dump with gzip compression, 30-day retention — `scripts/backup-db.sh`, `scripts/restore-db.sh` |
 
 ### Infrastructure & DevOps
 
@@ -85,9 +86,10 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Docker Build | Implemented | Node 20 Alpine, multi-stage build with bcrypt native compilation — `Dockerfile` |
 | Monorepo Tooling | Implemented | Turborepo 1.11, npm workspaces — root `package.json`, `turbo.json` |
 | Shared Package | Implemented | `@bugsnap/shared` TypeScript package — `packages/shared/` |
-| CI/CD (GitHub Actions) | Not Implemented | No `.github/workflows/` directory |
-| Environment Separation | Partial | Dev/Prod `.env` files, NODE_ENV-aware error handling; no formal staging environment |
-| Monitoring & Logging | Not Implemented | Fastify stdout logger only. No Sentry, Datadog, or structured logging |
+| CI/CD (GitHub Actions) | Implemented | Lint, type-check, test, build on push/PR — `.github/workflows/ci.yml` |
+| Environment Separation | Implemented | Dev/Staging/Prod `.env` files, NODE_ENV-aware logging, staging CI workflow — `.env.staging.example`, `.github/workflows/staging.yml` |
+| Error Tracking (Sentry) | Implemented | `@sentry/node` (API) + `@sentry/nextjs` (web) — `apps/api/src/lib/sentry.ts`, `apps/web/sentry.*.config.ts` |
+| Automated Tests | Implemented | Vitest 4.x, 25 unit tests (auth + projects) — `apps/api/src/__tests__/`, `apps/api/vitest.config.ts` |
 | SSL/TLS | Implemented | Handled by Vercel (frontend) and Render (backend) platform-level TLS |
 | Domain Configuration | Partial | Default platform subdomains (`bugsnap-web-dun.vercel.app`, `bugsnap-xgfd.onrender.com`). Custom domain `leidback.viewourdesign.info` referenced in CORS. |
 
@@ -112,16 +114,18 @@ The core product loop is functional:
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| OAuth login (Google/GitHub) | High | Reduces registration friction |
-| File upload (Cloudinary/S3) | High | Currently no image upload pipeline — screenshots are URL-only |
-| CI/CD pipeline | High | No automated testing, linting, or deployment gates |
-| Firefox/Safari extensions | Medium | Limits browser reach |
-| Real-time updates (WebSockets) | Medium | Dashboard requires manual refresh |
-| Rate limiting | Medium | API is unprotected against abuse |
-| Monitoring/error tracking | Medium | No visibility into production errors |
-| Redis caching | Low | Not needed at current scale |
-| Background jobs | Low | No long-running tasks currently |
-| Database backups | Low | Managed by database provider, but no app-level strategy |
+| ~~OAuth login (Google/GitHub)~~ | ~~High~~ | **DONE** — `@fastify/oauth2` with Google/GitHub, `findOrCreateOAuthUser` |
+| ~~File upload (Cloudinary/S3)~~ | ~~High~~ | **DONE** — Cloudinary upload route at `POST /api/uploads` |
+| ~~CI/CD pipeline~~ | ~~High~~ | **DONE** — GitHub Actions: lint, type-check, test, build |
+| ~~Firefox extension~~ | ~~Medium~~ | **DONE** — MV2 manifest with `browser.*` API in `extension-firefox/` |
+| Safari extension | Medium | Requires macOS/Xcode — skipped |
+| ~~Real-time updates (SSE)~~ | ~~Medium~~ | **DONE** — SSE endpoint + EventEmitter pub/sub |
+| ~~Rate limiting~~ | ~~Medium~~ | **DONE** — `@fastify/rate-limit` (100/min global, 10/min auth) |
+| ~~Error tracking (Sentry)~~ | ~~Medium~~ | **DONE** — `@sentry/node` (API) + `@sentry/nextjs` (web) |
+| ~~Automated tests~~ | ~~Medium~~ | **DONE** — Vitest with 25 unit tests, CI-integrated |
+| ~~Redis caching~~ | ~~Low~~ | **DONE** — ioredis with TTL-based caching + SCAN invalidation |
+| ~~Background jobs~~ | ~~Low~~ | **DONE** — BullMQ queues (email, screenshot, cleanup) |
+| ~~Database backups~~ | ~~Low~~ | **DONE** — pg_dump scripts with 30-day retention |
 
 ---
 
@@ -129,23 +133,23 @@ The core product loop is functional:
 
 ### Security
 
-1. **No rate limiting** — API endpoints are unprotected against brute force or abuse
-2. **Hardcoded JWT fallback** — `JWT_SECRET` defaults to a static string if env var is missing (`apps/api/src/index.ts:24`)
-3. **CORS allows all origins** — The origin callback ultimately returns `true` for all origins (`apps/api/src/index.ts:61`)
+1. ~~**No rate limiting**~~ — **RESOLVED:** `@fastify/rate-limit` with 100 req/min global, 10 req/min on auth routes
+2. ~~**Hardcoded JWT fallback**~~ — **RESOLVED:** Startup fails if `JWT_SECRET` is unset
+3. ~~**CORS allows all origins**~~ — **RESOLVED:** Explicit `ALLOWED_ORIGINS` env-based allowlist
 4. **No CSRF protection** — JWT-only auth without CSRF tokens
 5. **No input sanitization beyond Zod** — Zod validates structure but not XSS content
 
 ### Reliability
 
-1. **No CI/CD** — Changes go to production without automated tests or checks
-2. **No monitoring** — Production errors are only visible in Render logs
+1. ~~**No CI/CD**~~ — **RESOLVED:** GitHub Actions CI pipeline (lint, type-check, test, build) on push/PR
+2. ~~**No monitoring**~~ — **RESOLVED:** Sentry error tracking for both API and frontend
 3. **No health check alerting** — `/health` endpoint exists but nothing monitors it
 4. **Free-tier hosting** — Render free tier has cold start delays and limited resources
 
 ### Data
 
-1. **No file storage integration** — Cloudinary is referenced in `.env.example` but never used in code
-2. **No database backup strategy** — Relies entirely on hosting provider defaults
+1. ~~**No file storage integration**~~ — **RESOLVED:** Cloudinary SDK integration with upload route (`POST /api/uploads`)
+2. ~~**No database backup strategy**~~ — **RESOLVED:** pg_dump scripts with gzip compression and 30-day retention (`scripts/backup-db.sh`, `scripts/restore-db.sh`)
 3. **Screenshots stored as URLs only** — If external sources go down, screenshot data is lost
 
 ---
@@ -156,31 +160,34 @@ The core product loop is functional:
 
 | # | Action | Rationale |
 |---|--------|-----------|
-| 1 | **Add CI/CD pipeline** (GitHub Actions: lint, type-check, test) | Prevents regressions, gates broken code from deploying |
-| 2 | **Implement rate limiting** (`@fastify/rate-limit`) | Protects auth endpoints from brute force attacks |
-| 3 | **Remove JWT fallback secret** — fail hard if `JWT_SECRET` is unset | Prevents accidental deployment with predictable secret |
-| 4 | **Implement file upload** (Cloudinary or S3) with upload routes | Unblocks screenshot and attachment persistence |
-| 5 | **Restrict CORS origins** to explicit allowlist | Current config effectively allows all origins |
+| 1 | ~~**Add CI/CD pipeline**~~ | **DONE** — `.github/workflows/ci.yml` |
+| 2 | ~~**Implement rate limiting**~~ | **DONE** — `@fastify/rate-limit` registered globally |
+| 3 | ~~**Remove JWT fallback secret**~~ | **DONE** — Startup fails if `JWT_SECRET` unset |
+| 4 | ~~**Implement file upload**~~ | **DONE** — Cloudinary SDK + `POST /api/uploads` |
+| 5 | ~~**Restrict CORS origins**~~ | **DONE** — `ALLOWED_ORIGINS` env-based allowlist |
 
 ### Medium Priority
 
 | # | Action | Rationale |
 |---|--------|-----------|
-| 6 | **Add error tracking** (Sentry or similar) | Gain visibility into production errors |
-| 7 | **Add OAuth login** (Google, GitHub) | Reduces signup friction for developers |
-| 8 | **Add WebSocket or SSE support** for live dashboard updates | Eliminates need for manual refresh |
-| 9 | **Port extension to Firefox** (WebExtension API is mostly compatible) | Expands browser coverage |
-| 10 | **Add automated tests** (Vitest for API, Playwright for E2E) | Enables safe refactoring and CI gates |
+| 6 | ~~**Add error tracking**~~ | **DONE** — `@sentry/node` + `@sentry/nextjs` |
+| 7 | ~~**Add OAuth login**~~ | **DONE** — Google/GitHub via `@fastify/oauth2` |
+| 8 | ~~**Add SSE support**~~ | **DONE** — SSE endpoint + EventEmitter pub/sub |
+| 9 | ~~**Port extension to Firefox**~~ | **DONE** — MV2 with `browser.*` API |
+| 10 | ~~**Add automated tests**~~ | **DONE** — Vitest with 25 API unit tests |
 
 ### Low Priority
 
 | # | Action | Rationale |
 |---|--------|-----------|
-| 11 | **Add Redis caching** for frequently-read project/task data | Not needed until scale demands it |
-| 12 | **Add structured logging** (pino-pretty for dev, JSON for prod) | Fastify already uses pino — just needs configuration |
-| 13 | **Upgrade to paid hosting tier** | Eliminates cold starts, improves reliability |
-| 14 | **Custom domain setup** | More professional URLs for production |
-| 15 | **Safari extension** | Smallest browser market share among targets |
+| 11 | ~~**Add Redis caching**~~ | **DONE** — ioredis with TTL-based get-or-compute pattern |
+| 12 | ~~**Add structured logging**~~ | **DONE** — pino-pretty for dev, JSON for prod |
+| 13 | ~~**Add background jobs**~~ | **DONE** — BullMQ queues (email, screenshot, cleanup) |
+| 14 | ~~**Add database backups**~~ | **DONE** — pg_dump scripts with 30-day retention |
+| 15 | ~~**Add environment separation**~~ | **DONE** — Staging env configs + CI deploy workflow |
+| 16 | **Upgrade to paid hosting tier** | Eliminates cold starts, improves reliability |
+| 17 | **Custom domain setup** | More professional URLs for production |
+| 18 | **Safari extension** | Smallest browser market share among targets |
 
 ---
 
@@ -201,6 +208,22 @@ The core product loop is functional:
 | `extension/bugsnap-ui.js` | Extension overlay UI |
 | `extension/content.js` | Content script (page injection) |
 | `extension/background.js` | Extension service worker |
+| `extension-firefox/manifest.json` | Firefox extension MV2 config |
+| `extension-firefox/bugsnap-ui.js` | Firefox extension overlay UI (browser.* API) |
+| `apps/api/src/lib/sentry.ts` | Sentry SDK initialization |
+| `apps/api/src/routes/oauth.ts` | OAuth2 login routes (Google/GitHub) |
+| `apps/api/src/lib/eventBus.ts` | SSE event emitter pub/sub |
+| `apps/api/src/routes/events.ts` | SSE endpoint for live updates |
+| `apps/api/vitest.config.ts` | Vitest test configuration |
+| `apps/api/src/__tests__/` | API unit tests (auth, projects) |
+| `apps/web/sentry.client.config.ts` | Frontend Sentry client config |
+| `apps/api/src/lib/redis.ts` | Redis caching layer (ioredis) |
+| `apps/api/src/lib/queue.ts` | BullMQ background job queues |
+| `scripts/backup-db.sh` | Database backup script (pg_dump) |
+| `scripts/restore-db.sh` | Database restore script |
+| `apps/api/.env.staging.example` | API staging environment template |
+| `apps/web/.env.staging.example` | Web staging environment template |
+| `.github/workflows/staging.yml` | Staging deploy workflow |
 | `Dockerfile` | Docker build for API (Node 20 Alpine) |
 | `render.yaml` | Render deployment config |
 | `turbo.json` | Turborepo pipeline config |
