@@ -60,7 +60,11 @@ fastify.register(fastifyJwt, {
 });
 
 // Item 5: CORS with explicit origin allowlist
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+
+if (allowedOrigins.length === 0) {
+  console.warn('WARNING: ALLOWED_ORIGINS is empty — all cross-origin browser requests will be blocked');
+}
 
 fastify.register(cors, {
   origin: (origin, callback) => {
@@ -74,8 +78,8 @@ fastify.register(cors, {
     // Check explicit allowlist
     if (allowedOrigins.some(allowed => origin.includes(allowed)))
       return callback(null, true);
-    // Reject unknown origins
-    callback(new Error('Not allowed by CORS'), false);
+    // Reject unknown origins (false = no CORS headers, browser blocks the request)
+    callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
