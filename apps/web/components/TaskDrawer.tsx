@@ -6,6 +6,7 @@ import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
+import CommentSection from './CommentSection';
 
 interface TaskDrawerProps {
   taskId: string | null;
@@ -47,25 +48,11 @@ interface Task {
   };
 }
 
-interface Comment {
-  id: string;
-  content: string;
-  createdAt: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
 export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChange }: TaskDrawerProps) {
   const [task, setTask] = useState<Task | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isScreenshotEnlarged, setIsScreenshotEnlarged] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   // Extract task/bug/feature number from title
   const getTaskNumber = (title: string) => {
@@ -117,7 +104,6 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
   useEffect(() => {
     if (isOpen && taskId) {
       fetchTaskDetails();
-      fetchComments();
     }
   }, [isOpen, taskId]);
 
@@ -144,61 +130,6 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
       // Silently fail
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchComments = async () => {
-    if (!taskId) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}/comments`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data);
-      }
-    } catch (error) {
-      // Silently fail
-    }
-  };
-
-  const submitComment = async () => {
-    if (!taskId || !newComment.trim()) return;
-
-    setIsSubmittingComment(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}/comments`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ content: newComment.trim() }),
-        }
-      );
-
-      if (response.ok) {
-        const comment = await response.json();
-        const updatedComments = [...comments, comment];
-        setComments(updatedComments);
-        setNewComment('');
-        onCommentCountChange?.(taskId, updatedComments.length);
-      }
-    } catch (error) {
-      // Silently fail
-    } finally {
-      setIsSubmittingComment(false);
     }
   };
 
@@ -397,52 +328,10 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
             </div>
 
             {/* Comments */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Comments ({comments.length})
-              </h3>
-              
-              {comments.length > 0 ? (
-                <div className="space-y-4">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
-                        {comment.user.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium text-gray-900">{comment.user.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(comment.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-700">{comment.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No comments yet</p>
-              )}
-
-              {/* Add comment form */}
-              <div className="mt-4">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                  rows={3}
-                />
-                <button
-                  onClick={submitComment}
-                  disabled={isSubmittingComment || !newComment.trim()}
-                  className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmittingComment ? 'Posting...' : 'Add Comment'}
-                </button>
-              </div>
-            </div>
+            <CommentSection
+              taskId={taskId}
+              onCommentCountChange={(count) => onCommentCountChange?.(taskId!, count)}
+            />
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">

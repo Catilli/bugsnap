@@ -215,6 +215,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
           task: {
             include: { project: true },
           },
+          feedback: true,
         },
       });
 
@@ -222,15 +223,17 @@ export async function commentRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Comment not found' });
       }
 
-      if (!comment.task) {
-        return reply.status(400).send({ error: 'This comment is not associated with a task' });
+      const isAuthor = comment.userId === userId;
+      let isOwner = false;
+
+      if (comment.task) {
+        isOwner = comment.task.project.createdById === userId;
+      } else if (comment.feedback) {
+        isOwner = comment.feedback.createdById === userId;
       }
 
-      const isAuthor = comment.userId === userId;
-      const isProjectOwner = comment.task.project.createdById === userId;
-
-      if (!isAuthor && !isProjectOwner) {
-        return reply.status(403).send({ error: 'Only the comment author or project owner can delete this comment' });
+      if (!isAuthor && !isOwner) {
+        return reply.status(403).send({ error: 'Only the comment author or project/feedback owner can delete this comment' });
       }
 
       await prisma.comment.delete({ where: { id: commentId } });
