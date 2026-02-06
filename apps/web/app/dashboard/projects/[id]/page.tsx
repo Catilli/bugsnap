@@ -1,9 +1,10 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useProject } from '../../ProjectContext';
 import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
+import { FilterBar } from '@/components/FilterBar';
 import IssueDrawer from '@/components/IssueDrawer';
 import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
@@ -68,6 +69,46 @@ export default function ProjectDetailPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; issueId: string | null }>({ show: false, issueId: null });
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+
+  const assigneeOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    issues.forEach((issue) => {
+      if (issue.assignedTo && !seen.has(issue.assignedTo.id)) {
+        seen.set(issue.assignedTo.id, issue.assignedTo.name);
+      }
+    });
+    return Array.from(seen, ([id, name]) => ({ label: name, value: id }));
+  }, [issues]);
+
+  const filteredIssues = useMemo(() => {
+    return issues.filter((issue) => {
+      if (typeFilter && issue.type !== typeFilter) return false;
+      if (priorityFilter && issue.priority !== priorityFilter) return false;
+      if (assigneeFilter && issue.assignedTo?.id !== assigneeFilter) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!issue.title.toLowerCase().includes(q) && !issue.description?.toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [issues, typeFilter, priorityFilter, assigneeFilter, searchQuery]);
+
+  const hasActiveFilters = typeFilter !== null || priorityFilter !== null || assigneeFilter !== null || searchQuery !== '';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setTypeFilter(null);
+    setPriorityFilter(null);
+    setAssigneeFilter(null);
+  };
 
   const openIssueDrawer = (issueId: string) => {
     setSelectedIssueId(issueId);
@@ -373,13 +414,60 @@ export default function ProjectDetailPage() {
             </p>
           </div>
         ) : (
-          <KanbanBoard
-            issues={issues}
-            columns={PROJECT_COLUMNS}
-            showFilters={false}
-            onIssueClick={openIssueDrawer}
-            onStatusChange={handleStatusChange}
-          />
+          <div className="space-y-4">
+            <FilterBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchPlaceholder="Search issues..."
+              slots={[
+                {
+                  kind: 'select',
+                  key: 'type',
+                  placeholder: 'All Types',
+                  value: typeFilter,
+                  options: [
+                    { label: 'Bug', value: 'BUG' },
+                    { label: 'Feature', value: 'FEATURE' },
+                    { label: 'Task', value: 'TASK' },
+                  ],
+                  onChange: setTypeFilter,
+                },
+                {
+                  kind: 'select',
+                  key: 'priority',
+                  placeholder: 'All Priorities',
+                  value: priorityFilter,
+                  options: [
+                    { label: 'Critical', value: 'critical' },
+                    { label: 'High', value: 'high' },
+                    { label: 'Medium', value: 'medium' },
+                    { label: 'Low', value: 'low' },
+                  ],
+                  onChange: setPriorityFilter,
+                },
+                ...(assigneeOptions.length > 0
+                  ? [
+                      {
+                        kind: 'select' as const,
+                        key: 'assignee',
+                        placeholder: 'All Assignees',
+                        value: assigneeFilter,
+                        options: assigneeOptions,
+                        onChange: setAssigneeFilter,
+                      },
+                    ]
+                  : []),
+              ]}
+              showClear={hasActiveFilters}
+              onClear={clearFilters}
+            />
+            <KanbanBoard
+              issues={filteredIssues}
+              columns={PROJECT_COLUMNS}
+              onIssueClick={openIssueDrawer}
+              onStatusChange={handleStatusChange}
+            />
+          </div>
         )}
       </div>
 

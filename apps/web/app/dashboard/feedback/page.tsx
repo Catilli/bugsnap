@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Bug, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Bug, Plus, Lightbulb } from 'lucide-react';
 import { KanbanBoard } from '../../../components/kanban/KanbanBoard';
 import { FeedbackForm } from '../../../components/FeedbackForm';
 import FeedbackDrawer from '../../../components/FeedbackDrawer';
 import { PageHeader } from '../../../components/PageHeader';
+import { FilterBar } from '@/components/FilterBar';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 interface Feedback {
@@ -75,6 +76,42 @@ export default function FeedbackPage() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<('BUG' | 'FEATURE')[]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+
+  const toggleType = (type: 'BUG' | 'FEATURE') => {
+    setTypeFilter((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  };
+
+  const hasActiveFilters = typeFilter.length > 0 || priorityFilter !== null || searchQuery !== '';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setTypeFilter([]);
+    setPriorityFilter(null);
+  };
+
+  // Filter feedback then convert to kanban format
+  const filteredKanbanIssues = useMemo(() => {
+    return feedbackList
+      .filter((item) => {
+        if (typeFilter.length > 0 && !typeFilter.includes(item.type)) return false;
+        if (priorityFilter && item.priority !== priorityFilter) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          if (!item.title.toLowerCase().includes(q) && !item.description?.toLowerCase().includes(q)) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .map(feedbackToKanbanIssue);
+  }, [feedbackList, typeFilter, priorityFilter, searchQuery]);
 
   // Fetch all feedback
   const fetchFeedback = useCallback(async () => {
@@ -204,9 +241,6 @@ export default function FeedbackPage() {
     fetchFeedback();
   };
 
-  // Convert feedback list to KanbanBoard format
-  const kanbanIssues = feedbackList.map(feedbackToKanbanIssue);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -258,13 +292,54 @@ export default function FeedbackPage() {
         }
       />
 
+      {/* Filters */}
+      <FilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search feedback..."
+        slots={[
+          {
+            kind: 'toggle',
+            key: 'bug',
+            label: 'Bug',
+            icon: <Bug className="w-4 h-4" />,
+            active: typeFilter.includes('BUG'),
+            activeClassName: 'bg-red-100 text-red-700 border border-red-300',
+            onClick: () => toggleType('BUG'),
+          },
+          {
+            kind: 'toggle',
+            key: 'feature',
+            label: 'Feature',
+            icon: <Lightbulb className="w-4 h-4" />,
+            active: typeFilter.includes('FEATURE'),
+            activeClassName: 'bg-purple-100 text-purple-700 border border-purple-300',
+            onClick: () => toggleType('FEATURE'),
+          },
+          {
+            kind: 'select',
+            key: 'priority',
+            placeholder: 'All Priorities',
+            value: priorityFilter,
+            options: [
+              { label: 'Critical', value: 'critical' },
+              { label: 'High', value: 'high' },
+              { label: 'Medium', value: 'medium' },
+              { label: 'Low', value: 'low' },
+            ],
+            onChange: setPriorityFilter,
+          },
+        ]}
+        showClear={hasActiveFilters}
+        onClear={clearFilters}
+      />
+
       {/* Kanban Board */}
       <KanbanBoard
-        issues={kanbanIssues}
+        issues={filteredKanbanIssues}
         onIssueClick={handleFeedbackClick}
         onStatusChange={handleStatusChange}
       />
-
 
       {/* Feedback Form Modal */}
       <FeedbackForm

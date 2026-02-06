@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import FilterControls from '@/components/FilterControls';
+import { FilterBar } from '@/components/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
-import { Plus, RefreshCw, FileText, Search, Trash2, FolderRoot } from 'lucide-react';
+import { Plus, RefreshCw, FileText, Search, Trash2, FolderRoot, Grid2x2, List } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 type ViewMode = 'grid' | 'list';
@@ -97,6 +97,9 @@ export default function DashboardPage() {
     { label: 'Newest first', value: 'desc' },
   ];
 
+  // Derive dropdown label from current sort selection
+  const selectedSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label || 'Sort';
+
   // Helper function to format relative time
   const getRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -176,18 +179,41 @@ export default function DashboardPage() {
         </div>
 
         {/* Search and View Controls */}
-        <FilterControls
+        <FilterBar
           searchPlaceholder="Search projects..."
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          sortOptions={sortOptions}
-          orderOptions={orderOptions}
-          selectedSort={sortBy}
-          selectedOrder={orderBy}
-          onSortChange={(value) => setSortBy(value as SortBy)}
-          onOrderChange={(value) => setOrderBy(value as OrderBy)}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
+          slots={[
+            {
+              kind: 'dropdown',
+              key: 'sort',
+              label: selectedSortLabel,
+              sections: [
+                {
+                  title: 'Sort by',
+                  options: sortOptions,
+                  selected: sortBy,
+                  onChange: (value) => setSortBy(value as SortBy),
+                },
+                {
+                  title: 'Order',
+                  options: orderOptions,
+                  selected: orderBy,
+                  onChange: (value) => setOrderBy(value as OrderBy),
+                },
+              ],
+            },
+            {
+              kind: 'view-toggle',
+              key: 'view',
+              options: [
+                { icon: <Grid2x2 className="w-5 h-5" />, value: 'grid', title: 'Grid View' },
+                { icon: <List className="w-5 h-5" />, value: 'list', title: 'List View' },
+              ],
+              selected: viewMode,
+              onChange: (value) => setViewMode(value as ViewMode),
+            },
+          ]}
         />
       </div>
 
