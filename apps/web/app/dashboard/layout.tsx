@@ -19,6 +19,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
+  // Redirect to login client-side only (router.push references browser location)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
   useEffect(() => {
     if (sessionStorage.getItem('bugsnap_extension_bubble_dismissed') === 'true') {
       setBubbleDismissed(true);
@@ -42,7 +49,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  if (isLoading) {
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -51,11 +58,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    router.push('/login');
-    return null;
   }
 
   return (
