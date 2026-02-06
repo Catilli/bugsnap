@@ -5,6 +5,17 @@ import { ExtensionSync } from '../lib/extensionSync';
 
 const isBrowser = typeof window !== 'undefined';
 
+// No-op storage for SSR — prevents "Cannot read properties of undefined
+// (reading 'getItem')" during static page generation on the server.
+const noopStorage: Storage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  length: 0,
+  clear: () => {},
+  key: () => null,
+};
+
 interface User {
   id: string;
   email: string;
@@ -121,7 +132,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => (isBrowser ? localStorage : undefined!)),
+      storage: createJSONStorage(() => (isBrowser ? localStorage : noopStorage)),
       partialize: (state) => ({
         user: state.user,
         token: state.token,
