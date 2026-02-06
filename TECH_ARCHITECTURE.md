@@ -1,7 +1,7 @@
 # BugSnap - Technical Architecture Audit
 
-**Version:** 0.3.2
-**Audit Date:** 2026-02-06
+**Version:** 0.4.0
+**Audit Date:** 2026-02-07
 **Repository:** Turborepo monorepo with npm workspaces
 
 ---
@@ -55,7 +55,7 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | JWT Authentication | Implemented | `@fastify/jwt` 9.1, 7-day tokens, bcrypt password hashing, startup validation of `JWT_SECRET`. Auth plugin wrapped with `fastify-plugin` (fp) to break encapsulation — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts`, `apps/api/src/index.ts` |
 | Auth Service | Implemented | Full auth service: register, login, password change, password reset (crypto token + SHA-256 hash, 1h TTL), OAuth user linking — `apps/api/src/services/authService.ts` |
 | Email Service | Implemented | Resend SDK with lazy initialization, branded HTML password reset emails — `apps/api/src/services/emailService.ts` |
-| API Routes | Implemented | 7 route modules: auth, oauth, projects, projectMembers, tasks, feedback, uploads — `apps/api/src/routes/` |
+| API Routes | Implemented | 8 route modules: auth, oauth, projects, projectMembers, issues, comments, feedback, uploads — `apps/api/src/routes/` |
 | CORS Configuration | Implemented | Explicit `ALLOWED_ORIGINS` env-based allowlist + chrome-extension + localhost (dev only) — `apps/api/src/index.ts:35-59` |
 | Error Handling | Implemented | Custom Fastify error handler plugin — `apps/api/src/plugins/errorHandler.ts` |
 | Input Validation | Implemented | Zod 3.22 for request validation — `apps/api/package.json` |
@@ -72,7 +72,7 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Component | Status | Details |
 |-----------|--------|---------|
 | PostgreSQL | Implemented | Prisma 5.8.1 ORM — `apps/api/prisma/schema.prisma` |
-| Schema Models | Implemented | 10 models: User, Project, ProjectMember, Task, Annotation, Comment, Feedback, FeedbackComment, PasswordResetToken + enums (UserRole, TaskType, FeedbackType, FeedbackStatus) |
+| Schema Models | Implemented | 10 models: User, Project, ProjectMember, Issue, Annotation, Comment, Feedback, FeedbackComment, PasswordResetToken + enums (UserRole, IssueType, FeedbackType, FeedbackStatus) |
 | Migrations | Implemented | 15 migrations applied — `apps/api/prisma/migrations/` |
 | Database Indexes | Implemented | Indexes on foreign keys and frequently queried fields (status, priority, type) |
 | File Storage (Cloudinary) | Implemented | Cloudinary SDK integration with `POST /api/uploads` route — `apps/api/src/lib/cloudinary.ts`, `apps/api/src/routes/uploads.ts` |
@@ -107,10 +107,11 @@ The core product loop is functional:
 2. **Creates a project** with a website URL, gets an API key
 3. **Installs the Chrome extension** and links it to the project
 4. **Captures bugs** on any website via the extension overlay (screenshot + annotations)
-5. **Tasks appear** on the project dashboard with screenshots, annotations, metadata
-6. **Team members** can be invited (Manager/Developer/Viewer roles)
-7. **Comments** can be added to tasks
+5. **Issues appear** on the project dashboard with screenshots, annotations, metadata
+6. **Team members** can be invited with role-based access (ADMIN/Manager/Developer/Viewer)
+7. **Comments** can be added to issues (full CRUD)
 8. **Feedback system** exists as a separate module (BUG/FEATURE types)
+9. **Roles & permissions** enforced at global and project-scoped levels
 
 ### Phase 2 — Not Yet Built
 
@@ -202,12 +203,17 @@ The core product loop is functional:
 | `apps/web/vercel.json` | Vercel build configuration |
 | `apps/api/package.json` | Backend dependencies and scripts |
 | `apps/api/src/index.ts` | Fastify server entry point |
-| `apps/api/src/routes/` | API route modules (auth, oauth, projects, tasks, feedback, members, uploads) |
+| `apps/api/src/routes/` | API route modules (auth, oauth, projects, issues, comments, feedback, members, uploads) |
 | `apps/api/src/plugins/` | Fastify plugins (auth with fastify-plugin, errorHandler) |
 | `apps/api/src/services/authService.ts` | Auth service (register, login, password reset, OAuth) |
 | `apps/api/src/services/emailService.ts` | Resend email service (password reset emails) |
 | `apps/web/store/authStore.ts` | Zustand auth state with persist middleware |
 | `apps/web/lib/clerkTokenBridge.ts` | Auth token bridge (`getAuthToken()` from localStorage) |
+| `apps/web/lib/useRole.ts` | Global role hook (`hasRole`, `isAdmin`, `isViewer`) |
+| `apps/web/lib/useProjectRole.ts` | Project-scoped role hook |
+| `apps/web/components/RoleGate.tsx` | Conditional render by minimum role |
+| `apps/api/src/middleware/requireRole.ts` | Global role guard middleware |
+| `apps/api/src/middleware/requireProjectRole.ts` | Project-scoped role guard middleware |
 | `apps/web/app/forgot-password/page.tsx` | Forgot password page |
 | `apps/web/app/reset-password/page.tsx` | Reset password page (token from URL) |
 | `apps/api/prisma/schema.prisma` | Database schema (10 models, 4 enums) |

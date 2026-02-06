@@ -14,6 +14,7 @@ BugSnap is a web-based application that helps teams capture, annotate, and manag
 |----------|-------------|
 | [Technical Architecture](./TECH_ARCHITECTURE.md) | Full architecture audit — frontend, backend, database, infrastructure, identified gaps, and recommended next steps |
 | [Core Features Audit](./CORE_FEATURES_AUDIT.md) | Read-only codebase analysis of 46 features across 7 categories with implementation status and evidence |
+| [User Roles & Permissions](./docs/user-roles-permissions-progress.md) | Implementation tracker for the 4-role RBAC system -- capabilities, status, and verification steps |
 
 
 ## 🏗️ Project Structure
@@ -97,7 +98,8 @@ The BugSnap browser extension allows users to capture bugs directly from any web
 ### Backend (API)
 - **Framework**: Fastify
 - **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT
+- **Authentication**: JWT + OAuth (Google, GitHub)
+- **Authorization**: Role-based (ADMIN, MANAGER, DEVELOPER, VIEWER)
 - **Language**: TypeScript
 
 ### Browser Extension
@@ -142,40 +144,48 @@ For Windows users, you can use the provided batch files:
 - ✅ Shared types and schemas
 - ✅ TypeScript configuration
 - ✅ ESLint and Prettier setup
-- ✅ User authentication and authorization (JWT)
+- ✅ User authentication and authorization (JWT + OAuth)
+- ✅ Role-based access control (ADMIN, MANAGER, DEVELOPER, VIEWER)
 - ✅ Project management
-- ✅ Project member management
-- ✅ Dashboard with project listing
+- ✅ Project member management with role assignment
+- ✅ Dashboard with project listing (grid and list views)
 - ✅ Project creation and editing
-- ✅ Task management with full CRUD operations
-- ✅ Task display with grid and list views
-- ✅ Task filtering and sorting (by date, priority, status)
+- ✅ Issue management with full CRUD operations
+- ✅ Kanban board with drag-and-drop (role-gated)
+- ✅ Issue filtering and sorting (by date, priority, status)
+- ✅ Reusable FilterBar and PageHeader components
 - ✅ Browser extension integration
 - ✅ PostgreSQL database with Prisma ORM
-- ✅ Task creation with custom titles and auto-numbering
+- ✅ Issue creation with custom titles and auto-numbering
 - ✅ Screenshot capture and annotation tools
 - ✅ Environment data collection
 - ✅ Comments and collaboration
 - ✅ Status and priority management
+- ✅ Real-time updates (SSE)
+- ✅ OAuth login (Google, GitHub)
+- ✅ Rate limiting
+- ✅ Error tracking (Sentry)
 
 ### Planned
-- 🔲 Shareable task links
-- 🔲 Real-time updates
+- 🔲 Shareable issue links
 - 🔲 Third-party integrations (Jira, Linear, GitHub)
-- 🔲 Task assignment workflow
 - 🔲 Advanced filtering and search
-- 🔲 Task templates
+- 🔲 Issue templates
 - 🔲 Email notifications
+- 🔲 Admin settings panel (workflows, statuses, priorities)
+- 🔲 Report export
 
 ## 🗄️ Database Schema
 
 The database schema includes:
-- Users (with authentication)
+- Users (with authentication and roles)
 - Projects (bug tracking projects)
-- ProjectMembers (project access control)
-- Tasks (bug reports/issues)
-- Annotations (visual annotations on tasks)
-- Comments (task comments and collaboration)
+- ProjectMembers (project access control with per-project roles)
+- Issues (bug reports)
+- Annotations (visual annotations on issues)
+- Comments (issue comments and collaboration)
+- Feedback and FeedbackComments
+- PasswordResetTokens
 
 See [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma) for the complete schema definition.
 
@@ -188,6 +198,12 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 DATABASE_URL=postgresql://user:password@localhost:5432/bugsnap
 JWT_SECRET=your-secret-key
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
@@ -220,26 +236,35 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.3.1
+**Current Version**: v0.4.0
 
-**Next Steps**: Implement shareable task links and real-time updates
+**Next Steps**: Implement shareable issue links and admin settings panel
 
 **Recent Updates**:
-- Migrated authentication from custom JWT to Clerk
-- Removed @fastify/jwt, @fastify/oauth2, resend, zustand
-- Added Clerk components (SignIn, SignUp, UserProfile, UserButton)
-- Token bridge pattern for Clerk async tokens
+- Added 4-role RBAC system (ADMIN, MANAGER, DEVELOPER, VIEWER)
+- Unified filter components into slot-based FilterBar
+- Renamed Task entity to Issue across the project
+- Reusable KanbanBoard and PageHeader components
 
 
 ## 📝 Changelog
 
+### v0.4.0 (February 2026)
+- ✅ Added roles & permissions system (ADMIN, MANAGER, DEVELOPER, VIEWER)
+- ✅ Global role guards (`requireRole`) and project-scoped guards (`requireProjectRole`)
+- ✅ Frontend `useRole` / `useProjectRole` hooks and `<RoleGate>` component
+- ✅ Fine-grained issue update permissions (DEVELOPER: own/assigned only; MANAGER: full)
+- ✅ Renamed Task entity to Issue across project (routes, components, schema)
+- ✅ Unified filter components into reusable slot-based FilterBar
+- ✅ Extracted reusable PageHeader component with icon support
+- ✅ Replaced project page grid/list with reusable KanbanBoard (drag-and-drop)
+
 ### v0.3.1 (February 2026)
-- ✅ Migrated authentication from custom JWT to Clerk
-- ✅ Added Clerk auth plugin with account linking (clerkId/email)
-- ✅ Replaced login/register pages with Clerk components
-- ✅ Added ClerkProvider, middleware, ClerkTokenSync
-- ✅ Removed authStore, oauth routes, emailService, forgot/reset-password pages
-- ✅ Uninstalled @fastify/jwt, @fastify/oauth2, resend, zustand
+- ✅ Migrated auth back to self-hosted JWT + OAuth (Google, GitHub)
+- ✅ Zustand auth store with persist middleware
+- ✅ OAuth routes conditional on env vars
+- ✅ Email service with lazy Resend initialization
+- ✅ Password reset flow (crypto token + SHA-256, 1h TTL)
 
 ### v0.3.0 (February 2026)
 - ✅ Codebase cleanup: removed unused files, dead code, and stale stubs
