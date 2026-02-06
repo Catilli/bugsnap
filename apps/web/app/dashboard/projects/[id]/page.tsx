@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useProject } from '../../ProjectContext';
 import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import TaskDrawer from '@/components/TaskDrawer';
-import { Pencil, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
+import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
@@ -301,6 +301,11 @@ export default function ProjectDetailPage() {
     <div>
       <div className="mb-8">
         <PageHeader
+          icon={
+            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+              <BadgeAlert className="w-5 h-5 text-red-600" />
+            </div>
+          }
           title={
             <div className="flex items-center gap-3">
               {isEditingName ? (
