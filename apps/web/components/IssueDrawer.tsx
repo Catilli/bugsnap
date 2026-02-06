@@ -8,6 +8,9 @@ import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
 import { getAuthToken } from '../lib/clerkTokenBridge';
+import { useRole } from '../lib/useRole';
+import { useAuthStore } from '../store/authStore';
+import { RoleGate } from './RoleGate';
 
 interface IssueDrawerProps {
   issueId: string | null;
@@ -50,6 +53,8 @@ interface Issue {
 }
 
 export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange }: IssueDrawerProps) {
+  const { role, hasRole, isViewer } = useRole();
+  const currentUser = useAuthStore((s) => s.user);
   const [issue, setIssue] = useState<Issue | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -202,48 +207,73 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
           <div className="p-6 space-y-6">
             {/* Title */}
             <div>
-              <input
-                type="text"
-                value={getCleanTitle(issue.title)}
-                onChange={(e) => {
-                  const issueNumber = getIssueNumber(issue.title);
-                  const typePrefix = getTypePrefix(issue.title);
-                  const newTitle = issueNumber ? `${typePrefix} #${issueNumber} - ${e.target.value}` : e.target.value;
-                  setIssue({ ...issue, title: newTitle });
-                }}
-                onBlur={(e) => {
-                  const issueNumber = getIssueNumber(issue.title);
-                  const typePrefix = getTypePrefix(issue.title);
-                  const newTitle = issueNumber ? `${typePrefix} #${issueNumber} - ${e.target.value}` : e.target.value;
-                  updateIssue('title', newTitle);
-                }}
-                className="text-2xl font-semibold text-gray-900 w-full border-none focus:outline-none focus:ring-0 px-0"
-                placeholder="Issue title"
-              />
+              {isViewer ? (
+                <h2 className="text-2xl font-semibold text-gray-900">{getCleanTitle(issue.title)}</h2>
+              ) : (
+                <input
+                  type="text"
+                  value={getCleanTitle(issue.title)}
+                  onChange={(e) => {
+                    const issueNumber = getIssueNumber(issue.title);
+                    const typePrefix = getTypePrefix(issue.title);
+                    const newTitle = issueNumber ? `${typePrefix} #${issueNumber} - ${e.target.value}` : e.target.value;
+                    setIssue({ ...issue, title: newTitle });
+                  }}
+                  onBlur={(e) => {
+                    const issueNumber = getIssueNumber(issue.title);
+                    const typePrefix = getTypePrefix(issue.title);
+                    const newTitle = issueNumber ? `${typePrefix} #${issueNumber} - ${e.target.value}` : e.target.value;
+                    updateIssue('title', newTitle);
+                  }}
+                  className="text-2xl font-semibold text-gray-900 w-full border-none focus:outline-none focus:ring-0 px-0"
+                  placeholder="Issue title"
+                />
+              )}
             </div>
 
             {/* Description */}
             <div>
-              <textarea
-                value={issue.description || ''}
-                onChange={(e) => {
-                  setIssue({ ...issue, description: e.target.value });
-                }}
-                onBlur={(e) => updateIssue('description', e.target.value)}
-                className="text-gray-600 w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                placeholder="Add description..."
-                rows={3}
-              />
+              {isViewer ? (
+                <p className="text-gray-600">{issue.description || 'No description'}</p>
+              ) : (
+                <textarea
+                  value={issue.description || ''}
+                  onChange={(e) => {
+                    setIssue({ ...issue, description: e.target.value });
+                  }}
+                  onBlur={(e) => updateIssue('description', e.target.value)}
+                  className="text-gray-600 w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  placeholder="Add description..."
+                  rows={3}
+                />
+              )}
             </div>
 
-            {/* Status */}
+            {/* Status — VIEWER sees read-only, DEVELOPER can change on own/assigned only */}
             <div>
-              <ButtonDropdown
-                label={`Mark as ${formatStatus(issue.status)}`}
-                options={statusOptions}
-                selectedValue={issue.status}
-                onChange={(value) => updateIssue('status', value)}
-              />
+              {(() => {
+                const isCreator = issue.createdBy?.id === currentUser?.id;
+                const isAssignee = issue.assignedTo?.id === currentUser?.id;
+                const canChangeStatus = hasRole('MANAGER') || (role === 'DEVELOPER' && (isCreator || isAssignee));
+
+                if (canChangeStatus) {
+                  return (
+                    <ButtonDropdown
+                      label={`Mark as ${formatStatus(issue.status)}`}
+                      options={statusOptions}
+                      selectedValue={issue.status}
+                      onChange={(value) => updateIssue('status', value)}
+                    />
+                  );
+                }
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">Status:</span>
+                    <StatusBadge status={issue.status} />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Screenshot */}
@@ -287,23 +317,27 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
               </div>
             )}
 
-            {/* Priority */}
+            {/* Priority — MANAGER+ can edit, others see read-only */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority (Optional)</label>
-              <select
-                value={issue.priority || ''}
-                onChange={(e) => updateIssue('priority', e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-              >
-                <option value="">Not Set</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+              {hasRole('MANAGER') ? (
+                <select
+                  value={issue.priority || ''}
+                  onChange={(e) => updateIssue('priority', e.target.value || null)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                >
+                  <option value="">Not Set</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              ) : (
+                <span className="text-sm text-gray-600 capitalize">{issue.priority || 'Not set'}</span>
+              )}
             </div>
 
-            {/* Assigned To */}
+            {/* Assigned To — MANAGER+ can assign, others see read-only */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
               {issue.assignedTo ? (
@@ -316,10 +350,12 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                     <div className="text-xs text-gray-500">{issue.assignedTo.email}</div>
                   </div>
                 </div>
-              ) : (
+              ) : hasRole('MANAGER') ? (
                 <button className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors text-left">
                   + Assign user
                 </button>
+              ) : (
+                <span className="text-sm text-gray-500">Unassigned</span>
               )}
             </div>
 

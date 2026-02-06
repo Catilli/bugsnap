@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { z } from 'zod';
+import { requireRole } from '../middleware/requireRole';
 
 const createFeedbackSchema = z.object({
   type: z.enum(['BUG', 'FEATURE']),
@@ -24,13 +25,16 @@ const createCommentSchema = z.object({
 export async function feedbackRoutes(fastify: FastifyInstance) {
   // Create new feedback
   fastify.post('/', {
-    preHandler: async (request, reply) => {
-      try {
-        await fastify.authenticate(request, reply);
-      } catch (err) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-    },
+    preHandler: [
+      async (request, reply) => {
+        try {
+          await fastify.authenticate(request, reply);
+        } catch (err) {
+          return reply.status(401).send({ error: 'Unauthorized' });
+        }
+      },
+      requireRole('DEVELOPER'),
+    ],
   }, async (request, reply) => {
     try {
       const userId = (request.user as any)?.id;
@@ -226,13 +230,16 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
 
   // Update feedback
   fastify.patch('/:feedbackId', {
-    preHandler: async (request, reply) => {
-      try {
-        await fastify.authenticate(request, reply);
-      } catch (err) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-    },
+    preHandler: [
+      async (request, reply) => {
+        try {
+          await fastify.authenticate(request, reply);
+        } catch (err) {
+          return reply.status(401).send({ error: 'Unauthorized' });
+        }
+      },
+      requireRole('DEVELOPER'),
+    ],
   }, async (request, reply) => {
     try {
       const { feedbackId } = request.params as { feedbackId: string };
@@ -278,13 +285,16 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
 
   // Delete feedback
   fastify.delete('/:feedbackId', {
-    preHandler: async (request, reply) => {
-      try {
-        await fastify.authenticate(request, reply);
-      } catch (err) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-    },
+    preHandler: [
+      async (request, reply) => {
+        try {
+          await fastify.authenticate(request, reply);
+        } catch (err) {
+          return reply.status(401).send({ error: 'Unauthorized' });
+        }
+      },
+      requireRole('DEVELOPER'),
+    ],
   }, async (request, reply) => {
     try {
       const { feedbackId } = request.params as { feedbackId: string };
@@ -320,13 +330,16 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
 
   // Add comment to feedback
   fastify.post('/:feedbackId/comments', {
-    preHandler: async (request, reply) => {
-      try {
-        await fastify.authenticate(request, reply);
-      } catch (err) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-    },
+    preHandler: [
+      async (request, reply) => {
+        try {
+          await fastify.authenticate(request, reply);
+        } catch (err) {
+          return reply.status(401).send({ error: 'Unauthorized' });
+        }
+      },
+      requireRole('DEVELOPER'),
+    ],
   }, async (request, reply) => {
     try {
       const { feedbackId } = request.params as { feedbackId: string };

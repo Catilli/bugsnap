@@ -8,7 +8,7 @@ interface CurrentUser {
   id: string;
   email: string;
   name: string;
-  role: 'MANAGER' | 'DEVELOPER' | 'VIEWER';
+  role: 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER';
 }
 
 let cachedUser: CurrentUser | null = null;

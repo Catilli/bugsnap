@@ -20,7 +20,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'MANAGER' | 'DEVELOPER' | 'VIEWER';
+  role: 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER';
 }
 
 interface AuthState {

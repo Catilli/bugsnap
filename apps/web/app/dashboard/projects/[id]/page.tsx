@@ -9,6 +9,8 @@ import IssueDrawer from '@/components/IssueDrawer';
 import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { useRole } from '@/lib/useRole';
+import { RoleGate } from '@/components/RoleGate';
 
 interface Project {
   id: string;
@@ -54,6 +56,7 @@ const PROJECT_COLUMNS: ColumnConfig[] = [
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const { isViewer, hasRole } = useRole();
   const [project, setProject] = useState<Project | null>(null);
   const { setProjectName } = useProject();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -349,7 +352,7 @@ export default function ProjectDetailPage() {
           }
           title={
             <div className="flex items-center gap-3">
-              {isEditingName ? (
+              {isEditingName && hasRole('MANAGER') ? (
                 <input
                   ref={nameInputRef}
                   type="text"
@@ -362,11 +365,13 @@ export default function ProjectDetailPage() {
                 />
               ) : (
                 <h1
-                  className="text-2xl font-bold text-gray-900 cursor-text hover:text-indigo-600 transition-colors group flex items-center gap-2"
-                  onClick={() => setIsEditingName(true)}
+                  className={`text-2xl font-bold text-gray-900 flex items-center gap-2 ${hasRole('MANAGER') ? 'cursor-text hover:text-indigo-600 transition-colors group' : ''}`}
+                  onClick={hasRole('MANAGER') ? () => setIsEditingName(true) : undefined}
                 >
                   {project?.name || 'Loading...'}
-                  <Pencil className="w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {hasRole('MANAGER') && (
+                    <Pencil className="w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
                 </h1>
               )}
               {isSavingName && (
@@ -465,7 +470,7 @@ export default function ProjectDetailPage() {
               issues={filteredIssues}
               columns={PROJECT_COLUMNS}
               onIssueClick={openIssueDrawer}
-              onStatusChange={handleStatusChange}
+              onStatusChange={isViewer ? undefined : handleStatusChange}
             />
           </div>
         )}

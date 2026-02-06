@@ -64,10 +64,12 @@ export async function issueRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isAdmin = userRecord?.role === 'ADMIN';
       const isOwner = project.createdById === userId;
       const isMember = project.members.some((member: any) => member.userId === userId);
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
@@ -112,9 +114,15 @@ export async function issueRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const userId = (request.user as any)?.id;
+      const userRole = (request.user as any)?.role;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      // VIEWER cannot create issues
+      if (userRole === 'VIEWER') {
+        return reply.status(403).send({ error: 'Viewers cannot create issues' });
       }
 
       const data = createIssueSchema.parse(request.body);
@@ -131,10 +139,11 @@ export async function issueRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
+      const isAdmin = userRole === 'ADMIN';
       const isOwner = project.createdById === userId;
       const isMember = project.members.some((member: any) => member.userId === userId);
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
@@ -245,10 +254,12 @@ export async function issueRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isAdmin = userRecord?.role === 'ADMIN';
       const isOwner = project.createdById === userId;
       const isMember = project.members.some((member: any) => member.userId === userId);
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
@@ -389,6 +400,8 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Verify user has access to project
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isAdmin = userRecord?.role === 'ADMIN';
       const isOwner = issue.project.createdById === userId;
       const isMember = await prisma.projectMember.findFirst({
         where: {
@@ -397,7 +410,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
         },
       });
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 
@@ -421,9 +434,15 @@ export async function issueRoutes(fastify: FastifyInstance) {
     try {
       const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
+      const userRole = (request.user as any)?.role;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      // VIEWER cannot update issues
+      if (userRole === 'VIEWER') {
+        return reply.status(403).send({ error: 'Viewers cannot update issues' });
       }
 
       const updateData = updateIssueSchema.parse(request.body);
@@ -431,7 +450,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       // Get issue to verify access
       const issue = await prisma.issue.findUnique({
         where: { id: issueId },
-        include: { project: true },
+        include: { project: { include: { members: true } } },
       });
 
       if (!issue) {
@@ -439,16 +458,40 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Verify user has access
-      const isOwner = issue.project.createdById === userId;
-      const isMember = await prisma.projectMember.findFirst({
-        where: {
-          projectId: issue.projectId,
-          userId,
-        },
-      });
+      const isAdmin = userRole === 'ADMIN';
+      const isProjectOwner = issue.project.createdById === userId;
+      const membership = issue.project.members.find((m: any) => m.userId === userId);
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isProjectOwner && !membership) {
         return reply.status(403).send({ error: 'You do not have access to this issue' });
+      }
+
+      // Determine effective project role
+      const effectiveRole = isAdmin ? 'ADMIN' : isProjectOwner ? 'MANAGER' : (membership?.role ?? 'VIEWER');
+      const roleLevel: Record<string, number> = { VIEWER: 0, DEVELOPER: 1, MANAGER: 2, ADMIN: 3 };
+
+      // MANAGER-only fields: assignedToId, priority
+      if (updateData.assignedToId !== undefined || updateData.priority !== undefined) {
+        if (roleLevel[effectiveRole] < roleLevel['MANAGER']) {
+          return reply.status(403).send({ error: 'Only MANAGER or higher can change assignee or priority' });
+        }
+      }
+
+      // DEVELOPER restrictions: can only update status on own/assigned issues
+      // Cannot change title, type, visibility on others' issues
+      if (effectiveRole === 'DEVELOPER') {
+        const isCreator = issue.createdById === userId;
+        const isAssignee = issue.assignedToId === userId;
+
+        if (updateData.status !== undefined && !isCreator && !isAssignee) {
+          return reply.status(403).send({ error: 'You can only update status on issues you created or are assigned to' });
+        }
+
+        if (updateData.title !== undefined || updateData.type !== undefined || updateData.visibility !== undefined) {
+          if (!isCreator) {
+            return reply.status(403).send({ error: 'You can only edit title/type/visibility on issues you created' });
+          }
+        }
       }
 
       // Update issue
@@ -481,6 +524,9 @@ export async function issueRoutes(fastify: FastifyInstance) {
       if (error.name === 'ZodError') {
         return reply.status(400).send({ error: 'Invalid issue data', details: error.errors });
       }
+      if (error.name === 'ForbiddenError' || error.name === 'AppError') {
+        return reply.status(error.statusCode || 403).send({ error: error.message });
+      }
       return reply.status(500).send({ error: 'Failed to update issue' });
     }
   });
@@ -512,12 +558,22 @@ export async function issueRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Issue not found' });
       }
 
-      // Only owner or issue creator can delete
+      // ADMIN or project owner (MANAGER+) can delete
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isAdmin = userRecord?.role === 'ADMIN';
       const isProjectOwner = issue.project.createdById === userId;
-      const isIssueCreator = issue.createdById === userId;
 
-      if (!isProjectOwner && !isIssueCreator) {
-        return reply.status(403).send({ error: 'Only the project owner or issue creator can delete this issue' });
+      // Check if user has MANAGER role in the project
+      let isProjectManager = false;
+      if (!isAdmin && !isProjectOwner) {
+        const membership = await prisma.projectMember.findUnique({
+          where: { projectId_userId: { projectId: issue.projectId, userId } },
+        });
+        isProjectManager = membership?.role === 'MANAGER';
+      }
+
+      if (!isAdmin && !isProjectOwner && !isProjectManager) {
+        return reply.status(403).send({ error: 'Only MANAGER or higher can delete issues' });
       }
 
       await prisma.issue.delete({

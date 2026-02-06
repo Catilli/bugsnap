@@ -8,6 +8,8 @@ import FeedbackDrawer from '../../../components/FeedbackDrawer';
 import { PageHeader } from '../../../components/PageHeader';
 import { FilterBar } from '@/components/FilterBar';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { RoleGate } from '@/components/RoleGate';
+import { useRole } from '@/lib/useRole';
 
 interface Feedback {
   id: string;
@@ -70,6 +72,7 @@ const feedbackToKanbanIssue = (feedback: Feedback): KanbanIssue => ({
 });
 
 export default function FeedbackPage() {
+  const { isViewer } = useRole();
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -282,13 +285,15 @@ export default function FeedbackPage() {
         title="Bug Reports & Feature Requests"
         description="Track and manage feedback for BugSnap"
         primaryAction={
-          <button
-            onClick={() => setShowFeedbackForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-          >
-            <Plus className="w-5 h-5" />
-            Submit Feedback
-          </button>
+          <RoleGate minRole="DEVELOPER">
+            <button
+              onClick={() => setShowFeedbackForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              Submit Feedback
+            </button>
+          </RoleGate>
         }
       />
 
@@ -338,7 +343,7 @@ export default function FeedbackPage() {
       <KanbanBoard
         issues={filteredKanbanIssues}
         onIssueClick={handleFeedbackClick}
-        onStatusChange={handleStatusChange}
+        onStatusChange={isViewer ? undefined : handleStatusChange}
       />
 
       {/* Feedback Form Modal */}

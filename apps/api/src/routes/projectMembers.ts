@@ -6,11 +6,11 @@ import { z } from 'zod';
 
 const addMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['MANAGER', 'DEVELOPER', 'VIEWER']).optional(),
+  role: z.enum(['ADMIN', 'MANAGER', 'DEVELOPER', 'VIEWER']).optional(),
 });
 
 const updateRoleSchema = z.object({
-  role: z.enum(['MANAGER', 'DEVELOPER', 'VIEWER']),
+  role: z.enum(['ADMIN', 'MANAGER', 'DEVELOPER', 'VIEWER']),
 });
 
 export async function projectMemberRoutes(fastify: FastifyInstance) {

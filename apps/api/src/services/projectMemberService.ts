@@ -8,6 +8,16 @@ export class ProjectMemberService {
    * Check if a user is a member of a project (or the owner)
    */
   static async isMemberOfProject(userId: string, projectId: string): Promise<boolean> {
+    // ADMIN bypasses — always has access
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (user?.role === 'ADMIN') {
+      return true;
+    }
+
     // Check if user is the project owner
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -35,6 +45,29 @@ export class ProjectMemberService {
    * Get all projects accessible by a user (owned + member)
    */
   static async getUserProjects(userId: string) {
+    // ADMIN sees ALL projects
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (user?.role === 'ADMIN') {
+      return prisma.project.findMany({
+        include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+          members: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+        },
+      });
+    }
+
     // Get owned projects
     const ownedProjects = await prisma.project.findMany({
       where: { createdById: userId },
@@ -106,7 +139,7 @@ export class ProjectMemberService {
   static async addMember(
     projectId: string,
     userEmail: string,
-    role: 'MANAGER' | 'DEVELOPER' | 'VIEWER' = 'DEVELOPER'
+    role: 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER' = 'DEVELOPER'
   ) {
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -180,7 +213,7 @@ export class ProjectMemberService {
   static async updateMemberRole(
     projectId: string,
     userId: string,
-    role: 'MANAGER' | 'DEVELOPER' | 'VIEWER'
+    role: 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER'
   ) {
     const membership = await prisma.projectMember.findUnique({
       where: {
@@ -262,13 +295,24 @@ export class ProjectMemberService {
   static async hasRole(
     userId: string,
     projectId: string,
-    requiredRole: 'MANAGER' | 'DEVELOPER' | 'VIEWER'
+    requiredRole: 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER'
   ): Promise<boolean> {
-    const roleHierarchy = {
+    const roleHierarchy: Record<string, number> = {
       VIEWER: 0,
       DEVELOPER: 1,
       MANAGER: 2,
+      ADMIN: 3,
     };
+
+    // Check global user role — ADMIN bypasses all project-level checks
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (user?.role === 'ADMIN') {
+      return true;
+    }
 
     // Check if owner
     const project = await prisma.project.findUnique({
@@ -294,7 +338,6 @@ export class ProjectMemberService {
       return false;
     }
 
-    const userRole = membership.role as 'MANAGER' | 'DEVELOPER' | 'VIEWER';
-    return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
+    return (roleHierarchy[membership.role] ?? 0) >= (roleHierarchy[requiredRole] ?? 0);
   }
 }

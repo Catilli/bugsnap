@@ -21,7 +21,7 @@ interface KanbanCardProps {
     };
   };
   onClick: () => void;
-  onDragStart: (e: React.DragEvent, issueId: string) => void;
+  onDragStart?: (e: React.DragEvent, issueId: string) => void;
 }
 
 export function KanbanCard({ issue, onClick, onDragStart }: KanbanCardProps) {
@@ -38,8 +38,8 @@ export function KanbanCard({ issue, onClick, onDragStart }: KanbanCardProps) {
 
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart(e, issue.id)}
+      draggable={!!onDragStart}
+      onDragStart={onDragStart ? (e) => onDragStart(e, issue.id) : undefined}
       onClick={onClick}
       className="bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
     >

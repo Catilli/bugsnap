@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Check, X } from 'lucide-react';
 import { getAuthToken } from '../lib/clerkTokenBridge';
 import { useCurrentUser } from '../lib/useCurrentUser';
+import { useRole } from '../lib/useRole';
 
 interface Comment {
   id: string;
@@ -23,6 +24,7 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ issueId, feedbackId, onCommentCountChange }: CommentSectionProps) {
+  const { isViewer } = useRole();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -217,23 +219,25 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
         <p className="text-gray-500 text-sm">No comments yet</p>
       )}
 
-      {/* Add comment form */}
-      <div className="mt-4">
-        <textarea
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-          rows={3}
-        />
-        <button
-          onClick={handleAddComment}
-          disabled={isSubmitting || !newComment.trim()}
-          className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? 'Posting...' : 'Add Comment'}
-        </button>
-      </div>
+      {/* Add comment form — hidden for VIEWER */}
+      {!isViewer && (
+        <div className="mt-4">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Add a comment..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            rows={3}
+          />
+          <button
+            onClick={handleAddComment}
+            disabled={isSubmitting || !newComment.trim()}
+            className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? 'Posting...' : 'Add Comment'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

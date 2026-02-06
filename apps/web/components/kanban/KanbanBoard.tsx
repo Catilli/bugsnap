@@ -36,7 +36,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 interface KanbanBoardProps {
   issues: Issue[];
   onIssueClick: (issueId: string) => void;
-  onStatusChange: (issueId: string, newStatus: string) => Promise<void>;
+  onStatusChange?: (issueId: string, newStatus: string) => Promise<void>;
   columns?: ColumnConfig[];
 }
 
@@ -60,18 +60,23 @@ export function KanbanBoard({ issues, onIssueClick, onStatusChange, columns }: K
     return grouped;
   }, [issues, activeColumns]);
 
+  const isDragEnabled = !!onStatusChange;
+
   const handleDragStart = (e: React.DragEvent, issueId: string) => {
+    if (!isDragEnabled) return;
     e.dataTransfer.setData('issueId', issueId);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, status: string) => {
+    if (!isDragEnabled) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverColumn(status);
   };
 
   const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+    if (!onStatusChange) return;
     e.preventDefault();
     setDragOverColumn(null);
 
@@ -114,7 +119,7 @@ export function KanbanBoard({ issues, onIssueClick, onStatusChange, columns }: K
                 key={issue.id}
                 issue={issue}
                 onClick={() => onIssueClick(issue.id)}
-                onDragStart={handleDragStart}
+                onDragStart={isDragEnabled ? handleDragStart : undefined}
               />
             ))
           )}

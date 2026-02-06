@@ -33,9 +33,12 @@ export async function eventRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
+    // Check access (ADMIN bypasses)
+    const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const isAdmin = userRecord?.role === 'ADMIN';
     const isOwner = project.createdById === userId;
     const isMember = project.members.some((m: any) => m.userId === userId);
-    if (!isOwner && !isMember) {
+    if (!isAdmin && !isOwner && !isMember) {
       return reply.status(403).send({ error: 'Access denied' });
     }
 

@@ -21,9 +21,15 @@ export async function commentRoutes(fastify: FastifyInstance) {
     try {
       const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
+      const userRole = (request.user as any)?.role;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      // VIEWER cannot comment
+      if (userRole === 'VIEWER') {
+        return reply.status(403).send({ error: 'Viewers cannot add comments' });
       }
 
       const data = createCommentSchema.parse(request.body);
@@ -37,13 +43,14 @@ export async function commentRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Issue not found' });
       }
 
-      // Verify user has access to project
+      // Verify user has access to project (ADMIN bypasses)
+      const isAdmin = userRole === 'ADMIN';
       const isOwner = issue.project.createdById === userId;
       const isMember = await prisma.projectMember.findFirst({
         where: { projectId: issue.projectId, userId },
       });
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 

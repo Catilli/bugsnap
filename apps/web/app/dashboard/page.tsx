@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
 import { Plus, RefreshCw, FileText, Search, Trash2, FolderRoot, Grid2x2, List } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { RoleGate } from '@/components/RoleGate';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'name' | 'date' | 'status' | 'lastViewed';
@@ -146,13 +147,15 @@ export default function DashboardPage() {
             title="Projects"
             description="Manage your bug tracking projects"
             primaryAction={
-              <Link
-                href="/dashboard/projects/new"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                New Project
-              </Link>
+              <RoleGate minRole="DEVELOPER">
+                <Link
+                  href="/dashboard/projects/new"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Project
+                </Link>
+              </RoleGate>
             }
           />
         </div>
@@ -239,12 +242,14 @@ export default function DashboardPage() {
               : 'Get started by creating your first project'}
           </p>
           {!searchQuery && (
-            <Link
-              href="/dashboard/projects/new"
-              className="inline-flex items-center px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Create Project
-            </Link>
+            <RoleGate minRole="DEVELOPER">
+              <Link
+                href="/dashboard/projects/new"
+                className="inline-flex items-center px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Create Project
+              </Link>
+            </RoleGate>
           )}
         </div>
       ) : viewMode === 'grid' ? (
@@ -255,17 +260,19 @@ export default function DashboardPage() {
               className="group bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all overflow-hidden relative"
             >
               {/* Delete Button */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setDeleteConfirm({ show: true, projectId: project.id });
-                }}
-                className="absolute top-2 right-2 z-10 p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-600"
-                title="Delete project"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <RoleGate minRole="MANAGER">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDeleteConfirm({ show: true, projectId: project.id });
+                  }}
+                  className="absolute top-2 right-2 z-10 p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-600"
+                  title="Delete project"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </RoleGate>
 
               {/* Project Thumbnail */}
               <div className="aspect-video bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center relative overflow-hidden">
@@ -393,16 +400,18 @@ export default function DashboardPage() {
                     {getRelativeTime(project.updatedAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirm({ show: true, projectId: project.id });
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete project"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <RoleGate minRole="MANAGER">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm({ show: true, projectId: project.id });
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete project"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </RoleGate>
                   </td>
                 </tr>
               ))}

@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { cacheInvalidate } from '../lib/redis';
 import { z } from 'zod';
+import { requireRole } from '../middleware/requireRole';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -16,13 +17,16 @@ const updateProjectSchema = z.object({
 export async function projectRoutes(fastify: FastifyInstance) {
   // Create a new project
   fastify.post('/projects', {
-    preHandler: async (request, reply) => {
-      try {
-        await fastify.authenticate(request, reply);
-      } catch (err) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-    },
+    preHandler: [
+      async (request, reply) => {
+        try {
+          await fastify.authenticate(request, reply);
+        } catch (err) {
+          return reply.status(401).send({ error: 'Unauthorized' });
+        }
+      },
+      requireRole('DEVELOPER'),
+    ],
   }, async (request, reply) => {
     try {
       const userId = (request.user as any)?.id;
@@ -109,11 +113,13 @@ export async function projectRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
-      // Check if user has access (is owner or member)
+      // Check if user has access (ADMIN, owner, or member)
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isAdmin = userRecord?.role === 'ADMIN';
       const isOwner = project.createdById === userId;
       const isMember = project.members.some((member: any) => member.userId === userId);
 
-      if (!isOwner && !isMember) {
+      if (!isAdmin && !isOwner && !isMember) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
@@ -156,15 +162,17 @@ export async function projectRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isGlobalAdmin = userRecord?.role === 'ADMIN';
       const isOwner = project.createdById === userId;
-      const isAdmin = project.members.some(
-        (member: any) => member.userId === userId && (member.role === 'admin' || member.role === 'owner')
+      const isManager = project.members.some(
+        (member: any) => member.userId === userId && member.role === 'MANAGER'
       );
 
-      if (!isOwner && !isAdmin) {
+      if (!isGlobalAdmin && !isOwner && !isManager) {
         return reply
           .status(403)
-          .send({ error: 'You need admin permissions to update this project' });
+          .send({ error: 'You need MANAGER permissions to update this project' });
       }
 
       const updatedProject = await prisma.project.update({
@@ -220,8 +228,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 
-      // Only project owner can delete
-      if (project.createdById !== userId) {
+      // Only project owner or ADMIN can delete
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (userRecord?.role !== 'ADMIN' && project.createdById !== userId) {
         return reply.status(403).send({ error: 'Only the project owner can delete the project' });
       }
 

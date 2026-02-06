@@ -13,7 +13,7 @@ declare module '@fastify/jwt' {
     user: {
       id: string;
       email: string;
-      role: string;
+      role: 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER';
     };
   }
 }

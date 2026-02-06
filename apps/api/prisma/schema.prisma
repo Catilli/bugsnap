@@ -11,6 +11,7 @@ datasource db {
 }
 
 enum UserRole {
+  ADMIN     // System administrators -> full access to all projects and settings
   MANAGER   // Project managers -> manage projects and project members
   DEVELOPER // Developers/Designers/Project Members -> invited by MANAGER, will fix reports
   VIEWER    // Clients/Guests -> PUBLIC Shareable link, viewing only
