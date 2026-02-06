@@ -2,13 +2,10 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useProject } from '../../ProjectContext';
-import FilterControls from '@/components/FilterControls';
-import { StatusBadge } from '@/components/StatusBadge';
-import { PriorityBadge } from '@/components/PriorityBadge';
+import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import TaskDrawer from '@/components/TaskDrawer';
-import { Pencil, ExternalLink, FileText, Search, RefreshCw, MessageSquare, Trash2 } from 'lucide-react';
+import { Pencil, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 interface Project {
@@ -23,6 +20,7 @@ interface Task {
   id: string;
   title: string;
   description: string | null;
+  type?: 'BUG' | 'FEATURE' | 'TASK';
   url: string | null;
   screenshotUrl: string | null;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -44,6 +42,13 @@ interface Task {
   };
 }
 
+const PROJECT_COLUMNS: ColumnConfig[] = [
+  { status: 'open', title: 'New', color: 'yellow' },
+  { status: 'in_progress', title: 'In Progress', color: 'blue' },
+  { status: 'resolved', title: 'Ready for QA', color: 'purple' },
+  { status: 'closed', title: 'Completed', color: 'green' },
+];
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
@@ -53,30 +58,66 @@ export default function ProjectDetailPage() {
   const [editedName, setEditedName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Task state
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isTasksLoading, setIsTasksLoading] = useState(true);
-  
-  // Task filter and view state
-  const [taskSearchQuery, setTaskSearchQuery] = useState('');
-  const [taskSortBy, setTaskSortBy] = useState('date');
-  const [taskOrderBy, setTaskOrderBy] = useState('desc');
-  const [taskViewMode, setTaskViewMode] = useState<'grid' | 'list'>('grid');
-  
+
   // Task drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; taskId: string | null }>({ show: false, taskId: null });
-  
+
   const openTaskDrawer = (taskId: string) => {
     setSelectedTaskId(taskId);
     setIsDrawerOpen(true);
   };
-  
+
   const closeTaskDrawer = () => {
     setIsDrawerOpen(false);
     setSelectedTaskId(null);
+  };
+
+  // Handle task status change (optimistic update)
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const previousStatus = task.status;
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
+    );
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        // Revert on error
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+        );
+      }
+    } catch {
+      // Revert on error
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+      );
+    }
   };
 
   // Handle task deletion
@@ -96,7 +137,6 @@ export default function ProjectDetailPage() {
       );
 
       if (response.ok) {
-        // Remove the deleted task from the list
         setTasks(tasks.filter(t => t.id !== taskId));
         setDeleteConfirm({ show: false, taskId: null });
       }
@@ -256,70 +296,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Helper function to format relative time
-  const getRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMs / 3600000);
-    const diffInDays = Math.floor(diffInMs / 86400000);
-
-    if (diffInMins < 60) return `${diffInMins} minute${diffInMins !== 1 ? 's' : ''} ago`;
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
-    if (diffInDays < 30) return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString();
-  };
-
-  // Priority order for sorting
-  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-  
-  // Status order for sorting
-  const statusOrder = { open: 0, in_progress: 1, resolved: 2, closed: 3 };
-
-  // Get priority-based background color for task card
-  const getPriorityCardColor = (priority: string) => {
-    const colors = {
-      low: 'bg-gray-50 border-gray-200',
-      medium: 'bg-blue-50 border-blue-200',
-      high: 'bg-orange-50 border-orange-200',
-      critical: 'bg-red-50 border-red-200',
-    };
-    return colors[priority as keyof typeof colors] || colors.medium;
-  };
-
-  // Filter and sort tasks
-  const filteredTasks = tasks
-    .filter((task) =>
-      task.title.toLowerCase().includes(taskSearchQuery.toLowerCase()) ||
-      (task.description && task.description.toLowerCase().includes(taskSearchQuery.toLowerCase()))
-    )
-    .sort((a, b) => {
-      let comparison = 0;
-      if (taskSortBy === 'date') {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (taskSortBy === 'priority') {
-        const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] : 999;
-        const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] : 999;
-        comparison = aPriority - bPriority;
-      } else if (taskSortBy === 'status') {
-        comparison = statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
-      }
-      return taskOrderBy === 'asc' ? comparison : -comparison;
-    });
-
-  // Sort options for tasks
-  const taskSortOptions = [
-    { label: 'Date created', value: 'date' },
-    { label: 'Priority', value: 'priority' },
-    { label: 'Status', value: 'status' },
-  ];
-
-  const taskOrderOptions = [
-    { label: 'Oldest first', value: 'asc' },
-    { label: 'Newest first', value: 'desc' },
-  ];
-
   return (
     <div>
       <div className="mb-8">
@@ -373,19 +349,6 @@ export default function ProjectDetailPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Tasks</h2>
-          <FilterControls
-            searchPlaceholder="Search tasks..."
-            searchQuery={taskSearchQuery}
-            onSearchChange={setTaskSearchQuery}
-            sortOptions={taskSortOptions}
-            orderOptions={taskOrderOptions}
-            selectedSort={taskSortBy}
-            selectedOrder={taskOrderBy}
-            onSortChange={setTaskSortBy}
-            onOrderChange={setTaskOrderBy}
-            viewMode={taskViewMode}
-            onViewModeChange={setTaskViewMode}
-          />
         </div>
 
         {/* Loading State */}
@@ -396,147 +359,24 @@ export default function ProjectDetailPage() {
             </div>
             <p className="text-gray-600">Loading tasks...</p>
           </div>
-        ) : filteredTasks.length === 0 ? (
+        ) : tasks.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-400" />
+              <RefreshCw className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {taskSearchQuery ? 'No tasks found' : 'No tasks yet'}
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No tasks yet</h3>
             <p className="text-gray-600">
-              {taskSearchQuery
-                ? 'Try adjusting your search query'
-                : 'Tasks created for this project will appear here'}
+              Tasks created for this project will appear here
             </p>
           </div>
-        ) : taskViewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`group rounded-lg border hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden cursor-pointer relative ${task.priority ? getPriorityCardColor(task.priority) : 'bg-gray-50 border-gray-200'}`}
-              >
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setDeleteConfirm({ show: true, taskId: task.id });
-                  }}
-                  className="absolute top-2 right-2 z-10 p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-600"
-                  title="Delete task"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-
-                {/* Task Info */}
-                <div className="p-4" onClick={() => openTaskDrawer(task.id)}>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                      {task.title}
-                    </h3>
-                  </div>
-                  
-                  {task.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {task.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between mb-3">
-                    <StatusBadge status={task.status} />
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>{getRelativeTime(task.createdAt)}</span>
-                    {task._count.comments > 0 && (
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="w-3 h-3" />
-                        {task._count.comments}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Task
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Comments
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.map((task) => (
-                  <tr
-                    key={task.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-6 py-4" onClick={() => openTaskDrawer(task.id)}>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 line-clamp-1">
-                          {task.title}
-                        </div>
-                        {task.description && (
-                          <div className="text-sm text-gray-500 line-clamp-1">
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap" onClick={() => openTaskDrawer(task.id)}>
-                      <StatusBadge status={task.status} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap" onClick={() => openTaskDrawer(task.id)}>
-                      <PriorityBadge priority={task.priority} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" onClick={() => openTaskDrawer(task.id)}>
-                      {getRelativeTime(task.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" onClick={() => openTaskDrawer(task.id)}>
-                      {task._count.comments > 0 ? (
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-3 h-3" />
-                          {task._count.comments}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteConfirm({ show: true, taskId: task.id });
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete task"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <KanbanBoard
+            tasks={tasks}
+            columns={PROJECT_COLUMNS}
+            showFilters={false}
+            onTaskClick={openTaskDrawer}
+            onStatusChange={handleStatusChange}
+          />
         )}
       </div>
 

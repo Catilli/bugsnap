@@ -9,8 +9,8 @@ interface Task {
   id: string;
   title: string;
   description: string | null;
-  type: 'BUG' | 'FEATURE' | 'TASK';
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  type?: 'BUG' | 'FEATURE' | 'TASK';
+  status: string;
   priority: 'low' | 'medium' | 'high' | 'critical' | null;
   createdBy: {
     id: string;
@@ -21,20 +21,29 @@ interface Task {
   };
 }
 
+export interface ColumnConfig {
+  status: string;
+  title: string;
+  color: 'yellow' | 'blue' | 'gray' | 'green' | 'purple';
+}
+
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { status: 'open', title: 'New', color: 'yellow' },
+  { status: 'in_progress', title: 'In Progress', color: 'blue' },
+  { status: 'closed', title: 'Rejected', color: 'gray' },
+  { status: 'resolved', title: 'Completed', color: 'green' },
+];
+
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskClick: (taskId: string) => void;
   onStatusChange: (taskId: string, newStatus: string) => Promise<void>;
+  columns?: ColumnConfig[];
+  showFilters?: boolean;
 }
 
-const columns = [
-  { status: 'open', title: 'New', color: 'yellow' as const },
-  { status: 'in_progress', title: 'In Progress', color: 'blue' as const },
-  { status: 'closed', title: 'Rejected', color: 'gray' as const },
-  { status: 'resolved', title: 'Completed', color: 'green' as const },
-];
-
-export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onTaskClick, onStatusChange, columns, showFilters }: KanbanBoardProps) {
+  const activeColumns = columns ?? DEFAULT_COLUMNS;
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<('BUG' | 'FEATURE')[]>([]);
@@ -42,6 +51,10 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
 
   // Filter tasks based on search and filters
   const filteredTasks = useMemo(() => {
+    if (showFilters === false) {
+      return tasks;
+    }
+
     return tasks.filter((task) => {
       // Only show BUG and FEATURE types (not TASK)
       if (task.type !== 'BUG' && task.type !== 'FEATURE') {
@@ -70,16 +83,14 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
 
       return true;
     });
-  }, [tasks, typeFilter, priorityFilter, searchQuery]);
+  }, [tasks, typeFilter, priorityFilter, searchQuery, showFilters]);
 
-  // Group tasks by status
+  // Group tasks by status (dynamically from active columns)
   const tasksByStatus = useMemo(() => {
-    const grouped: Record<string, Task[]> = {
-      open: [],
-      in_progress: [],
-      closed: [],
-      resolved: [],
-    };
+    const grouped: Record<string, Task[]> = {};
+    activeColumns.forEach((col) => {
+      grouped[col.status] = [];
+    });
 
     filteredTasks.forEach((task) => {
       if (grouped[task.status]) {
@@ -88,7 +99,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
     });
 
     return grouped;
-  }, [filteredTasks]);
+  }, [filteredTasks, activeColumns]);
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
@@ -121,21 +132,23 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange }: KanbanBoardP
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <KanbanFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        typeFilter={typeFilter}
-        onTypeFilterChange={setTypeFilter}
-        priorityFilter={priorityFilter}
-        onPriorityFilterChange={setPriorityFilter}
-      />
+      {showFilters !== false && (
+        <KanbanFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          priorityFilter={priorityFilter}
+          onPriorityFilterChange={setPriorityFilter}
+        />
+      )}
 
       {/* Board */}
       <div
         className="grid grid-cols-4 gap-4 pb-4"
         onDragLeave={handleDragLeave}
       >
-        {columns.map((column) => (
+        {activeColumns.map((column) => (
           <KanbanColumn
             key={column.status}
             title={column.title}

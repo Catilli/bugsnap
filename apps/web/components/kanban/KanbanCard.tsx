@@ -9,7 +9,7 @@ interface KanbanCardProps {
     id: string;
     title: string;
     description: string | null;
-    type: 'BUG' | 'FEATURE' | 'TASK';
+    type?: 'BUG' | 'FEATURE' | 'TASK';
     status: string;
     priority: 'low' | 'medium' | 'high' | 'critical' | null;
     createdBy: {
@@ -46,7 +46,7 @@ export function KanbanCard({ task, onClick, onDragStart }: KanbanCardProps) {
       {/* Header with number and type */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-gray-500 font-medium">{getNumber(task.title)}</span>
-        <TypeBadge type={task.type} size="sm" />
+        {task.type && <TypeBadge type={task.type} size="sm" />}
       </div>
 
       {/* Title */}
