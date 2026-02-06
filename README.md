@@ -6,18 +6,22 @@
 
 BugSnap is a web-based application that helps teams capture, annotate, and manage bug reports with rich context. Users can upload screenshots, add annotations, and provide detailed environment information to help developers fix issues faster.
 
-## 📚 Documentation
+## 📚 Documentation Index
 
-<details>
-<summary>📖 Documentation index</summary>
+### Architecture & Audits
 
-- [Core Features Audit](./CORE_FEATURES_AUDIT.md) — Read-only codebase analysis
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md) — Production deployment instructions
-- [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) — Step-by-step deployment checklist
-- [Railway Deployment](./RAILWAY_DEPLOYMENT.md) — Railway-specific deployment guide
-- [Technical Architecture](./TECH_ARCHITECTURE.md) — Architecture overview and audit
+| Document | Description |
+|----------|-------------|
+| [Technical Architecture](./TECH_ARCHITECTURE.md) | Full architecture audit — frontend, backend, database, infrastructure, identified gaps, and recommended next steps |
+| [Core Features Audit](./CORE_FEATURES_AUDIT.md) | Read-only codebase analysis of 46 features across 7 categories with implementation status and evidence |
 
-</details>
+### Deployment & DevOps
+
+| Document | Description |
+|----------|-------------|
+| [Deployment Guide](./DEPLOYMENT_GUIDE.md) | End-to-end production deployment instructions (Supabase + Vercel + Chrome Web Store) with troubleshooting |
+| [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) | Step-by-step checklist covering pre-deployment, backend, frontend, extension, and post-deployment verification |
+| [Railway Deployment](./RAILWAY_DEPLOYMENT.md) | Railway-specific API deployment guide with monorepo build configuration and environment variable reference |
 
 ## 🏗️ Project Structure
 
