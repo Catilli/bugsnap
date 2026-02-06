@@ -15,7 +15,7 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   };
 
   const getStatusLabel = () => {
-    return status.replace('_', ' ').toUpperCase();
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const sizeClasses = {

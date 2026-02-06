@@ -182,7 +182,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
               {task?.title ? `${getTypePrefix(task.title)} #${getTaskNumber(task.title) || '1'}` : '...'}
             </span>
             {task?.type && task.type !== 'TASK' && <TypeBadge type={task.type} size="sm" />}
-            {task?.status && <StatusBadge status={task.status} />}
+            {task?.status && <StatusBadge status={task.status} size="sm" />}
           </div>
           <div className="flex items-center gap-2">
             <button
