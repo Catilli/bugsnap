@@ -35,9 +35,15 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
+// Captured reference to the store's `set` so that onRehydrateStorage can call
+// it without referencing useAuthStore (which is still in TDZ during create()).
+let _set: ((state: Partial<AuthState>) => void) | null = null;
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set) => {
+      _set = set;
+      return ({
       user: null,
       token: null,
       // Start as true so we never redirect before Zustand rehydrates
@@ -129,7 +135,8 @@ export const useAuthStore = create<AuthState>()(
           }
         }
       },
-    }),
+    });
+    },
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => (isBrowser ? localStorage : noopStorage)),
@@ -147,7 +154,7 @@ export const useAuthStore = create<AuthState>()(
         if (error) {
           console.error('Auth hydration failed:', error);
         }
-        useAuthStore.setState({ isLoading: false });
+        _set?.({ isLoading: false });
       },
     }
   )
