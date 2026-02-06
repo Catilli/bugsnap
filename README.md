@@ -15,13 +15,6 @@ BugSnap is a web-based application that helps teams capture, annotate, and manag
 | [Technical Architecture](./TECH_ARCHITECTURE.md) | Full architecture audit — frontend, backend, database, infrastructure, identified gaps, and recommended next steps |
 | [Core Features Audit](./CORE_FEATURES_AUDIT.md) | Read-only codebase analysis of 46 features across 7 categories with implementation status and evidence |
 
-### Deployment & DevOps
-
-| Document | Description |
-|----------|-------------|
-| [Deployment Guide](./DEPLOYMENT_GUIDE.md) | End-to-end production deployment instructions (Supabase + Vercel + Chrome Web Store) with troubleshooting |
-| [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) | Step-by-step checklist covering pre-deployment, backend, frontend, extension, and post-deployment verification |
-| [Railway Deployment](./RAILWAY_DEPLOYMENT.md) | Railway-specific API deployment guide with monorepo build configuration and environment variable reference |
 
 ## 🏗️ Project Structure
 
@@ -237,25 +230,6 @@ This project is private and proprietary.
 - Added Clerk components (SignIn, SignUp, UserProfile, UserButton)
 - Token bridge pattern for Clerk async tokens
 
-## 🚀 Production Deployment
-
-For deploying BugSnap to production, see the comprehensive [Deployment Guide](./DEPLOYMENT_GUIDE.md) and [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md).
-
-### Quick Deployment Summary
-
-1. **Database**: Set up PostgreSQL (Supabase, Neon, or Railway)
-2. **Backend API**: Deploy to Railway, Render, or Fly.io
-3. **Frontend**: Deploy to Vercel
-4. **Extension**: Update configuration and publish to Chrome Web Store
-
-### Important Deployment Notes
-
-- `.vercelignore` excludes `turbo.json` to prevent Vercel's turbo auto-detection from breaking builds
-- Root Directory must be set to `apps/web` in the Vercel dashboard
-- Build Command: `next build`, Install Command: `cd ../.. && npm install`
-- See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions and troubleshooting
-
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
 
 ## 📝 Changelog
 
