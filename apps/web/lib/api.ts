@@ -30,7 +30,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const isCheckAuthCall = error.config?.url === '/api/auth/me';
-      if (!isCheckAuthCall) {
+      if (!isCheckAuthCall && typeof window !== 'undefined') {
         window.location.href = '/login';
       }
     }

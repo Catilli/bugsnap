@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { api } from '../lib/api';
 import { ExtensionSync } from '../lib/extensionSync';
 
+const isBrowser = typeof window !== 'undefined';
+
 interface User {
   id: string;
   email: string;
@@ -36,7 +38,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.post('/api/auth/login', { email, password });
           const { user, token } = response.data;
 
-          localStorage.setItem('token', token);
+          if (isBrowser) localStorage.setItem('token', token);
           set({ user, token, isAuthenticated: true, isLoading: false });
 
           ExtensionSync.syncTokenToExtension(token);
@@ -53,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.post('/api/auth/register', { email, password, name });
           const { user, token } = response.data;
 
-          localStorage.setItem('token', token);
+          if (isBrowser) localStorage.setItem('token', token);
           set({ user, token, isAuthenticated: true, isLoading: false });
 
           ExtensionSync.syncTokenToExtension(token);
@@ -65,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       handleOAuthCallback: async (token: string) => {
-        localStorage.setItem('token', token);
+        if (isBrowser) localStorage.setItem('token', token);
         set({ token, isAuthenticated: true, isLoading: true });
         try {
           const response = await api.get('/api/auth/me');
@@ -81,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem('token');
+        if (isBrowser) localStorage.removeItem('token');
         set({ user: null, token: null, isAuthenticated: false });
 
         ExtensionSync.syncLogoutToExtension();
@@ -89,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem('token');
+        const token = isBrowser ? localStorage.getItem('token') : null;
         if (!token) {
           set({ isAuthenticated: false, isLoading: false });
           return;
@@ -106,7 +108,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => (isBrowser ? localStorage : undefined!)),
       partialize: (state) => ({
         user: state.user,
         token: state.token,
