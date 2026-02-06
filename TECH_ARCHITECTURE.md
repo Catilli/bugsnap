@@ -1,7 +1,7 @@
 # BugSnap - Technical Architecture Audit
 
-**Version:** 0.3.0
-**Audit Date:** 2026-02-05
+**Version:** 0.3.2
+**Audit Date:** 2026-02-06
 **Repository:** Turborepo monorepo with npm workspaces
 
 ---
@@ -39,8 +39,8 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Component | Status | Details |
 |-----------|--------|---------|
 | Web Application | Implemented | Next.js 16.1.6, React 19, App Router, Tailwind CSS 3.4 — `apps/web/` |
-| State Management | Implemented | Zustand 4.4 (client state), TanStack React Query 5.17 (server state) — `apps/web/package.json` |
-| Dashboard Pages | Implemented | 9 routes: login, register, dashboard, projects (list/new/detail), account, feedback, install-extension — `apps/web/app/` |
+| State Management | Implemented | Zustand 4.4 with persist middleware (auth state + client state), TanStack React Query 5.17 (server state) — `apps/web/store/authStore.ts`, `apps/web/package.json` |
+| Dashboard Pages | Implemented | 11 routes: login, register, forgot-password, reset-password, dashboard, projects (list/new/detail), account, feedback, install-extension — `apps/web/app/` |
 | Chrome Extension | Implemented | Manifest V3, content scripts injected on all URLs — `extension/manifest.json` |
 | Annotation Layer | Implemented | Custom HTML5 Canvas 2D implementation (rectangle, arrow, pen, text, cursor tools) — `extension/mark-my-image.js` |
 | Overlay / Bug Capture UI | Implemented | Injected via extension content scripts — `extension/bugsnap-ui.js`, `extension/content.js` |
@@ -52,14 +52,16 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Component | Status | Details |
 |-----------|--------|---------|
 | API Framework | Implemented | Fastify 5.7.4 with TypeScript — `apps/api/src/index.ts` |
-| JWT Authentication | Implemented | `@fastify/jwt` 10.0, 7-day tokens, bcrypt password hashing, startup validation of `JWT_SECRET` — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts`, `apps/api/src/index.ts:19-23` |
-| API Routes | Implemented | 6 route modules: auth, projects, projectMembers, tasks, feedback, uploads — `apps/api/src/routes/` |
+| JWT Authentication | Implemented | `@fastify/jwt` 9.1, 7-day tokens, bcrypt password hashing, startup validation of `JWT_SECRET`. Auth plugin wrapped with `fastify-plugin` (fp) to break encapsulation — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts`, `apps/api/src/index.ts` |
+| Auth Service | Implemented | Full auth service: register, login, password change, password reset (crypto token + SHA-256 hash, 1h TTL), OAuth user linking — `apps/api/src/services/authService.ts` |
+| Email Service | Implemented | Resend SDK with lazy initialization, branded HTML password reset emails — `apps/api/src/services/emailService.ts` |
+| API Routes | Implemented | 7 route modules: auth, oauth, projects, projectMembers, tasks, feedback, uploads — `apps/api/src/routes/` |
 | CORS Configuration | Implemented | Explicit `ALLOWED_ORIGINS` env-based allowlist + chrome-extension + localhost (dev only) — `apps/api/src/index.ts:35-59` |
 | Error Handling | Implemented | Custom Fastify error handler plugin — `apps/api/src/plugins/errorHandler.ts` |
 | Input Validation | Implemented | Zod 3.22 for request validation — `apps/api/package.json` |
 | File Upload Support | Implemented | `@fastify/multipart` (10MB limit) + Cloudinary upload route — `apps/api/src/routes/uploads.ts`, `apps/api/src/lib/cloudinary.ts` |
 | Health Check | Implemented | `/health` endpoint with database connectivity check — `apps/api/src/index.ts:81-89` |
-| OAuth (Google/GitHub) | Implemented | `@fastify/oauth2` — Google Discovery + GitHub config, `findOrCreateOAuthUser` — `apps/api/src/routes/oauth.ts` |
+| OAuth (Google/GitHub) | Implemented | `@fastify/oauth2` — Google Discovery + GitHub config, `findOrCreateOAuthUser`, conditionally registered based on env vars — `apps/api/src/routes/oauth.ts` |
 | Real-time (SSE) | Implemented | Server-Sent Events with EventEmitter pub/sub — `apps/api/src/routes/events.ts`, `apps/api/src/lib/eventBus.ts` |
 | Background Jobs (Queues) | Implemented | BullMQ with email, screenshot, cleanup queues — `apps/api/src/lib/queue.ts` |
 | Rate Limiting | Implemented | `@fastify/rate-limit` — global 100 req/min, auth routes 10 req/min — `apps/api/src/index.ts:61-65`, `apps/api/src/routes/auth.ts:7-14` |
@@ -70,8 +72,8 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Component | Status | Details |
 |-----------|--------|---------|
 | PostgreSQL | Implemented | Prisma 5.8.1 ORM — `apps/api/prisma/schema.prisma` |
-| Schema Models | Implemented | 9 models: User, Project, ProjectMember, Task, Annotation, Comment, Feedback, FeedbackComment + enums (UserRole, TaskType, FeedbackType, FeedbackStatus) |
-| Migrations | Implemented | 10 migrations applied — `apps/api/prisma/migrations/` |
+| Schema Models | Implemented | 10 models: User, Project, ProjectMember, Task, Annotation, Comment, Feedback, FeedbackComment, PasswordResetToken + enums (UserRole, TaskType, FeedbackType, FeedbackStatus) |
+| Migrations | Implemented | 15 migrations applied — `apps/api/prisma/migrations/` |
 | Database Indexes | Implemented | Indexes on foreign keys and frequently queried fields (status, priority, type) |
 | File Storage (Cloudinary) | Implemented | Cloudinary SDK integration with `POST /api/uploads` route — `apps/api/src/lib/cloudinary.ts`, `apps/api/src/routes/uploads.ts` |
 | Redis Caching | Implemented | ioredis with get-or-compute pattern + SCAN-based invalidation — `apps/api/src/lib/redis.ts` |
@@ -89,7 +91,7 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | CI/CD (GitHub Actions) | Implemented | Lint, type-check, test, build on push/PR — `.github/workflows/ci.yml` |
 | Environment Separation | Implemented | Dev/Staging/Prod `.env` files, NODE_ENV-aware logging, staging CI workflow — `.env.staging.example`, `.github/workflows/staging.yml` |
 | Error Tracking (Sentry) | Implemented | `@sentry/node` (API) + `@sentry/nextjs` (web) — `apps/api/src/lib/sentry.ts`, `apps/web/sentry.*.config.ts` |
-| Automated Tests | Implemented | Vitest 4.x, 25 unit tests (auth + projects) — `apps/api/src/__tests__/`, `apps/api/vitest.config.ts` |
+| Automated Tests | Implemented | Vitest 4.x, 12 unit tests (projects) — `apps/api/src/__tests__/`, `apps/api/vitest.config.ts` |
 | SSL/TLS | Implemented | Handled by Vercel (frontend) and Render (backend) platform-level TLS |
 | Domain Configuration | Partial | Default platform subdomains (`bugsnap-web-dun.vercel.app`, `bugsnap-xgfd.onrender.com`). No custom domain configured yet. |
 
@@ -200,9 +202,15 @@ The core product loop is functional:
 | `apps/web/vercel.json` | Vercel build configuration |
 | `apps/api/package.json` | Backend dependencies and scripts |
 | `apps/api/src/index.ts` | Fastify server entry point |
-| `apps/api/src/routes/` | API route modules (auth, projects, tasks, feedback, members) |
-| `apps/api/src/plugins/` | Fastify plugins (auth, errorHandler) |
-| `apps/api/prisma/schema.prisma` | Database schema (9 models, 4 enums) |
+| `apps/api/src/routes/` | API route modules (auth, oauth, projects, tasks, feedback, members, uploads) |
+| `apps/api/src/plugins/` | Fastify plugins (auth with fastify-plugin, errorHandler) |
+| `apps/api/src/services/authService.ts` | Auth service (register, login, password reset, OAuth) |
+| `apps/api/src/services/emailService.ts` | Resend email service (password reset emails) |
+| `apps/web/store/authStore.ts` | Zustand auth state with persist middleware |
+| `apps/web/lib/clerkTokenBridge.ts` | Auth token bridge (`getAuthToken()` from localStorage) |
+| `apps/web/app/forgot-password/page.tsx` | Forgot password page |
+| `apps/web/app/reset-password/page.tsx` | Reset password page (token from URL) |
+| `apps/api/prisma/schema.prisma` | Database schema (10 models, 4 enums) |
 | `extension/manifest.json` | Chrome extension Manifest V3 config |
 | `extension/mark-my-image.js` | Canvas annotation engine |
 | `extension/bugsnap-ui.js` | Extension overlay UI |
