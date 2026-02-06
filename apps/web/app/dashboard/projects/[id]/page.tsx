@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { PriorityBadge } from '@/components/PriorityBadge';
 import TaskDrawer from '@/components/TaskDrawer';
 import { Pencil, ExternalLink, FileText, Search, RefreshCw, MessageSquare, Trash2 } from 'lucide-react';
-import { getClerkToken } from '@/lib/clerkTokenBridge';
+import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 interface Project {
   id: string;
@@ -82,7 +82,7 @@ export default function ProjectDetailPage() {
   // Handle task deletion
   const handleDeleteTask = async (taskId: string) => {
     try {
-      const token = getClerkToken();
+      const token = getAuthToken();
       if (!token) return;
 
       const response = await fetch(
@@ -109,7 +109,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const token = getClerkToken();
+        const token = getAuthToken();
         if (!token) return;
 
         const response = await fetch(
@@ -142,7 +142,7 @@ export default function ProjectDetailPage() {
 
   // SSE: Subscribe to real-time task updates
   useEffect(() => {
-    const token = getClerkToken();
+    const token = getAuthToken();
     if (!token || !projectId) return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -174,7 +174,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const token = getClerkToken();
+        const token = getAuthToken();
         if (!token) return;
 
         const response = await fetch(
@@ -218,7 +218,7 @@ export default function ProjectDetailPage() {
 
     setIsSavingName(true);
     try {
-      const token = getClerkToken();
+      const token = getAuthToken();
       if (!token) return;
 
       const response = await fetch(

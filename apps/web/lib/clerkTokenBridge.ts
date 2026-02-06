@@ -1,12 +1,7 @@
-// Bridge between Clerk's async getToken() and the sync localStorage pattern
-// used throughout the codebase for API calls.
+// Auth token bridge — sources token from localStorage (set by authStore).
+// Kept as a separate module so API call sites have a single import to change.
 
-let currentToken: string | null = null;
-
-export function setClerkToken(token: string | null) {
-  currentToken = token;
-}
-
-export function getClerkToken(): string | null {
-  return currentToken;
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
 }

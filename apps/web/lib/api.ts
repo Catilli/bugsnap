@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getClerkToken } from './clerkTokenBridge';
+import { getAuthToken } from './clerkTokenBridge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -13,7 +13,7 @@ export const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = getClerkToken();
+    const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,7 +29,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clerk middleware handles redirects, but clear stale tokens
       const isCheckAuthCall = error.config?.url === '/api/auth/me';
       if (!isCheckAuthCall) {
         window.location.href = '/login';

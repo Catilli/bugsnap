@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
+import fastifyJwt from '@fastify/jwt';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,8 +13,9 @@ initSentry();
 
 import { prisma } from './lib/prisma';
 import { errorHandler } from './plugins/errorHandler';
-import { clerkAuthPlugin } from './plugins/clerkAuth';
+import { authPlugin } from './plugins/auth';
 import { authRoutes } from './routes/auth';
+import { oauthRoutes } from './routes/oauth';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { projectRoutes } from './routes/projects';
 import { taskRoutes } from './routes/tasks';
@@ -24,9 +26,9 @@ import { commentRoutes } from './routes/comments';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
 
-// Fail hard if CLERK_SECRET_KEY is not set
-if (!process.env.CLERK_SECRET_KEY) {
-  console.error('FATAL: CLERK_SECRET_KEY environment variable is required');
+// Fail hard if JWT_SECRET is not set
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
   process.exit(1);
 }
 
@@ -47,7 +49,6 @@ const fastify = Fastify({
       }
     : {
         level: 'info',
-        // JSON output in production (pino default)
       },
   bodyLimit: 50 * 1024 * 1024, // 50MB to handle large screenshots
 });
@@ -94,8 +95,13 @@ fastify.register(multipart, {
   },
 });
 
+// Register JWT plugin
+fastify.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET!,
+});
+
 fastify.register(errorHandler);
-fastify.register(clerkAuthPlugin);
+fastify.register(authPlugin);
 
 // Health check route
 fastify.get('/health', async () => {
@@ -115,6 +121,7 @@ fastify.get('/api', async () => {
 
 // Register route modules
 fastify.register(authRoutes, { prefix: '/api/auth' });
+fastify.register(oauthRoutes, { prefix: '/api/auth' });
 fastify.register(projectMemberRoutes, { prefix: '/api' }); // Register this first for /projects endpoint
 fastify.register(projectRoutes, { prefix: '/api' });
 fastify.register(taskRoutes, { prefix: '/api' });
@@ -128,7 +135,7 @@ const start = async () => {
     const port = parseInt(process.env.PORT || '3001', 10);
     await fastify.listen({ port, host: '0.0.0.0' });
     startWorkers();
-    console.log(`🚀 Server running on http://localhost:${port}`);
+    console.log(`Server running on http://localhost:${port}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

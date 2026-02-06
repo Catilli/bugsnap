@@ -1,16 +1,15 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { onTaskEvent, TaskEvent } from '../lib/eventBus';
-import { verifyClerkToken } from '../plugins/clerkAuth';
 
 export async function eventRoutes(fastify: FastifyInstance) {
-  // GET /api/projects/:projectId/events?token=CLERK_TOKEN — SSE endpoint for live task updates
+  // GET /api/projects/:projectId/events?token=JWT — SSE endpoint for live task updates
   // Accepts token via query param since EventSource doesn't support custom headers
   fastify.get('/projects/:projectId/events', async (request, reply) => {
     const { projectId } = request.params as { projectId: string };
     const { token } = request.query as { token?: string };
 
-    // Verify Clerk token from query param or Authorization header
+    // Verify JWT from query param or Authorization header
     let userId: string;
     try {
       const tokenToVerify = token || request.headers.authorization?.slice(7);
@@ -18,17 +17,8 @@ export async function eventRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const { clerkId } = await verifyClerkToken(tokenToVerify);
-      const user = await prisma.user.findUnique({
-        where: { clerkId },
-        select: { id: true },
-      });
-
-      if (!user) {
-        return reply.status(401).send({ error: 'Unauthorized' });
-      }
-
-      userId = user.id;
+      const payload = fastify.jwt.verify<{ id: string }>(tokenToVerify);
+      userId = payload.id;
     } catch {
       return reply.status(401).send({ error: 'Unauthorized' });
     }

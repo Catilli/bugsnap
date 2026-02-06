@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getClerkToken } from '@/lib/clerkTokenBridge';
+import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function NewProjectPage() {
     setError(null);
 
     try {
-      const token = getClerkToken();
+      const token = getAuthToken();
       
       if (!token) {
         setError('You must be logged in to create a project');

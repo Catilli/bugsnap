@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
-import { getClerkToken } from './clerkTokenBridge';
+import { useAuthStore } from '../store/authStore';
+import { getAuthToken } from './clerkTokenBridge';
 
 interface CurrentUser {
   id: string;
@@ -14,11 +14,11 @@ interface CurrentUser {
 let cachedUser: CurrentUser | null = null;
 
 export function useCurrentUser() {
-  const { isSignedIn } = useAuth();
+  const { isAuthenticated } = useAuthStore();
   const [user, setUser] = useState<CurrentUser | null>(cachedUser);
 
   useEffect(() => {
-    if (!isSignedIn) {
+    if (!isAuthenticated) {
       setUser(null);
       cachedUser = null;
       return;
@@ -31,7 +31,7 @@ export function useCurrentUser() {
     }
 
     const fetchUser = async () => {
-      const token = getClerkToken();
+      const token = getAuthToken();
       if (!token) return;
 
       try {
@@ -51,7 +51,7 @@ export function useCurrentUser() {
     };
 
     fetchUser();
-  }, [isSignedIn]);
+  }, [isAuthenticated]);
 
   return user;
 }

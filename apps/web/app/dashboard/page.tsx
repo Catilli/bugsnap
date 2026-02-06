@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FilterControls from '@/components/FilterControls';
 import { Plus, RefreshCw, FileText, Search, Trash2 } from 'lucide-react';
-import { getClerkToken } from '@/lib/clerkTokenBridge';
+import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'name' | 'date' | 'status' | 'lastViewed';
@@ -38,7 +38,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const token = getClerkToken();
+        const token = getAuthToken();
         if (!token) return;
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
@@ -64,7 +64,7 @@ export default function DashboardPage() {
   // Handle project deletion
   const handleDeleteProject = async (projectId: string) => {
     try {
-      const token = getClerkToken();
+      const token = getAuthToken();
       if (!token) return;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`, {

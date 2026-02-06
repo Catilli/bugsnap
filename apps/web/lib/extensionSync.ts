@@ -1,6 +1,5 @@
 // Extension sync utilities for BugSnap
-// Note: Token and email sync is now handled by ClerkTokenSync component.
-// These helpers remain for any imperative sync needs.
+// These helpers sync auth state to localStorage for the browser extension.
 
 export const ExtensionSync = {
   setUserEmail: (email: string) => {

@@ -1,15 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
-import { buildApp, TEST_TOKEN } from './helpers/buildApp';
-
-// Mock @clerk/backend before any imports that use it
-vi.mock('@clerk/backend', () => ({
-  verifyToken: vi.fn().mockResolvedValue({
-    sub: 'clerk-test-user-id',
-    email: 'test@example.com',
-    name: 'Test User',
-  }),
-}));
+import { buildApp, signTestToken } from './helpers/buildApp';
 
 // Mock Prisma before any imports that use it
 vi.mock('../lib/prisma', () => ({
@@ -49,11 +40,15 @@ import { prisma } from '../lib/prisma';
 const mockPrisma = vi.mocked(prisma);
 
 let app: FastifyInstance;
+let TEST_TOKEN: string;
 
 beforeAll(async () => {
-  // Set CLERK_SECRET_KEY for the plugin (mocked verifyToken won't actually use it)
-  process.env.CLERK_SECRET_KEY = 'sk_test_mock';
   app = await buildApp();
+  TEST_TOKEN = signTestToken(app, {
+    id: 'test-user-id',
+    email: 'test@example.com',
+    role: 'MANAGER',
+  });
 });
 
 afterAll(async () => {
@@ -62,26 +57,6 @@ afterAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-
-  // Re-apply default: Clerk token resolves to test user
-  const { verifyToken } = require('@clerk/backend');
-  verifyToken.mockResolvedValue({
-    sub: 'clerk-test-user-id',
-    email: 'test@example.com',
-    name: 'Test User',
-  });
-
-  // syncClerkUserToDatabase will look up user by clerkId
-  mockPrisma.user.findUnique.mockImplementation(async (args: any) => {
-    if (args?.where?.clerkId === 'clerk-test-user-id') {
-      return {
-        id: 'test-user-id',
-        email: 'test@example.com',
-        role: 'MANAGER',
-      } as any;
-    }
-    return null;
-  });
 });
 
 describe('POST /api/projects', () => {
@@ -155,7 +130,6 @@ describe('POST /api/projects', () => {
 
 describe('GET /api/projects/:projectId', () => {
   it('should return project if user is owner', async () => {
-    // Override findUnique to handle both clerkId and projectId lookups
     mockPrisma.project.findUnique.mockResolvedValue({
       id: 'project-1',
       name: 'Test Project',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Check, X } from 'lucide-react';
-import { getClerkToken } from '../lib/clerkTokenBridge';
+import { getAuthToken } from '../lib/clerkTokenBridge';
 import { useCurrentUser } from '../lib/useCurrentUser';
 
 interface Comment {
@@ -40,7 +40,7 @@ export default function CommentSection({ taskId, feedbackId, onCommentCountChang
   }, [entityId]);
 
   const getHeaders = () => {
-    const token = getClerkToken();
+    const token = getAuthToken();
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,

@@ -1,12 +1,37 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const isProtectedRoute = createRouteMatcher(['/dashboard(.*)']);
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+  // Check for auth token in cookies (set by persist middleware) or auth-storage
+  // Note: Main auth guard is client-side via authStore; this is a safety net
+  const authStorage = request.cookies.get('auth-storage')?.value;
+  let isAuthenticated = false;
+
+  if (authStorage) {
+    try {
+      const parsed = JSON.parse(authStorage);
+      isAuthenticated = !!parsed?.state?.token;
+    } catch {
+      // Invalid cookie
+    }
   }
-});
+
+  // Protect dashboard routes
+  if (pathname.startsWith('/dashboard') && !isAuthenticated) {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
+    const dashboardUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(dashboardUrl);
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
