@@ -5,6 +5,7 @@ import { Bug, Plus } from 'lucide-react';
 import { KanbanBoard } from '../../../components/kanban/KanbanBoard';
 import { FeedbackForm } from '../../../components/FeedbackForm';
 import FeedbackDrawer from '../../../components/FeedbackDrawer';
+import { AuditGaps } from '../../../components/AuditGaps';
 import { getClerkToken } from '@/lib/clerkTokenBridge';
 
 interface Feedback {
@@ -268,6 +269,9 @@ export default function FeedbackPage() {
         onTaskClick={handleFeedbackClick}
         onStatusChange={handleStatusChange}
       />
+
+      {/* Audit Gaps */}
+      <AuditGaps />
 
       {/* Feedback Form Modal */}
       <FeedbackForm
