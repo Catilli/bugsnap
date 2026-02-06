@@ -5,6 +5,7 @@ import { Bug, Plus } from 'lucide-react';
 import { KanbanBoard } from '../../../components/kanban/KanbanBoard';
 import { FeedbackForm } from '../../../components/FeedbackForm';
 import FeedbackDrawer from '../../../components/FeedbackDrawer';
+import { PageHeader } from '../../../components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 interface Feedback {
@@ -238,29 +239,24 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <PageHeader
+        icon={
           <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
             <Bug className="w-5 h-5 text-red-600" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Bug Reports & Feature Requests
-            </h1>
-            <p className="text-sm text-gray-500">
-              Track and manage feedback for BugSnap
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setShowFeedbackForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-        >
-          <Plus className="w-5 h-5" />
-          Submit Feedback
-        </button>
-      </div>
+        }
+        title="Bug Reports & Feature Requests"
+        description="Track and manage feedback for BugSnap"
+        primaryAction={
+          <button
+            onClick={() => setShowFeedbackForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+          >
+            <Plus className="w-5 h-5" />
+            Submit Feedback
+          </button>
+        }
+      />
 
       {/* Kanban Board */}
       <KanbanBoard

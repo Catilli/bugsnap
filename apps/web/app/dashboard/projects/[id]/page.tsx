@@ -6,6 +6,7 @@ import { useProject } from '../../ProjectContext';
 import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import TaskDrawer from '@/components/TaskDrawer';
 import { Pencil, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
 interface Project {
@@ -299,36 +300,36 @@ export default function ProjectDetailPage() {
   return (
     <div>
       <div className="mb-8">
-        {/* Project Title and Actions */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            {isEditingName ? (
-              <input
-                ref={nameInputRef}
-                type="text"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                onBlur={saveProjectName}
-                onKeyDown={handleNameKeyDown}
-                className="text-3xl font-bold text-gray-900 border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                disabled={isSavingName}
-              />
-            ) : (
-              <h1
-                className="text-3xl font-bold text-gray-900 cursor-text hover:text-indigo-600 transition-colors group flex items-center gap-2"
-                onClick={() => setIsEditingName(true)}
-              >
-                {project?.name || 'Loading...'}
-                <Pencil className="w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </h1>
-            )}
-            {isSavingName && (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
+        <PageHeader
+          title={
+            <div className="flex items-center gap-3">
+              {isEditingName ? (
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onBlur={saveProjectName}
+                  onKeyDown={handleNameKeyDown}
+                  className="text-2xl font-bold text-gray-900 border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  disabled={isSavingName}
+                />
+              ) : (
+                <h1
+                  className="text-2xl font-bold text-gray-900 cursor-text hover:text-indigo-600 transition-colors group flex items-center gap-2"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  {project?.name || 'Loading...'}
+                  <Pencil className="w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h1>
+              )}
+              {isSavingName && (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              )}
+            </div>
+          }
+          description={`Project ID: ${projectId}`}
+          primaryAction={
             <a
               href={project?.websiteUrl}
               target="_blank"
@@ -338,11 +339,8 @@ export default function ProjectDetailPage() {
               <ExternalLink className="w-4 h-4" />
               Open website
             </a>
-          </div>
-        </div>
-        <p className="text-gray-500 text-sm mt-2">
-          Project ID: {projectId}
-        </p>
+          }
+        />
       </div>
 
       {/* Tasks Section */}

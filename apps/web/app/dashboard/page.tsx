@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FilterControls from '@/components/FilterControls';
+import { PageHeader } from '@/components/PageHeader';
 import { Plus, RefreshCw, FileText, Search, Trash2 } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 
@@ -132,20 +133,20 @@ export default function DashboardPage() {
     <div>
       {/* Header with search and controls */}
       <div className="mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-            <p className="text-gray-600 mt-1">Manage your bug tracking projects</p>
-          </div>
-
-          {/* Create Project Button */}
-          <Link
-            href="/dashboard/projects/new"
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            New Project
-          </Link>
+        <div className="mb-6">
+          <PageHeader
+            title="Projects"
+            description="Manage your bug tracking projects"
+            primaryAction={
+              <Link
+                href="/dashboard/projects/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                <Plus className="w-5 h-5" />
+                New Project
+              </Link>
+            }
+          />
         </div>
 
         {/* Status Legend */}
