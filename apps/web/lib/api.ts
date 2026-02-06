@@ -29,8 +29,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const isCheckAuthCall = error.config?.url === '/api/auth/me';
-      if (!isCheckAuthCall && typeof window !== 'undefined') {
+      // Only redirect on expired session, not on auth endpoint failures
+      // (login/register return 401 for invalid credentials — let callers handle those)
+      const isAuthEndpoint = error.config?.url?.startsWith('/api/auth/');
+      if (!isAuthEndpoint && typeof window !== 'undefined') {
         window.location.href = '/login';
       }
     }

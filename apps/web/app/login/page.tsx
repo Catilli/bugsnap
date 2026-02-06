@@ -57,7 +57,8 @@ function LoginContent() {
       await login(email, password);
       router.push('/dashboard');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.message || 'Login failed. Please check your credentials and try again.';
+      const data = err.response?.data;
+      const errorMessage = data?.error?.message || data?.message || err.message || 'Login failed. Please check your credentials and try again.';
       setError(errorMessage);
     }
   };

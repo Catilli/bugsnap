@@ -1,8 +1,9 @@
+import fp from 'fastify-plugin';
 import { FastifyPluginAsync, FastifyError } from 'fastify';
 import { ZodError } from 'zod';
 import { AppError } from '../utils/errors';
 
-export const errorHandler: FastifyPluginAsync = async (fastify) => {
+const errorHandlerFn: FastifyPluginAsync = async (fastify) => {
   fastify.setErrorHandler((error: FastifyError | AppError | ZodError, _request, reply) => {
     // Log error
     fastify.log.error(error);
@@ -53,3 +54,5 @@ export const errorHandler: FastifyPluginAsync = async (fastify) => {
     });
   });
 };
+
+export const errorHandler = fp(errorHandlerFn, { name: 'error-handler' });
