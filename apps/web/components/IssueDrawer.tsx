@@ -9,14 +9,14 @@ import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
 import { getAuthToken } from '../lib/clerkTokenBridge';
 
-interface TaskDrawerProps {
-  taskId: string | null;
+interface IssueDrawerProps {
+  issueId: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onCommentCountChange?: (taskId: string, count: number) => void;
+  onCommentCountChange?: (issueId: string, count: number) => void;
 }
 
-interface Task {
+interface Issue {
   id: string;
   title: string;
   description: string | null;
@@ -49,14 +49,14 @@ interface Task {
   };
 }
 
-export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChange }: TaskDrawerProps) {
-  const [task, setTask] = useState<Task | null>(null);
+export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange }: IssueDrawerProps) {
+  const [issue, setIssue] = useState<Issue | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isScreenshotEnlarged, setIsScreenshotEnlarged] = useState(false);
 
-  // Extract task/bug/feature number from title
-  const getTaskNumber = (title: string) => {
+  // Extract issue/bug/feature number from title
+  const getIssueNumber = (title: string) => {
     const match = title.match(/^(Bug|Feature|Task) #(\d+)/);
     return match ? match[2] : null;
   };
@@ -67,7 +67,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
     return match ? match[1] : 'Task';
   };
 
-  // Remove task number prefix from title
+  // Remove issue number prefix from title
   const getCleanTitle = (title: string) => {
     return title.replace(/^(Bug|Feature|Task) #\d+\s*-\s*/, '');
   };
@@ -84,13 +84,13 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
     const month = monthNames[date.getMonth()];
     const day = date.getDate();
     const year = date.getFullYear();
-    
+
     let hours = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const ampm = hours >= 12 ? 'pm' : 'am';
     hours = hours % 12;
     hours = hours ? hours : 12; // 0 should be 12
-    
+
     return `${month} ${day}, ${year} at ${hours}:${minutes}${ampm}`;
   };
 
@@ -101,21 +101,21 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
     { value: 'closed', label: 'Closed' },
   ];
 
-  // Fetch task details when drawer opens
+  // Fetch issue details when drawer opens
   useEffect(() => {
-    if (isOpen && taskId) {
-      fetchTaskDetails();
+    if (isOpen && issueId) {
+      fetchIssueDetails();
     }
-  }, [isOpen, taskId]);
+  }, [isOpen, issueId]);
 
-  const fetchTaskDetails = async () => {
-    if (!taskId) return;
-    
+  const fetchIssueDetails = async () => {
+    if (!issueId) return;
+
     setIsLoading(true);
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -125,7 +125,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
 
       if (response.ok) {
         const data = await response.json();
-        setTask(data);
+        setIssue(data);
       }
     } catch (error) {
       // Silently fail
@@ -134,14 +134,14 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
     }
   };
 
-  const updateTask = async (field: string, value: any) => {
-    if (!taskId || !task) return;
-    
+  const updateIssue = async (field: string, value: any) => {
+    if (!issueId || !issue) return;
+
     setIsSaving(true);
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           method: 'PATCH',
           headers: {
@@ -153,8 +153,8 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
       );
 
       if (response.ok) {
-        const updatedTask = await response.json();
-        setTask(updatedTask);
+        const updatedIssue = await response.json();
+        setIssue(updatedIssue);
       }
     } catch (error) {
       // Silently fail
@@ -179,10 +179,10 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
-              {task?.title ? `${getTypePrefix(task.title)} #${getTaskNumber(task.title) || '1'}` : '...'}
+              {issue?.title ? `${getTypePrefix(issue.title)} #${getIssueNumber(issue.title) || '1'}` : '...'}
             </span>
-            {task?.type && task.type !== 'TASK' && <TypeBadge type={task.type} size="sm" />}
-            {task?.status && <StatusBadge status={task.status} size="sm" />}
+            {issue?.type && issue.type !== 'TASK' && <TypeBadge type={issue.type} size="sm" />}
+            {issue?.status && <StatusBadge status={issue.status} size="sm" />}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -198,36 +198,38 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           </div>
-        ) : task ? (
+        ) : issue ? (
           <div className="p-6 space-y-6">
             {/* Title */}
             <div>
               <input
                 type="text"
-                value={getCleanTitle(task.title)}
+                value={getCleanTitle(issue.title)}
                 onChange={(e) => {
-                  const taskNumber = getTaskNumber(task.title);
-                  const newTitle = taskNumber ? `Task #${taskNumber} - ${e.target.value}` : e.target.value;
-                  setTask({ ...task, title: newTitle });
+                  const issueNumber = getIssueNumber(issue.title);
+                  const typePrefix = getTypePrefix(issue.title);
+                  const newTitle = issueNumber ? `${typePrefix} #${issueNumber} - ${e.target.value}` : e.target.value;
+                  setIssue({ ...issue, title: newTitle });
                 }}
                 onBlur={(e) => {
-                  const taskNumber = getTaskNumber(task.title);
-                  const newTitle = taskNumber ? `Task #${taskNumber} - ${e.target.value}` : e.target.value;
-                  updateTask('title', newTitle);
+                  const issueNumber = getIssueNumber(issue.title);
+                  const typePrefix = getTypePrefix(issue.title);
+                  const newTitle = issueNumber ? `${typePrefix} #${issueNumber} - ${e.target.value}` : e.target.value;
+                  updateIssue('title', newTitle);
                 }}
                 className="text-2xl font-semibold text-gray-900 w-full border-none focus:outline-none focus:ring-0 px-0"
-                placeholder="Task title"
+                placeholder="Issue title"
               />
             </div>
 
             {/* Description */}
             <div>
               <textarea
-                value={task.description || ''}
+                value={issue.description || ''}
                 onChange={(e) => {
-                  setTask({ ...task, description: e.target.value });
+                  setIssue({ ...issue, description: e.target.value });
                 }}
-                onBlur={(e) => updateTask('description', e.target.value)}
+                onBlur={(e) => updateIssue('description', e.target.value)}
                 className="text-gray-600 w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 placeholder="Add description..."
                 rows={3}
@@ -237,15 +239,15 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
             {/* Status */}
             <div>
               <ButtonDropdown
-                label={`Mark as ${formatStatus(task.status)}`}
+                label={`Mark as ${formatStatus(issue.status)}`}
                 options={statusOptions}
-                selectedValue={task.status}
-                onChange={(value) => updateTask('status', value)}
+                selectedValue={issue.status}
+                onChange={(value) => updateIssue('status', value)}
               />
             </div>
 
             {/* Screenshot */}
-            {task.screenshotUrl && (
+            {issue.screenshotUrl && (
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">Screenshot</label>
@@ -255,7 +257,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
                   onClick={() => setIsScreenshotEnlarged(true)}
                 >
                   <img
-                    src={task.screenshotUrl}
+                    src={issue.screenshotUrl}
                     alt="Screenshot"
                     className="w-full h-full object-cover"
                   />
@@ -269,17 +271,17 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
             )}
 
             {/* Location */}
-            {task.url && (
+            {issue.url && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                 <a
-                  href={task.url}
+                  href={issue.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-sm break-all"
                 >
                   <MapPin className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">{task.url}</span>
+                  <span className="truncate">{issue.url}</span>
                   <ExternalLink className="w-4 h-4 flex-shrink-0" />
                 </a>
               </div>
@@ -289,8 +291,8 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Priority (Optional)</label>
               <select
-                value={task.priority || ''}
-                onChange={(e) => updateTask('priority', e.target.value || null)}
+                value={issue.priority || ''}
+                onChange={(e) => updateIssue('priority', e.target.value || null)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
               >
                 <option value="">Not Set</option>
@@ -304,14 +306,14 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
             {/* Assigned To */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
-              {task.assignedTo ? (
+              {issue.assignedTo ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
                   <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-sm">
-                    {task.assignedTo.name.charAt(0).toUpperCase()}
+                    {issue.assignedTo.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">{task.assignedTo.name}</div>
-                    <div className="text-xs text-gray-500">{task.assignedTo.email}</div>
+                    <div className="text-sm font-medium text-gray-900">{issue.assignedTo.name}</div>
+                    <div className="text-xs text-gray-500">{issue.assignedTo.email}</div>
                   </div>
                 </div>
               ) : (
@@ -324,25 +326,25 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
             {/* Metadata */}
             <div className="border-t border-gray-200 pt-6">
               <p className="text-xs text-gray-500">
-                Reported {formatDateTime(task.createdAt)}, by {task.createdBy.name}
+                Reported {formatDateTime(issue.createdAt)}, by {issue.createdBy.name}
               </p>
             </div>
 
             {/* Comments */}
             <CommentSection
-              taskId={taskId}
-              onCommentCountChange={(count) => onCommentCountChange?.(taskId!, count)}
+              issueId={issueId}
+              onCommentCountChange={(count) => onCommentCountChange?.(issueId!, count)}
             />
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500">Task not found</p>
+            <p className="text-gray-500">Issue not found</p>
           </div>
         )}
       </div>
 
       {/* Screenshot Enlarged Modal */}
-      {isScreenshotEnlarged && task?.screenshotUrl && (
+      {isScreenshotEnlarged && issue?.screenshotUrl && (
         <div
           className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4"
           onClick={() => setIsScreenshotEnlarged(false)}
@@ -355,7 +357,7 @@ export default function TaskDrawer({ taskId, isOpen, onClose, onCommentCountChan
               <X className="w-6 h-6 text-white" />
             </button>
             <img
-              src={task.screenshotUrl}
+              src={issue.screenshotUrl}
               alt="Screenshot (enlarged)"
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}

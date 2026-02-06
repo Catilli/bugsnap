@@ -16,10 +16,13 @@ enum UserRole {
   VIEWER    // Clients/Guests -> PUBLIC Shareable link, viewing only
 }
 
-enum TaskType {
+// Issue was previously named Task — DB enum remains "TaskType" via @@map
+enum IssueType {
   BUG
   FEATURE
   TASK      // Default for backwards compatibility
+
+  @@map("TaskType")
 }
 
 enum FeedbackType {
@@ -48,8 +51,8 @@ model User {
   // Relations
   ownedProjects       Project[]
   projectMembers      ProjectMember[]
-  createdTasks        Task[]     @relation("TaskCreator")
-  assignedTasks       Task[]     @relation("TaskAssignee")
+  createdIssues       Issue[]    @relation("IssueCreator")
+  assignedIssues      Issue[]    @relation("IssueAssignee")
   comments            Comment[]
   feedback            Feedback[]
   passwordResetTokens PasswordResetToken[]
@@ -70,7 +73,7 @@ model Project {
   // Relations
   createdBy      User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
   members        ProjectMember[]
-  tasks          Task[]
+  issues         Issue[]
 
   @@index([createdById])
   @@map("projects")
@@ -93,27 +96,28 @@ model ProjectMember {
   @@map("project_members")
 }
 
-model Task {
-  id              String   @id @default(uuid())
+// Issue was previously named Task — DB table remains "tasks" via @@map
+model Issue {
+  id              String    @id @default(uuid())
   projectId       String
   title           String
-  description     String?  @db.Text
+  description     String?   @db.Text
   url             String?
   screenshotUrl   String?
-  status          String   @default("open") // open, in_progress, resolved, closed
-  priority        String?  // low, medium, high, critical (optional, no default)
-  type            TaskType @default(TASK)   // BUG, FEATURE, TASK
+  status          String    @default("open") // open, in_progress, resolved, closed
+  priority        String?   // low, medium, high, critical (optional, no default)
+  type            IssueType @default(TASK)   // BUG, FEATURE, TASK
   environmentData Json?
-  visibility      String   @default("members") // members, members_and_clients
+  visibility      String    @default("members") // members, members_and_clients
   assignedToId    String?
   createdById     String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  assignedTo  User?        @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy   User         @relation("IssueCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedTo  User?        @relation("IssueAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   annotations Annotation[]
   comments    Comment[]
 
@@ -128,7 +132,7 @@ model Task {
 
 model Annotation {
   id          String   @id @default(uuid())
-  taskId      String
+  issueId     String   @map("taskId")
   type        String // pen, highlighter, rectangle, text, arrow
   coordinates Json
   content     String?
@@ -136,27 +140,27 @@ model Annotation {
   createdAt   DateTime @default(now())
 
   // Relations
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
 
-  @@index([taskId])
+  @@index([issueId])
   @@map("annotations")
 }
 
 model Comment {
   id         String   @id @default(uuid())
-  taskId     String?
+  issueId    String?  @map("taskId")
   feedbackId String?
   userId     String
   content    String   @db.Text
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  // Relations — exactly one of task/feedback is set (enforced by DB CHECK constraint)
-  task     Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  // Relations — exactly one of issue/feedback is set (enforced by DB CHECK constraint)
+  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
   feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([taskId])
+  @@index([issueId])
   @@index([feedbackId])
   @@index([userId])
   @@map("comments")

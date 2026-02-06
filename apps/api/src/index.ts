@@ -18,7 +18,7 @@ import { authRoutes } from './routes/auth';
 import { oauthRoutes } from './routes/oauth';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { projectRoutes } from './routes/projects';
-import { taskRoutes } from './routes/tasks';
+import { issueRoutes } from './routes/issues';
 import { feedbackRoutes } from './routes/feedback';
 import { uploadRoutes } from './routes/uploads';
 import { eventRoutes } from './routes/events';
@@ -124,7 +124,7 @@ fastify.register(authRoutes, { prefix: '/api/auth' });
 fastify.register(oauthRoutes, { prefix: '/api/auth' });
 fastify.register(projectMemberRoutes, { prefix: '/api' }); // Register this first for /projects endpoint
 fastify.register(projectRoutes, { prefix: '/api' });
-fastify.register(taskRoutes, { prefix: '/api' });
+fastify.register(issueRoutes, { prefix: '/api' });
 fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
 fastify.register(uploadRoutes, { prefix: '/api' });
 fastify.register(eventRoutes, { prefix: '/api' });

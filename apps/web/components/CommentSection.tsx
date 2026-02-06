@@ -17,12 +17,12 @@ interface Comment {
 }
 
 interface CommentSectionProps {
-  taskId?: string | null;
+  issueId?: string | null;
   feedbackId?: string | null;
   onCommentCountChange?: (count: number) => void;
 }
 
-export default function CommentSection({ taskId, feedbackId, onCommentCountChange }: CommentSectionProps) {
+export default function CommentSection({ issueId, feedbackId, onCommentCountChange }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,8 +30,8 @@ export default function CommentSection({ taskId, feedbackId, onCommentCountChang
   const [editContent, setEditContent] = useState('');
   const user = useCurrentUser();
 
-  const entityId = taskId || feedbackId;
-  const basePath = taskId ? `tasks/${taskId}` : `feedback/${feedbackId}`;
+  const entityId = issueId || feedbackId;
+  const basePath = issueId ? `issues/${issueId}` : `feedback/${feedbackId}`;
 
   useEffect(() => {
     if (entityId) {

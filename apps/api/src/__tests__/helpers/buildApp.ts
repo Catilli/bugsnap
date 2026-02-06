@@ -5,7 +5,7 @@ import { AppError } from '../../utils/errors';
 import { authPlugin } from '../../plugins/auth';
 import { authRoutes } from '../../routes/auth';
 import { projectRoutes } from '../../routes/projects';
-import { taskRoutes } from '../../routes/tasks';
+import { issueRoutes } from '../../routes/issues';
 
 const TEST_JWT_SECRET = 'test-jwt-secret-for-testing';
 
@@ -60,7 +60,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.register(authPlugin);
   app.register(authRoutes, { prefix: '/api/auth' });
   app.register(projectRoutes, { prefix: '/api' });
-  app.register(taskRoutes, { prefix: '/api' });
+  app.register(issueRoutes, { prefix: '/api' });
 
   await app.ready();
   return app;

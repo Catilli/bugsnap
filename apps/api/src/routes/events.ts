@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
-import { onTaskEvent, TaskEvent } from '../lib/eventBus';
+import { onIssueEvent, IssueEvent } from '../lib/eventBus';
 
 export async function eventRoutes(fastify: FastifyInstance) {
-  // GET /api/projects/:projectId/events?token=JWT — SSE endpoint for live task updates
+  // GET /api/projects/:projectId/events?token=JWT — SSE endpoint for live issue updates
   // Accepts token via query param since EventSource doesn't support custom headers
   fastify.get('/projects/:projectId/events', async (request, reply) => {
     const { projectId } = request.params as { projectId: string };
@@ -57,11 +57,11 @@ export async function eventRoutes(fastify: FastifyInstance) {
     }, 30000);
 
     // Subscribe to events for this project
-    const listener = (event: TaskEvent) => {
+    const listener = (event: IssueEvent) => {
       reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
     };
 
-    const unsubscribe = onTaskEvent(projectId, listener);
+    const unsubscribe = onIssueEvent(projectId, listener);
 
     // Cleanup on connection close
     request.raw.on('close', () => {

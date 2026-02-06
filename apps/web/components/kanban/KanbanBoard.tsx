@@ -5,7 +5,7 @@ import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { KanbanFilters } from './KanbanFilters';
 
-interface Task {
+interface Issue {
   id: string;
   title: string;
   description: string | null;
@@ -35,47 +35,47 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 ];
 
 interface KanbanBoardProps {
-  tasks: Task[];
-  onTaskClick: (taskId: string) => void;
-  onStatusChange: (taskId: string, newStatus: string) => Promise<void>;
+  issues: Issue[];
+  onIssueClick: (issueId: string) => void;
+  onStatusChange: (issueId: string, newStatus: string) => Promise<void>;
   columns?: ColumnConfig[];
   showFilters?: boolean;
 }
 
-export function KanbanBoard({ tasks, onTaskClick, onStatusChange, columns, showFilters }: KanbanBoardProps) {
+export function KanbanBoard({ issues, onIssueClick, onStatusChange, columns, showFilters }: KanbanBoardProps) {
   const activeColumns = columns ?? DEFAULT_COLUMNS;
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<('BUG' | 'FEATURE')[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
 
-  // Filter tasks based on search and filters
-  const filteredTasks = useMemo(() => {
+  // Filter issues based on search and filters
+  const filteredIssues = useMemo(() => {
     if (showFilters === false) {
-      return tasks;
+      return issues;
     }
 
-    return tasks.filter((task) => {
+    return issues.filter((issue) => {
       // Only show BUG and FEATURE types (not TASK)
-      if (task.type !== 'BUG' && task.type !== 'FEATURE') {
+      if (issue.type !== 'BUG' && issue.type !== 'FEATURE') {
         return false;
       }
 
       // Type filter
-      if (typeFilter.length > 0 && !typeFilter.includes(task.type)) {
+      if (typeFilter.length > 0 && !typeFilter.includes(issue.type)) {
         return false;
       }
 
       // Priority filter
-      if (priorityFilter && task.priority !== priorityFilter) {
+      if (priorityFilter && issue.priority !== priorityFilter) {
         return false;
       }
 
       // Search filter
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
-        const titleMatch = task.title.toLowerCase().includes(searchLower);
-        const descMatch = task.description?.toLowerCase().includes(searchLower);
+        const titleMatch = issue.title.toLowerCase().includes(searchLower);
+        const descMatch = issue.description?.toLowerCase().includes(searchLower);
         if (!titleMatch && !descMatch) {
           return false;
         }
@@ -83,26 +83,26 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, columns, showF
 
       return true;
     });
-  }, [tasks, typeFilter, priorityFilter, searchQuery, showFilters]);
+  }, [issues, typeFilter, priorityFilter, searchQuery, showFilters]);
 
-  // Group tasks by status (dynamically from active columns)
-  const tasksByStatus = useMemo(() => {
-    const grouped: Record<string, Task[]> = {};
+  // Group issues by status (dynamically from active columns)
+  const issuesByStatus = useMemo(() => {
+    const grouped: Record<string, Issue[]> = {};
     activeColumns.forEach((col) => {
       grouped[col.status] = [];
     });
 
-    filteredTasks.forEach((task) => {
-      if (grouped[task.status]) {
-        grouped[task.status].push(task);
+    filteredIssues.forEach((issue) => {
+      if (grouped[issue.status]) {
+        grouped[issue.status].push(issue);
       }
     });
 
     return grouped;
-  }, [filteredTasks, activeColumns]);
+  }, [filteredIssues, activeColumns]);
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('taskId', taskId);
+  const handleDragStart = (e: React.DragEvent, issueId: string) => {
+    e.dataTransfer.setData('issueId', issueId);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -116,13 +116,13 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, columns, showF
     e.preventDefault();
     setDragOverColumn(null);
 
-    const taskId = e.dataTransfer.getData('taskId');
-    if (!taskId) return;
+    const issueId = e.dataTransfer.getData('issueId');
+    if (!issueId) return;
 
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
+    const issue = issues.find((i) => i.id === issueId);
+    if (!issue || issue.status === newStatus) return;
 
-    await onStatusChange(taskId, newStatus);
+    await onStatusChange(issueId, newStatus);
   };
 
   const handleDragLeave = () => {
@@ -152,23 +152,23 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, columns, showF
           <KanbanColumn
             key={column.status}
             title={column.title}
-            count={tasksByStatus[column.status].length}
+            count={issuesByStatus[column.status].length}
             color={column.color}
             status={column.status}
             onDragOver={(e) => handleDragOver(e, column.status)}
             onDrop={handleDrop}
             isDragOver={dragOverColumn === column.status}
           >
-            {tasksByStatus[column.status].length === 0 ? (
+            {issuesByStatus[column.status].length === 0 ? (
               <div className="text-center py-8 text-gray-400 text-sm">
                 No items
               </div>
             ) : (
-              tasksByStatus[column.status].map((task) => (
+              issuesByStatus[column.status].map((issue) => (
                 <KanbanCard
-                  key={task.id}
-                  task={task}
-                  onClick={() => onTaskClick(task.id)}
+                  key={issue.id}
+                  issue={issue}
+                  onClick={() => onIssueClick(issue.id)}
                   onDragStart={handleDragStart}
                 />
               ))

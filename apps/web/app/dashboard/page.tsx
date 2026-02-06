@@ -18,7 +18,7 @@ interface Project {
   updatedAt: string;
   createdAt: string;
   _count?: {
-    tasks: number;
+    tasks: number; // kept as "tasks" for API compatibility
     open?: number;
     in_progress?: number;
     resolved?: number;
@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
         {/* Status Legend */}
         <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
-          <span className="font-medium">Task Status:</span>
+          <span className="font-medium">Issue Status:</span>
           <div className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-blue-500"></span>
             <span>Open</span>
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                   Website URL
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tasks
+                  Issues
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Last Updated
@@ -399,7 +399,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this project? All associated tasks and data will be permanently removed.
+              Are you sure you want to delete this project? All associated issues and data will be permanently removed.
             </p>
             <div className="flex justify-end gap-3">
               <button

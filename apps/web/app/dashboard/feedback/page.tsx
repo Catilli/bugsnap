@@ -46,8 +46,8 @@ const statusToUppercase = (status: string): Feedback['status'] => {
   return map[status] || 'OPEN';
 };
 
-// Transform Feedback to KanbanBoard Task format
-interface KanbanTask {
+// Transform Feedback to KanbanBoard Issue format
+interface KanbanIssue {
   id: string;
   title: string;
   description: string | null;
@@ -63,7 +63,7 @@ interface KanbanTask {
   };
 }
 
-const feedbackToKanbanTask = (feedback: Feedback): KanbanTask => ({
+const feedbackToKanbanIssue = (feedback: Feedback): KanbanIssue => ({
   ...feedback,
   status: statusToLowercase(feedback.status),
 });
@@ -205,7 +205,7 @@ export default function FeedbackPage() {
   };
 
   // Convert feedback list to KanbanBoard format
-  const kanbanTasks = feedbackList.map(feedbackToKanbanTask);
+  const kanbanIssues = feedbackList.map(feedbackToKanbanIssue);
 
   if (isLoading) {
     return (
@@ -260,8 +260,8 @@ export default function FeedbackPage() {
 
       {/* Kanban Board */}
       <KanbanBoard
-        tasks={kanbanTasks}
-        onTaskClick={handleFeedbackClick}
+        issues={kanbanIssues}
+        onIssueClick={handleFeedbackClick}
         onStatusChange={handleStatusChange}
       />
 

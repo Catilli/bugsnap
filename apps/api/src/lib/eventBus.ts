@@ -5,17 +5,17 @@ import { EventEmitter } from 'events';
 const emitter = new EventEmitter();
 emitter.setMaxListeners(100);
 
-export type TaskEvent = {
-  type: 'task:created' | 'task:updated' | 'task:deleted';
+export type IssueEvent = {
+  type: 'issue:created' | 'issue:updated' | 'issue:deleted';
   projectId: string;
   data: Record<string, unknown>;
 };
 
-export function emitTaskEvent(event: TaskEvent) {
+export function emitIssueEvent(event: IssueEvent) {
   emitter.emit(`project:${event.projectId}`, event);
 }
 
-export function onTaskEvent(projectId: string, listener: (event: TaskEvent) => void) {
+export function onIssueEvent(projectId: string, listener: (event: IssueEvent) => void) {
   emitter.on(`project:${projectId}`, listener);
   return () => {
     emitter.off(`project:${projectId}`, listener);

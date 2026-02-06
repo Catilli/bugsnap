@@ -163,30 +163,30 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
 
           return Promise.all(
             projects.map(async (project: any) => {
-              const tasks = await prisma.task.findMany({
+              const issues = await prisma.issue.findMany({
                 where: { projectId: project.id },
                 select: { status: true },
               });
 
-              const taskCounts = {
+              const issueCounts = {
                 open: 0,
                 in_progress: 0,
                 resolved: 0,
                 closed: 0,
               };
 
-              tasks.forEach((task: any) => {
-                if (task.status === 'open') taskCounts.open++;
-                else if (task.status === 'in_progress') taskCounts.in_progress++;
-                else if (task.status === 'resolved') taskCounts.resolved++;
-                else if (task.status === 'closed') taskCounts.closed++;
+              issues.forEach((issue: any) => {
+                if (issue.status === 'open') issueCounts.open++;
+                else if (issue.status === 'in_progress') issueCounts.in_progress++;
+                else if (issue.status === 'resolved') issueCounts.resolved++;
+                else if (issue.status === 'closed') issueCounts.closed++;
               });
 
               return {
                 ...project,
                 _count: {
-                  tasks: tasks.length,
-                  ...taskCounts,
+                  tasks: issues.length,
+                  ...issueCounts,
                 },
               };
             })

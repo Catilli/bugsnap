@@ -5,7 +5,7 @@ import { TypeBadge } from '../TypeBadge';
 import { PriorityBadge } from '../PriorityBadge';
 
 interface KanbanCardProps {
-  task: {
+  issue: {
     id: string;
     title: string;
     description: string | null;
@@ -21,11 +21,11 @@ interface KanbanCardProps {
     };
   };
   onClick: () => void;
-  onDragStart: (e: React.DragEvent, taskId: string) => void;
+  onDragStart: (e: React.DragEvent, issueId: string) => void;
 }
 
-export function KanbanCard({ task, onClick, onDragStart }: KanbanCardProps) {
-  // Extract task/bug/feature number from title
+export function KanbanCard({ issue, onClick, onDragStart }: KanbanCardProps) {
+  // Extract issue/bug/feature number from title
   const getNumber = (title: string) => {
     const match = title.match(/(Bug|Feature|Task) #(\d+)/);
     return match ? `#${match[2]}` : '';
@@ -39,46 +39,46 @@ export function KanbanCard({ task, onClick, onDragStart }: KanbanCardProps) {
   return (
     <div
       draggable
-      onDragStart={(e) => onDragStart(e, task.id)}
+      onDragStart={(e) => onDragStart(e, issue.id)}
       onClick={onClick}
       className="bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
     >
       {/* Header with number and type */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-gray-500 font-medium">{getNumber(task.title)}</span>
-        {task.type && <TypeBadge type={task.type} size="sm" />}
+        <span className="text-xs text-gray-500 font-medium">{getNumber(issue.title)}</span>
+        {issue.type && <TypeBadge type={issue.type} size="sm" />}
       </div>
 
       {/* Title */}
       <h4 className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">
-        {getCleanTitle(task.title)}
+        {getCleanTitle(issue.title)}
       </h4>
 
       {/* Description preview */}
-      {task.description && (
+      {issue.description && (
         <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-          {task.description}
+          {issue.description}
         </p>
       )}
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <div className="flex items-center gap-2">
-          {task.priority && <PriorityBadge priority={task.priority} size="sm" />}
+          {issue.priority && <PriorityBadge priority={issue.priority} size="sm" />}
         </div>
         <div className="flex items-center gap-2">
           {/* Creator avatar */}
           <div
             className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-medium"
-            title={task.createdBy.name}
+            title={issue.createdBy.name}
           >
-            {task.createdBy.name.charAt(0).toUpperCase()}
+            {issue.createdBy.name.charAt(0).toUpperCase()}
           </div>
           {/* Comment count */}
-          {task._count.comments > 0 && (
+          {issue._count.comments > 0 && (
             <div className="flex items-center gap-1 text-gray-400">
               <MessageSquare className="w-3.5 h-3.5" />
-              <span className="text-xs">{task._count.comments}</span>
+              <span className="text-xs">{issue._count.comments}</span>
             </div>
           )}
         </div>

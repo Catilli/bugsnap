@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useProject } from '../../ProjectContext';
 import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
-import TaskDrawer from '@/components/TaskDrawer';
+import IssueDrawer from '@/components/IssueDrawer';
 import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
@@ -17,7 +17,7 @@ interface Project {
   updatedAt: string;
 }
 
-interface Task {
+interface Issue {
   id: string;
   title: string;
   description: string | null;
@@ -60,35 +60,35 @@ export default function ProjectDetailPage() {
   const [isSavingName, setIsSavingName] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Task state
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isTasksLoading, setIsTasksLoading] = useState(true);
+  // Issue state
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [isIssuesLoading, setIsIssuesLoading] = useState(true);
 
-  // Task drawer state
+  // Issue drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; taskId: string | null }>({ show: false, taskId: null });
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; issueId: string | null }>({ show: false, issueId: null });
 
-  const openTaskDrawer = (taskId: string) => {
-    setSelectedTaskId(taskId);
+  const openIssueDrawer = (issueId: string) => {
+    setSelectedIssueId(issueId);
     setIsDrawerOpen(true);
   };
 
-  const closeTaskDrawer = () => {
+  const closeIssueDrawer = () => {
     setIsDrawerOpen(false);
-    setSelectedTaskId(null);
+    setSelectedIssueId(null);
   };
 
-  // Handle task status change (optimistic update)
-  const handleStatusChange = async (taskId: string, newStatus: string) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
+  // Handle issue status change (optimistic update)
+  const handleStatusChange = async (issueId: string, newStatus: string) => {
+    const issue = issues.find((i) => i.id === issueId);
+    if (!issue) return;
 
-    const previousStatus = task.status;
+    const previousStatus = issue.status;
 
     // Optimistic update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
+    setIssues((prev) =>
+      prev.map((i) => (i.id === issueId ? { ...i, status: newStatus as Issue['status'] } : i))
     );
 
     try {
@@ -96,7 +96,7 @@ export default function ProjectDetailPage() {
       if (!token) return;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           method: 'PATCH',
           headers: {
@@ -109,26 +109,26 @@ export default function ProjectDetailPage() {
 
       if (!response.ok) {
         // Revert on error
-        setTasks((prev) =>
-          prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+        setIssues((prev) =>
+          prev.map((i) => (i.id === issueId ? { ...i, status: previousStatus } : i))
         );
       }
     } catch {
       // Revert on error
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+      setIssues((prev) =>
+        prev.map((i) => (i.id === issueId ? { ...i, status: previousStatus } : i))
       );
     }
   };
 
-  // Handle task deletion
-  const handleDeleteTask = async (taskId: string) => {
+  // Handle issue deletion
+  const handleDeleteIssue = async (issueId: string) => {
     try {
       const token = getAuthToken();
       if (!token) return;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tasks/${taskId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           method: 'DELETE',
           headers: {
@@ -138,8 +138,8 @@ export default function ProjectDetailPage() {
       );
 
       if (response.ok) {
-        setTasks(tasks.filter(t => t.id !== taskId));
-        setDeleteConfirm({ show: false, taskId: null });
+        setIssues(issues.filter(i => i.id !== issueId));
+        setDeleteConfirm({ show: false, issueId: null });
       }
     } catch (error) {
       // Silently fail on error
@@ -181,7 +181,7 @@ export default function ProjectDetailPage() {
     };
   }, [projectId, setProjectName]);
 
-  // SSE: Subscribe to real-time task updates
+  // SSE: Subscribe to real-time issue updates
   useEffect(() => {
     const token = getAuthToken();
     if (!token || !projectId) return;
@@ -194,12 +194,12 @@ export default function ProjectDetailPage() {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'task:created') {
-          setTasks((prev) => [data.data, ...prev]);
-        } else if (data.type === 'task:updated') {
-          setTasks((prev) => prev.map((t) => (t.id === data.data.id ? { ...t, ...data.data } : t)));
-        } else if (data.type === 'task:deleted') {
-          setTasks((prev) => prev.filter((t) => t.id !== data.data.id));
+        if (data.type === 'issue:created') {
+          setIssues((prev) => [data.data, ...prev]);
+        } else if (data.type === 'issue:updated') {
+          setIssues((prev) => prev.map((i) => (i.id === data.data.id ? { ...i, ...data.data } : i)));
+        } else if (data.type === 'issue:deleted') {
+          setIssues((prev) => prev.filter((i) => i.id !== data.data.id));
         }
       } catch {
         // Ignore parse errors (keepalive, connected events)
@@ -211,15 +211,15 @@ export default function ProjectDetailPage() {
     };
   }, [projectId]);
 
-  // Fetch tasks for the project
+  // Fetch issues for the project
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchIssues = async () => {
       try {
         const token = getAuthToken();
         if (!token) return;
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/tasks`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/issues`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -229,16 +229,16 @@ export default function ProjectDetailPage() {
 
         if (response.ok) {
           const data = await response.json();
-          setTasks(data);
+          setIssues(data);
         }
       } catch (error) {
         // Silently fail on error
       } finally {
-        setIsTasksLoading(false);
+        setIsIssuesLoading(false);
       }
     };
 
-    fetchTasks();
+    fetchIssues();
   }, [projectId]);
 
   // Focus input when editing starts
@@ -348,50 +348,50 @@ export default function ProjectDetailPage() {
         />
       </div>
 
-      {/* Tasks Section */}
+      {/* Issues Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Tasks</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Issues</h2>
         </div>
 
         {/* Loading State */}
-        {isTasksLoading ? (
+        {isIssuesLoading ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
               <RefreshCw className="w-8 h-8 text-gray-400" />
             </div>
-            <p className="text-gray-600">Loading tasks...</p>
+            <p className="text-gray-600">Loading issues...</p>
           </div>
-        ) : tasks.length === 0 ? (
+        ) : issues.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <RefreshCw className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No tasks yet</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No issues yet</h3>
             <p className="text-gray-600">
-              Tasks created for this project will appear here
+              Issues created for this project will appear here
             </p>
           </div>
         ) : (
           <KanbanBoard
-            tasks={tasks}
+            issues={issues}
             columns={PROJECT_COLUMNS}
             showFilters={false}
-            onTaskClick={openTaskDrawer}
+            onIssueClick={openIssueDrawer}
             onStatusChange={handleStatusChange}
           />
         )}
       </div>
 
-      {/* Task Drawer */}
-      <TaskDrawer
-        taskId={selectedTaskId}
+      {/* Issue Drawer */}
+      <IssueDrawer
+        issueId={selectedIssueId}
         isOpen={isDrawerOpen}
-        onClose={closeTaskDrawer}
-        onCommentCountChange={(taskId, count) => {
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === taskId ? { ...t, _count: { ...t._count, comments: count } } : t
+        onClose={closeIssueDrawer}
+        onCommentCountChange={(issueId, count) => {
+          setIssues((prev) =>
+            prev.map((i) =>
+              i.id === issueId ? { ...i, _count: { ...i._count, comments: count } } : i
             )
           );
         }}
@@ -406,22 +406,22 @@ export default function ProjectDetailPage() {
                 <Trash2 className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Task</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Issue</h3>
                 <p className="text-sm text-gray-500">This action cannot be undone</p>
               </div>
             </div>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this task? All associated data will be permanently removed.
+              Are you sure you want to delete this issue? All associated data will be permanently removed.
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setDeleteConfirm({ show: false, taskId: null })}
+                onClick={() => setDeleteConfirm({ show: false, issueId: null })}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={() => deleteConfirm.taskId && handleDeleteTask(deleteConfirm.taskId)}
+                onClick={() => deleteConfirm.issueId && handleDeleteIssue(deleteConfirm.issueId)}
                 className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
               >
                 Delete

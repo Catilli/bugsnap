@@ -18,7 +18,7 @@ vi.mock('../lib/prisma', () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
-    task: {
+    issue: {
       count: vi.fn(),
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('../lib/prisma', () => ({
 
 // Mock eventBus to avoid side effects
 vi.mock('../lib/eventBus', () => ({
-  emitTaskEvent: vi.fn(),
+  emitIssueEvent: vi.fn(),
 }));
 
 import { prisma } from '../lib/prisma';

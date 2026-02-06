@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
-import { emitTaskEvent } from '../lib/eventBus';
+import { emitIssueEvent } from '../lib/eventBus';
 import { z } from 'zod';
 
 const createCommentSchema = z.object({
@@ -8,8 +8,8 @@ const createCommentSchema = z.object({
 });
 
 export async function commentRoutes(fastify: FastifyInstance) {
-  // Create a comment on a task
-  fastify.post('/tasks/:taskId/comments', {
+  // Create a comment on an issue
+  fastify.post('/issues/:issueId/comments', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -19,7 +19,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
 
       if (!userId) {
@@ -28,28 +28,28 @@ export async function commentRoutes(fastify: FastifyInstance) {
 
       const data = createCommentSchema.parse(request.body);
 
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
+      const issue = await prisma.issue.findUnique({
+        where: { id: issueId },
         include: { project: true },
       });
 
-      if (!task) {
-        return reply.status(404).send({ error: 'Task not found' });
+      if (!issue) {
+        return reply.status(404).send({ error: 'Issue not found' });
       }
 
       // Verify user has access to project
-      const isOwner = task.project.createdById === userId;
+      const isOwner = issue.project.createdById === userId;
       const isMember = await prisma.projectMember.findFirst({
-        where: { projectId: task.projectId, userId },
+        where: { projectId: issue.projectId, userId },
       });
 
       if (!isOwner && !isMember) {
-        return reply.status(403).send({ error: 'You do not have access to this task' });
+        return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 
       const comment = await prisma.comment.create({
         data: {
-          taskId,
+          issueId,
           userId,
           content: data.content,
         },
@@ -65,7 +65,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
       });
 
       // Emit SSE event so other clients see the new comment
-      emitTaskEvent({ type: 'task:updated', projectId: task.projectId, data: task as any });
+      emitIssueEvent({ type: 'issue:updated', projectId: issue.projectId, data: issue as any });
 
       return reply.status(201).send(comment);
     } catch (error: any) {
@@ -77,8 +77,8 @@ export async function commentRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // List comments for a task
-  fastify.get('/tasks/:taskId/comments', {
+  // List comments for an issue
+  fastify.get('/issues/:issueId/comments', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -88,34 +88,34 @@ export async function commentRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
+      const issue = await prisma.issue.findUnique({
+        where: { id: issueId },
         include: { project: true },
       });
 
-      if (!task) {
-        return reply.status(404).send({ error: 'Task not found' });
+      if (!issue) {
+        return reply.status(404).send({ error: 'Issue not found' });
       }
 
       // Verify user has access to project
-      const isOwner = task.project.createdById === userId;
+      const isOwner = issue.project.createdById === userId;
       const isMember = await prisma.projectMember.findFirst({
-        where: { projectId: task.projectId, userId },
+        where: { projectId: issue.projectId, userId },
       });
 
       if (!isOwner && !isMember) {
-        return reply.status(403).send({ error: 'You do not have access to this task' });
+        return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 
       const comments = await prisma.comment.findMany({
-        where: { taskId },
+        where: { issueId },
         include: {
           user: {
             select: {
@@ -212,7 +212,7 @@ export async function commentRoutes(fastify: FastifyInstance) {
       const comment = await prisma.comment.findUnique({
         where: { id: commentId },
         include: {
-          task: {
+          issue: {
             include: { project: true },
           },
           feedback: true,
@@ -226,8 +226,8 @@ export async function commentRoutes(fastify: FastifyInstance) {
       const isAuthor = comment.userId === userId;
       let isOwner = false;
 
-      if (comment.task) {
-        isOwner = comment.task.project.createdById === userId;
+      if (comment.issue) {
+        isOwner = comment.issue.project.createdById === userId;
       } else if (comment.feedback) {
         isOwner = comment.feedback.createdById === userId;
       }

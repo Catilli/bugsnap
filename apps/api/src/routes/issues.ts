@@ -1,12 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { z } from 'zod';
-import { emitTaskEvent } from '../lib/eventBus';
+import { emitIssueEvent } from '../lib/eventBus';
 import { cacheInvalidate } from '../lib/redis';
 
-const createTaskSchema = z.object({
+const createIssueSchema = z.object({
   projectId: z.string().uuid(),
-  title: z.string().min(1, 'Task title is required'),
+  title: z.string().min(1, 'Issue title is required'),
   description: z.string().optional(),
   url: z.string().optional(),
   screenshotUrl: z.string().optional(),
@@ -23,7 +23,7 @@ const createTaskSchema = z.object({
   })).optional(),
 });
 
-const updateTaskSchema = z.object({
+const updateIssueSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
@@ -33,9 +33,9 @@ const updateTaskSchema = z.object({
   assignedToId: z.string().uuid().optional(),
 });
 
-export async function taskRoutes(fastify: FastifyInstance) {
-  // Get next task number for a project
-  fastify.get('/projects/:projectId/next-task-number', {
+export async function issueRoutes(fastify: FastifyInstance) {
+  // Get next issue number for a project
+  fastify.get('/projects/:projectId/next-issue-number', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -73,35 +73,35 @@ export async function taskRoutes(fastify: FastifyInstance) {
 
       // Get the type from query params (default to TASK)
       const { type } = request.query as { type?: string };
-      const taskType = type || 'TASK';
+      const issueType = type || 'TASK';
 
-      // Get the last task of this type to determine next number
-      const lastTask = await prisma.task.findFirst({
+      // Get the last issue of this type to determine next number
+      const lastIssue = await prisma.issue.findFirst({
         where: {
           projectId,
-          type: taskType as any,
+          type: issueType as any,
         },
         orderBy: { createdAt: 'desc' },
       });
 
-      let nextTaskNumber = 1;
-      if (lastTask) {
+      let nextIssueNumber = 1;
+      if (lastIssue) {
         // Extract number from "Type #X ..." format (Bug #X, Feature #X, Task #X)
-        const match = lastTask.title.match(/(Bug|Feature|Task) #(\d+)/);
+        const match = lastIssue.title.match(/(Bug|Feature|Task) #(\d+)/);
         if (match) {
-          nextTaskNumber = parseInt(match[2]) + 1;
+          nextIssueNumber = parseInt(match[2]) + 1;
         }
       }
 
-      return reply.send({ nextTaskNumber });
+      return reply.send({ nextIssueNumber });
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ error: 'Failed to get next task number' });
+      return reply.status(500).send({ error: 'Failed to get next issue number' });
     }
   });
 
-  // Create a new task
-  fastify.post('/tasks', {
+  // Create a new issue
+  fastify.post('/issues', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -117,7 +117,7 @@ export async function taskRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const data = createTaskSchema.parse(request.body);
+      const data = createIssueSchema.parse(request.body);
 
       // Verify user has access to project
       const project = await prisma.project.findUnique({
@@ -138,34 +138,34 @@ export async function taskRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'You do not have access to this project' });
       }
 
-      // Get next task number for this project and type
-      const taskType = data.type || 'TASK';
-      const lastTask = await prisma.task.findFirst({
+      // Get next issue number for this project and type
+      const issueType = data.type || 'TASK';
+      const lastIssue = await prisma.issue.findFirst({
         where: {
           projectId: data.projectId,
-          type: taskType,
+          type: issueType,
         },
         orderBy: { createdAt: 'desc' },
       });
 
       // Get type prefix for title
-      const typePrefix = { BUG: 'Bug', FEATURE: 'Feature', TASK: 'Task' }[taskType];
+      const typePrefix = { BUG: 'Bug', FEATURE: 'Feature', TASK: 'Task' }[issueType];
 
-      let newTaskNumber = 1;
-      if (lastTask) {
+      let newIssueNumber = 1;
+      if (lastIssue) {
         // Extract number from "Type #X ..." format (Bug #X, Feature #X, Task #X)
-        const match = lastTask.title.match(/(Bug|Feature|Task) #(\d+)/);
+        const match = lastIssue.title.match(/(Bug|Feature|Task) #(\d+)/);
         if (match) {
-          newTaskNumber = parseInt(match[2]) + 1;
+          newIssueNumber = parseInt(match[2]) + 1;
         }
       }
 
-      // Create task with type-aware title prefix
-      const task = await prisma.task.create({
+      // Create issue with type-aware title prefix
+      const issue = await prisma.issue.create({
         data: {
           projectId: data.projectId,
-          title: `${typePrefix} #${newTaskNumber} - ${data.title}`,
-          type: taskType,
+          title: `${typePrefix} #${newIssueNumber} - ${data.title}`,
+          type: issueType,
           description: data.description,
           url: data.url,
           screenshotUrl: data.screenshotUrl,
@@ -203,20 +203,20 @@ export async function taskRoutes(fastify: FastifyInstance) {
         },
       });
 
-      emitTaskEvent({ type: 'task:created', projectId: data.projectId, data: task as any });
+      emitIssueEvent({ type: 'issue:created', projectId: data.projectId, data: issue as any });
       await cacheInvalidate('user:*:projects');
-      return reply.status(201).send(task);
+      return reply.status(201).send(issue);
     } catch (error: any) {
       fastify.log.error(error);
       if (error.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid task data', details: error.errors });
+        return reply.status(400).send({ error: 'Invalid issue data', details: error.errors });
       }
-      return reply.status(500).send({ error: 'Failed to create task' });
+      return reply.status(500).send({ error: 'Failed to create issue' });
     }
   });
 
-  // Get tasks for a project
-  fastify.get('/projects/:projectId/tasks', {
+  // Get issues for a project
+  fastify.get('/projects/:projectId/issues', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -295,8 +295,8 @@ export async function taskRoutes(fastify: FastifyInstance) {
         ];
       }
 
-      // Get tasks
-      const tasks = await prisma.task.findMany({
+      // Get issues
+      const issues = await prisma.issue.findMany({
         where: whereClause,
         include: {
           createdBy: {
@@ -326,15 +326,15 @@ export async function taskRoutes(fastify: FastifyInstance) {
         ],
       });
 
-      return reply.send(tasks);
+      return reply.send(issues);
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch tasks' });
+      return reply.status(500).send({ error: 'Failed to fetch issues' });
     }
   });
 
-  // Get a specific task
-  fastify.get('/tasks/:taskId', {
+  // Get a specific issue
+  fastify.get('/issues/:issueId', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -344,15 +344,15 @@ export async function taskRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
+      const issue = await prisma.issue.findUnique({
+        where: { id: issueId },
         include: {
           project: true,
           createdBy: {
@@ -384,32 +384,32 @@ export async function taskRoutes(fastify: FastifyInstance) {
         },
       });
 
-      if (!task) {
-        return reply.status(404).send({ error: 'Task not found' });
+      if (!issue) {
+        return reply.status(404).send({ error: 'Issue not found' });
       }
 
       // Verify user has access to project
-      const isOwner = task.project.createdById === userId;
+      const isOwner = issue.project.createdById === userId;
       const isMember = await prisma.projectMember.findFirst({
         where: {
-          projectId: task.projectId,
+          projectId: issue.projectId,
           userId,
         },
       });
 
       if (!isOwner && !isMember) {
-        return reply.status(403).send({ error: 'You do not have access to this task' });
+        return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 
-      return reply.send(task);
+      return reply.send(issue);
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch task' });
+      return reply.status(500).send({ error: 'Failed to fetch issue' });
     }
   });
 
-  // Update a task
-  fastify.patch('/tasks/:taskId', {
+  // Update an issue
+  fastify.patch('/issues/:issueId', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -419,41 +419,41 @@ export async function taskRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const updateData = updateTaskSchema.parse(request.body);
+      const updateData = updateIssueSchema.parse(request.body);
 
-      // Get task to verify access
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
+      // Get issue to verify access
+      const issue = await prisma.issue.findUnique({
+        where: { id: issueId },
         include: { project: true },
       });
 
-      if (!task) {
-        return reply.status(404).send({ error: 'Task not found' });
+      if (!issue) {
+        return reply.status(404).send({ error: 'Issue not found' });
       }
 
       // Verify user has access
-      const isOwner = task.project.createdById === userId;
+      const isOwner = issue.project.createdById === userId;
       const isMember = await prisma.projectMember.findFirst({
         where: {
-          projectId: task.projectId,
+          projectId: issue.projectId,
           userId,
         },
       });
 
       if (!isOwner && !isMember) {
-        return reply.status(403).send({ error: 'You do not have access to this task' });
+        return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 
-      // Update task
-      const updatedTask = await prisma.task.update({
-        where: { id: taskId },
+      // Update issue
+      const updatedIssue = await prisma.issue.update({
+        where: { id: issueId },
         data: updateData,
         include: {
           createdBy: {
@@ -473,20 +473,20 @@ export async function taskRoutes(fastify: FastifyInstance) {
         },
       });
 
-      emitTaskEvent({ type: 'task:updated', projectId: task.projectId, data: updatedTask as any });
+      emitIssueEvent({ type: 'issue:updated', projectId: issue.projectId, data: updatedIssue as any });
       await cacheInvalidate('user:*:projects');
-      return reply.send(updatedTask);
+      return reply.send(updatedIssue);
     } catch (error: any) {
       fastify.log.error(error);
       if (error.name === 'ZodError') {
-        return reply.status(400).send({ error: 'Invalid task data', details: error.errors });
+        return reply.status(400).send({ error: 'Invalid issue data', details: error.errors });
       }
-      return reply.status(500).send({ error: 'Failed to update task' });
+      return reply.status(500).send({ error: 'Failed to update issue' });
     }
   });
 
-  // Delete a task
-  fastify.delete('/tasks/:taskId', {
+  // Delete an issue
+  fastify.delete('/issues/:issueId', {
     preHandler: async (request, reply) => {
       try {
         await fastify.authenticate(request, reply);
@@ -496,40 +496,40 @@ export async function taskRoutes(fastify: FastifyInstance) {
     },
   }, async (request, reply) => {
     try {
-      const { taskId } = request.params as { taskId: string };
+      const { issueId } = request.params as { issueId: string };
       const userId = (request.user as any)?.id;
 
       if (!userId) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
+      const issue = await prisma.issue.findUnique({
+        where: { id: issueId },
         include: { project: true },
       });
 
-      if (!task) {
-        return reply.status(404).send({ error: 'Task not found' });
+      if (!issue) {
+        return reply.status(404).send({ error: 'Issue not found' });
       }
 
-      // Only owner or task creator can delete
-      const isProjectOwner = task.project.createdById === userId;
-      const isTaskCreator = task.createdById === userId;
+      // Only owner or issue creator can delete
+      const isProjectOwner = issue.project.createdById === userId;
+      const isIssueCreator = issue.createdById === userId;
 
-      if (!isProjectOwner && !isTaskCreator) {
-        return reply.status(403).send({ error: 'Only the project owner or task creator can delete this task' });
+      if (!isProjectOwner && !isIssueCreator) {
+        return reply.status(403).send({ error: 'Only the project owner or issue creator can delete this issue' });
       }
 
-      await prisma.task.delete({
-        where: { id: taskId },
+      await prisma.issue.delete({
+        where: { id: issueId },
       });
 
-      emitTaskEvent({ type: 'task:deleted', projectId: task.projectId, data: { id: taskId } });
+      emitIssueEvent({ type: 'issue:deleted', projectId: issue.projectId, data: { id: issueId } });
       await cacheInvalidate('user:*:projects');
-      return reply.send({ message: 'Task deleted successfully' });
+      return reply.send({ message: 'Issue deleted successfully' });
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ error: 'Failed to delete task' });
+      return reply.status(500).send({ error: 'Failed to delete issue' });
     }
   });
 }
