@@ -13,10 +13,16 @@ class BugSnapUI {
     this.currentTool = 'rectangle';
     this.projectMembers = [];
     this.selectedAssignees = [];
+    this.userEmail = null;
     this.init();
   }
 
-  init() {
+  async init() {
+    // Load reporter email from storage
+    try {
+      const result = await browser.storage.local.get(['userEmail']);
+      this.userEmail = result.userEmail || null;
+    } catch (e) { /* ignore */ }
     // Auto-start tagging mode on page load
     this.startTagging();
   }
@@ -80,6 +86,9 @@ class BugSnapUI {
     this.selectedElement.style.outline = '3px solid #3b82f6';
     this.selectedElement.style.outlineOffset = '2px';
 
+    // Add pin marker at selected element
+    this.addPinMarker(this.selectedElement);
+
     // Remove overlay and listeners
     const overlay = document.getElementById('bugsnap-tagging-overlay');
     if (overlay) overlay.remove();
@@ -88,6 +97,39 @@ class BugSnapUI {
 
     // Capture screenshot after a brief delay to ensure highlight is rendered
     setTimeout(() => this.captureScreenshot(), 300);
+  }
+
+  addPinMarker(element) {
+    const rect = element.getBoundingClientRect();
+    const pin = document.createElement('div');
+    pin.className = 'bugsnap-pin';
+    pin.style.cssText = `
+      position: fixed;
+      top: ${rect.top - 12}px;
+      left: ${rect.right + 4}px;
+      width: 24px;
+      height: 24px;
+      background: #ef4444;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      z-index: 10000000;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      pointer-events: none;
+    `;
+    const inner = document.createElement('div');
+    inner.style.cssText = `
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    `;
+    pin.appendChild(inner);
+    document.body.appendChild(pin);
+    this.pinMarker = pin;
   }
 
   async captureScreenshot() {
@@ -180,6 +222,20 @@ class BugSnapUI {
         justify-content: center;
       " title="Rectangle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+      </button>
+
+      <!-- Highlighter Tool -->
+      <button class="tool-btn" data-tool="highlighter" style="
+        background: white;
+        border: 1px solid #e5e7eb;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " title="Highlighter">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect width="18" height="8" x="3" y="8" rx="1" fill="#6b7280" fill-opacity="0.3" stroke="none"/><rect width="18" height="8" x="3" y="8" rx="1"/></svg>
       </button>
 
       <!-- Arrow Tool -->
@@ -890,6 +946,10 @@ class BugSnapUI {
           browser: navigator.userAgent,
           os: navigator.platform,
           timestamp: new Date().toISOString(),
+          screenResolution: `${screen.width}x${screen.height}`,
+          viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+          deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : (window.innerWidth <= 1024 ? 'tablet' : 'desktop'),
+          reporterEmail: this.userEmail || undefined,
           selectedElement: {
             tagName: this.selectedElement.tagName,
             innerText: this.selectedElement.innerText?.substring(0, 100),
@@ -965,6 +1025,12 @@ class BugSnapUI {
     this.selectedAnnotationIndex = null;
     this.isTagging = false;
     this.selectedAssignees = [];
+
+    // Remove pin marker
+    if (this.pinMarker) {
+      this.pinMarker.remove();
+      this.pinMarker = null;
+    }
 
     // Clean up MarkMyImage instance
     if (this.markMyImage) {

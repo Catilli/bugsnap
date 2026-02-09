@@ -67,9 +67,15 @@ export function startWorkers(): void {
   new Worker(
     'bugsnap:email',
     async (job: Job) => {
-      const { to, subject } = job.data;
-      // TODO: Integrate email service (SendGrid, Resend, etc.)
-      console.log(`[email] Would send to=${to} subject="${subject}"`);
+      const { to, subject, html } = job.data;
+      try {
+        // Lazy import to avoid circular dependency issues
+        const { emailService } = await import('../services/emailService');
+        await emailService.sendEmail(to, subject, html);
+      } catch (error) {
+        console.error(`[email] Failed to send to=${to} subject="${subject}":`, error);
+        throw error; // BullMQ will retry
+      }
     },
     { connection, concurrency: 5 }
   );

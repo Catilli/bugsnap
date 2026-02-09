@@ -14,6 +14,15 @@ export class EmailService {
     return this.resend;
   }
 
+  async sendEmail(to: string, subject: string, html: string) {
+    await this.getResend().emails.send({
+      from: RESEND_FROM_EMAIL,
+      to,
+      subject,
+      html,
+    });
+  }
+
   async sendPasswordResetEmail(to: string, rawToken: string, userName: string) {
     const resetUrl = `${FRONTEND_URL}/reset-password?token=${rawToken}`;
 

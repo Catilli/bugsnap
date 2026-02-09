@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma';
 import { emitIssueEvent } from '../lib/eventBus';
 import { z } from 'zod';
 import { sanitizeString } from '../utils/sanitize';
+import { logActivity } from '../utils/activityLogger';
+import { notificationService } from '../services/notificationService';
 
 const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment content is required').transform(sanitizeString),
@@ -74,6 +76,54 @@ export async function commentRoutes(fastify: FastifyInstance) {
 
       // Emit SSE event so other clients see the new comment
       emitIssueEvent({ type: 'issue:updated', projectId: issue.projectId, data: issue as any });
+
+      // Log activity
+      logActivity({
+        projectId: issue.projectId,
+        issueId,
+        userId,
+        action: 'commented',
+        metadata: { snippet: data.content.substring(0, 100) },
+      });
+
+      // Notify issue creator + assignee (exclude comment author)
+      const notifyIds = new Set<string>();
+      if (issue.createdById) notifyIds.add(issue.createdById);
+      if ((issue as any).assignedToId) notifyIds.add((issue as any).assignedToId);
+      notifyIds.delete(userId);
+
+      for (const recipientId of notifyIds) {
+        notificationService.create({
+          userId: recipientId,
+          type: 'commented',
+          title: `New comment on "${issue.title}"`,
+          message: data.content.substring(0, 200),
+          issueId,
+          projectId: issue.projectId,
+        });
+      }
+
+      // Parse @mentions and notify mentioned users
+      const mentions = data.content.match(/@(\w+)/g);
+      if (mentions) {
+        const mentionNames = mentions.map(m => m.slice(1));
+        const mentionedUsers = await prisma.user.findMany({
+          where: { name: { in: mentionNames, mode: 'insensitive' } },
+          select: { id: true, name: true },
+        });
+        for (const mentionedUser of mentionedUsers) {
+          if (mentionedUser.id !== userId && !notifyIds.has(mentionedUser.id)) {
+            notificationService.create({
+              userId: mentionedUser.id,
+              type: 'mentioned',
+              title: `You were mentioned in "${issue.title}"`,
+              message: data.content.substring(0, 200),
+              issueId,
+              projectId: issue.projectId,
+            });
+          }
+        }
+      }
 
       return reply.status(201).send(comment);
     } catch (error: any) {

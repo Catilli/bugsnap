@@ -23,7 +23,7 @@ interface Issue {
 export interface ColumnConfig {
   status: string;
   title: string;
-  color: 'yellow' | 'blue' | 'gray' | 'green' | 'purple';
+  color: 'yellow' | 'blue' | 'gray' | 'green' | 'purple' | 'teal';
 }
 
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -95,7 +95,7 @@ export function KanbanBoard({ issues, onIssueClick, onStatusChange, columns }: K
 
   return (
     <div
-      className="grid grid-cols-4 gap-4 pb-4"
+      className={`grid gap-4 pb-4 ${activeColumns.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}
       onDragLeave={handleDragLeave}
     >
       {activeColumns.map((column) => (

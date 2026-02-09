@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, MapPin, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, MapPin, ExternalLink, Share2, Check, Paperclip, Upload, FileText, Image, Film, Trash2 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
+import ActivityTimeline from './ActivityTimeline';
 import { getAuthToken } from '../lib/clerkTokenBridge';
 import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
@@ -25,8 +26,9 @@ interface Issue {
   description: string | null;
   url: string | null;
   screenshotUrl: string | null;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical' | null;
+  severity?: 'low' | 'medium' | 'high' | 'critical' | null;
   type?: 'BUG' | 'FEATURE' | 'TASK';
   createdAt: string;
   updatedAt: string;
@@ -44,12 +46,25 @@ interface Issue {
     browser?: string;
     os?: string;
     timestamp?: string;
+    screenResolution?: string;
+    viewportSize?: string;
+    deviceType?: string;
+    reporterEmail?: string;
     selectedElement?: any;
   };
   annotations?: any[];
   _count: {
     comments: number;
   };
+}
+
+interface Attachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  createdAt: string;
 }
 
 export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange }: IssueDrawerProps) {
@@ -59,6 +74,13 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isScreenshotEnlarged, setIsScreenshotEnlarged] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Extract issue/bug/feature number from title
   const getIssueNumber = (title: string) => {
@@ -102,6 +124,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const statusOptions = [
     { value: 'open', label: 'Open' },
     { value: 'in_progress', label: 'In Progress' },
+    { value: 'qa', label: 'QA' },
     { value: 'resolved', label: 'Resolved' },
     { value: 'closed', label: 'Closed' },
   ];
@@ -168,6 +191,114 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     }
   };
 
+  const handleShare = async () => {
+    if (!issueId) return;
+    setIsSharing(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/share`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ expiresInDays: 7 }),
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const link = `${window.location.origin}/shared/${data.token}`;
+        setShareLink(link);
+        await navigator.clipboard.writeText(link);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // Fetch attachments when issue loads
+  useEffect(() => {
+    if (isOpen && issueId) {
+      fetchAttachments();
+    }
+  }, [isOpen, issueId]);
+
+  const fetchAttachments = async () => {
+    if (!issueId) return;
+    try {
+      const token = getAuthToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/attachments`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.ok) {
+        setAttachments(await response.json());
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const uploadAttachment = async (file: File) => {
+    if (!issueId) return;
+    setIsUploading(true);
+    try {
+      const token = getAuthToken();
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/attachments`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      );
+      if (response.ok) {
+        const attachment = await response.json();
+        setAttachments((prev) => [attachment, ...prev]);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) uploadAttachment(files[0]);
+  }, [issueId]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) return <Image className="w-4 h-4" />;
+    if (fileType.startsWith('video/')) return <Film className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -190,6 +321,16 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             {issue?.status && <StatusBadge status={issue.status} size="sm" />}
           </div>
           <div className="flex items-center gap-2">
+            {hasRole('MANAGER') && (
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
+                title={shareCopied ? 'Link copied!' : 'Share issue'}
+              >
+                {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded transition-colors"
@@ -317,24 +458,44 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
               </div>
             )}
 
-            {/* Priority — MANAGER+ can edit, others see read-only */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-              {hasRole('MANAGER') ? (
-                <select
-                  value={issue.priority || ''}
-                  onChange={(e) => updateIssue('priority', e.target.value || null)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                >
-                  <option value="">Not Set</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-              ) : (
-                <span className="text-sm text-gray-600 capitalize">{issue.priority || 'Not set'}</span>
-              )}
+            {/* Priority & Severity — MANAGER+ can edit, others see read-only */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                {hasRole('MANAGER') ? (
+                  <select
+                    value={issue.priority || ''}
+                    onChange={(e) => updateIssue('priority', e.target.value || null)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                  >
+                    <option value="">Not Set</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                ) : (
+                  <span className="text-sm text-gray-600 capitalize">{issue.priority || 'Not set'}</span>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Severity</label>
+                {hasRole('MANAGER') ? (
+                  <select
+                    value={issue.severity || ''}
+                    onChange={(e) => updateIssue('severity', e.target.value || null)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                  >
+                    <option value="">Not Set</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                ) : (
+                  <span className="text-sm text-gray-600 capitalize">{issue.severity || 'Not set'}</span>
+                )}
+              </div>
             </div>
 
             {/* Assigned To — MANAGER+ can assign, others see read-only */}
@@ -359,6 +520,27 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
               )}
             </div>
 
+            {/* Environment Info */}
+            {issue.environmentData && (issue.environmentData.screenResolution || issue.environmentData.viewportSize || issue.environmentData.deviceType) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Environment</label>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3">
+                  {issue.environmentData.deviceType && (
+                    <div><span className="font-medium text-gray-700">Device:</span> {issue.environmentData.deviceType}</div>
+                  )}
+                  {issue.environmentData.screenResolution && (
+                    <div><span className="font-medium text-gray-700">Screen:</span> {issue.environmentData.screenResolution}</div>
+                  )}
+                  {issue.environmentData.viewportSize && (
+                    <div><span className="font-medium text-gray-700">Viewport:</span> {issue.environmentData.viewportSize}</div>
+                  )}
+                  {issue.environmentData.os && (
+                    <div><span className="font-medium text-gray-700">OS:</span> {issue.environmentData.os}</div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Metadata */}
             <div className="border-t border-gray-200 pt-6">
               <p className="text-xs text-gray-500">
@@ -366,11 +548,83 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
               </p>
             </div>
 
+            {/* Attachments */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Paperclip className="w-4 h-4 text-gray-500" />
+                <label className="text-sm font-medium text-gray-700">
+                  Attachments {attachments.length > 0 && `(${attachments.length})`}
+                </label>
+              </div>
+
+              {/* Drop zone — visible to non-viewers */}
+              {!isViewer && (
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors mb-3 ${
+                    isDragOver
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadAttachment(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  {isUploading ? (
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600" />
+                      Uploading...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <Upload className="w-4 h-4" />
+                      Drop file here or click to upload
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* File list */}
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((att) => (
+                    <a
+                      key={att.id}
+                      href={att.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                    >
+                      <span className="text-gray-400">{getFileIcon(att.fileType)}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-900 truncate">{att.fileName}</div>
+                        <div className="text-xs text-gray-500">{formatFileSize(att.fileSize)}</div>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Comments */}
             <CommentSection
               issueId={issueId}
               onCommentCountChange={(count) => onCommentCountChange?.(issueId!, count)}
             />
+
+            {/* Activity Timeline */}
+            <ActivityTimeline issueId={issueId} />
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">

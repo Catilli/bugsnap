@@ -5,6 +5,8 @@ import { emitIssueEvent } from '../lib/eventBus';
 import { cacheInvalidate } from '../lib/redis';
 import { sanitizeString } from '../utils/sanitize';
 import { processScreenshotUrl } from '../utils/processScreenshot';
+import { logActivity } from '../utils/activityLogger';
+import { notificationService } from '../services/notificationService';
 
 const createIssueSchema = z.object({
   projectId: z.string().uuid(),
@@ -13,12 +15,13 @@ const createIssueSchema = z.object({
   url: z.string().optional(),
   screenshotUrl: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   type: z.enum(['BUG', 'FEATURE', 'TASK']).default('TASK'),
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
   environmentData: z.any().optional(),
   annotations: z.array(z.object({
-    type: z.enum(['pen', 'rectangle', 'arrow', 'text']),
+    type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
     coordinates: z.any(),
     content: z.string().transform(sanitizeString).optional(),
     color: z.string().optional(),
@@ -28,8 +31,9 @@ const createIssueSchema = z.object({
 const updateIssueSchema = z.object({
   title: z.string().min(1).transform(sanitizeString).optional(),
   description: z.string().transform(sanitizeString).optional(),
-  status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+  status: z.enum(['open', 'in_progress', 'qa', 'resolved', 'closed']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).optional(),
   assignedToId: z.string().uuid().optional(),
@@ -189,6 +193,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
           url: data.url,
           screenshotUrl,
           priority: data.priority,
+          severity: data.severity,
           visibility: data.visibility,
           assignedToId: data.assignedToId,
           environmentData: data.environmentData,
@@ -224,6 +229,16 @@ export async function issueRoutes(fastify: FastifyInstance) {
 
       emitIssueEvent({ type: 'issue:created', projectId: data.projectId, data: issue as any });
       await cacheInvalidate('user:*:projects');
+
+      // Log activity
+      logActivity({
+        projectId: data.projectId,
+        issueId: issue.id,
+        userId,
+        action: 'created',
+        metadata: { title: issue.title },
+      });
+
       return reply.status(201).send(issue);
     } catch (error: any) {
       fastify.log.error(error);
@@ -274,11 +289,13 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Parse query params for filtering
-      const { type, status, priority, search } = request.query as {
+      const { type, status, priority, search, assignedToId, groupBy } = request.query as {
         type?: string;
         status?: string;
         priority?: string;
         search?: string;
+        assignedToId?: string;
+        groupBy?: string;
       };
 
       // Build where clause with filters
@@ -306,6 +323,11 @@ export async function issueRoutes(fastify: FastifyInstance) {
         if (priorities.length > 0) {
           whereClause.priority = { in: priorities };
         }
+      }
+
+      // Filter by assignee
+      if (assignedToId) {
+        whereClause.assignedToId = assignedToId;
       }
 
       // Search in title and description
@@ -346,6 +368,20 @@ export async function issueRoutes(fastify: FastifyInstance) {
           },
         ],
       });
+
+      // Group by URL if requested
+      if (groupBy === 'url') {
+        const grouped: Record<string, { url: string; count: number; issues: typeof issues }> = {};
+        for (const issue of issues) {
+          const url = issue.url || '(no URL)';
+          if (!grouped[url]) {
+            grouped[url] = { url, count: 0, issues: [] };
+          }
+          grouped[url].count++;
+          grouped[url].issues.push(issue);
+        }
+        return reply.send(Object.values(grouped));
+      }
 
       return reply.send(issues);
     } catch (error) {
@@ -528,6 +564,57 @@ export async function issueRoutes(fastify: FastifyInstance) {
 
       emitIssueEvent({ type: 'issue:updated', projectId: issue.projectId, data: updatedIssue as any });
       await cacheInvalidate('user:*:projects');
+
+      // Log activity for each changed field
+      const fieldsToTrack = ['status', 'priority', 'severity', 'title', 'description', 'type', 'visibility', 'assignedToId'] as const;
+      for (const field of fieldsToTrack) {
+        if (updateData[field] !== undefined && (issue as any)[field] !== updateData[field]) {
+          const action = field === 'status' ? 'status_changed'
+            : field === 'assignedToId' ? 'assigned'
+            : 'updated';
+          logActivity({
+            projectId: issue.projectId,
+            issueId,
+            userId,
+            action,
+            field,
+            oldValue: String((issue as any)[field] ?? ''),
+            newValue: String(updateData[field] ?? ''),
+          });
+        }
+      }
+
+      // Notify on assignment
+      if (updateData.assignedToId && updateData.assignedToId !== issue.assignedToId && updateData.assignedToId !== userId) {
+        notificationService.create({
+          userId: updateData.assignedToId,
+          type: 'assigned',
+          title: `You were assigned to "${issue.title}"`,
+          message: `You were assigned to the issue "${issue.title}".`,
+          issueId,
+          projectId: issue.projectId,
+        });
+      }
+
+      // Notify on status change (notify assignee + creator, exclude current user)
+      if (updateData.status && updateData.status !== issue.status) {
+        const notifyIds = new Set<string>();
+        if (issue.assignedToId) notifyIds.add(issue.assignedToId);
+        if (issue.createdById) notifyIds.add(issue.createdById);
+        notifyIds.delete(userId); // don't notify self
+
+        for (const recipientId of notifyIds) {
+          notificationService.create({
+            userId: recipientId,
+            type: 'status_changed',
+            title: `Status changed on "${issue.title}"`,
+            message: `Status changed from "${issue.status}" to "${updateData.status}".`,
+            issueId,
+            projectId: issue.projectId,
+          });
+        }
+      }
+
       return reply.send(updatedIssue);
     } catch (error: any) {
       fastify.log.error(error);
@@ -538,6 +625,61 @@ export async function issueRoutes(fastify: FastifyInstance) {
         return reply.status(error.statusCode || 403).send({ error: error.message });
       }
       return reply.status(500).send({ error: 'Failed to update issue' });
+    }
+  });
+
+  // Get activity log for an issue
+  fastify.get('/issues/:issueId/activity', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch (err) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
+    try {
+      const { issueId } = request.params as { issueId: string };
+      const userId = (request.user as any)?.id;
+
+      if (!userId) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const issue = await prisma.issue.findUnique({
+        where: { id: issueId },
+        include: { project: { include: { members: true } } },
+      });
+
+      if (!issue) {
+        return reply.status(404).send({ error: 'Issue not found' });
+      }
+
+      // Verify user has access
+      const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      const isAdmin = userRecord?.role === 'ADMIN';
+      const isOwner = issue.project.createdById === userId;
+      const isMember = issue.project.members.some((m: any) => m.userId === userId);
+
+      if (!isAdmin && !isOwner && !isMember) {
+        return reply.status(403).send({ error: 'You do not have access to this issue' });
+      }
+
+      const activity = await prisma.activityLog.findMany({
+        where: { issueId },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+
+      return reply.send(activity);
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch activity' });
     }
   });
 
@@ -592,6 +734,14 @@ export async function issueRoutes(fastify: FastifyInstance) {
 
       emitIssueEvent({ type: 'issue:deleted', projectId: issue.projectId, data: { id: issueId } });
       await cacheInvalidate('user:*:projects');
+
+      logActivity({
+        projectId: issue.projectId,
+        userId,
+        action: 'deleted',
+        metadata: { title: issue.title },
+      });
+
       return reply.send({ message: 'Issue deleted successfully' });
     } catch (error) {
       fastify.log.error(error);

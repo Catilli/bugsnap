@@ -6,7 +6,8 @@ import { useProject } from '../../ProjectContext';
 import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import { FilterBar } from '@/components/FilterBar';
 import IssueDrawer from '@/components/IssueDrawer';
-import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert } from 'lucide-react';
+import { StatusBadge } from '@/components/StatusBadge';
+import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert, Globe } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { useRole } from '@/lib/useRole';
@@ -27,8 +28,9 @@ interface Issue {
   type?: 'BUG' | 'FEATURE' | 'TASK';
   url: string | null;
   screenshotUrl: string | null;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical' | null;
+  severity?: 'low' | 'medium' | 'high' | 'critical' | null;
   createdAt: string;
   updatedAt: string;
   createdBy: {
@@ -49,7 +51,8 @@ interface Issue {
 const PROJECT_COLUMNS: ColumnConfig[] = [
   { status: 'open', title: 'New', color: 'yellow' },
   { status: 'in_progress', title: 'In Progress', color: 'blue' },
-  { status: 'resolved', title: 'Ready for QA', color: 'purple' },
+  { status: 'qa', title: 'QA', color: 'purple' },
+  { status: 'resolved', title: 'Resolved', color: 'teal' },
   { status: 'closed', title: 'Completed', color: 'green' },
 ];
 
@@ -78,6 +81,7 @@ export default function ProjectDetailPage() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+  const [groupByUrl, setGroupByUrl] = useState(false);
 
   const assigneeOptions = useMemo(() => {
     const seen = new Map<string, string>();
@@ -104,6 +108,17 @@ export default function ProjectDetailPage() {
     });
   }, [issues, typeFilter, priorityFilter, assigneeFilter, searchQuery]);
 
+  const groupedByUrl = useMemo(() => {
+    if (!groupByUrl) return null;
+    const groups: Record<string, Issue[]> = {};
+    filteredIssues.forEach((issue) => {
+      const key = issue.url || '(no URL)';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(issue);
+    });
+    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  }, [filteredIssues, groupByUrl]);
+
   const hasActiveFilters = typeFilter !== null || priorityFilter !== null || assigneeFilter !== null || searchQuery !== '';
 
   const clearFilters = () => {
@@ -111,6 +126,7 @@ export default function ProjectDetailPage() {
     setTypeFilter(null);
     setPriorityFilter(null);
     setAssigneeFilter(null);
+    setGroupByUrl(false);
   };
 
   const openIssueDrawer = (issueId: string) => {
@@ -462,16 +478,63 @@ export default function ProjectDetailPage() {
                       },
                     ]
                   : []),
+                {
+                  kind: 'toggle' as const,
+                  key: 'groupByUrl',
+                  label: 'Group by URL',
+                  icon: <Globe className="w-4 h-4" />,
+                  active: groupByUrl,
+                  activeClassName: 'bg-indigo-600 text-white',
+                  onClick: () => setGroupByUrl(!groupByUrl),
+                },
               ]}
               showClear={hasActiveFilters}
               onClear={clearFilters}
             />
-            <KanbanBoard
-              issues={filteredIssues}
-              columns={PROJECT_COLUMNS}
-              onIssueClick={openIssueDrawer}
-              onStatusChange={isViewer ? undefined : handleStatusChange}
-            />
+            {groupedByUrl && groupedByUrl.length > 0 ? (
+              <div className="space-y-4">
+                {groupedByUrl.map(([url, urlIssues]) => (
+                  <div key={url} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-700 truncate flex-1">{url}</span>
+                      <span className="text-xs text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">
+                        {urlIssues.length}
+                      </span>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {urlIssues.map((issue) => (
+                        <button
+                          key={issue.id}
+                          onClick={() => openIssueDrawer(issue.id)}
+                          className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <StatusBadge status={issue.status} size="sm" />
+                          <span className="text-sm text-gray-900 flex-1 truncate">{issue.title}</span>
+                          {issue.priority && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              issue.priority === 'critical' ? 'bg-red-100 text-red-700' :
+                              issue.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                              issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {issue.priority}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <KanbanBoard
+                issues={filteredIssues}
+                columns={PROJECT_COLUMNS}
+                onIssueClick={openIssueDrawer}
+                onStatusChange={isViewer ? undefined : handleStatusChange}
+              />
+            )}
           </div>
         )}
       </div>

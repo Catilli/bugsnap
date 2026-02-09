@@ -1,13 +1,14 @@
 interface StatusBadgeProps {
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
   size?: 'sm' | 'md';
 }
 
 export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   const getStatusStyles = () => {
-    const styles = {
+    const styles: Record<string, string> = {
       open: 'bg-yellow-100 text-yellow-800',
       in_progress: 'bg-blue-100 text-blue-800',
+      qa: 'bg-purple-100 text-purple-800',
       resolved: 'bg-green-100 text-green-800',
       closed: 'bg-gray-100 text-gray-800',
     };

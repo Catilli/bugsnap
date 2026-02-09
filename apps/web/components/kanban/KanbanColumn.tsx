@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 interface KanbanColumnProps {
   title: string;
   count: number;
-  color: 'yellow' | 'blue' | 'gray' | 'green' | 'purple';
+  color: 'yellow' | 'blue' | 'gray' | 'green' | 'purple' | 'teal';
   status: string;
   children: ReactNode;
   onDragOver: (e: React.DragEvent) => void;
@@ -48,6 +48,11 @@ export function KanbanColumn({
       header: 'bg-purple-100',
       dot: 'bg-purple-500',
       border: 'border-purple-300',
+    },
+    teal: {
+      header: 'bg-teal-100',
+      dot: 'bg-teal-500',
+      border: 'border-teal-300',
     },
   };
 

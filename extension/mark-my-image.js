@@ -96,6 +96,7 @@ class MarkMyImage {
         
       case 'rectangle':
       case 'arrow':
+      case 'highlighter':
         this.startX = x;
         this.startY = y;
         this.isDrawing = true;
@@ -126,6 +127,7 @@ class MarkMyImage {
       // Update annotation position based on type
       switch(ann.type) {
         case 'rectangle':
+        case 'highlighter':
           ann.coordinates.x += deltaX;
           ann.coordinates.y += deltaY;
           break;
@@ -163,11 +165,15 @@ class MarkMyImage {
       case 'rectangle':
         this.drawRectangle(this.startX, this.startY, x - this.startX, y - this.startY);
         break;
-        
+
+      case 'highlighter':
+        this.drawHighlighter(this.startX, this.startY, x - this.startX, y - this.startY);
+        break;
+
       case 'arrow':
         this.drawArrow(this.startX, this.startY, x, y);
         break;
-        
+
       case 'pen':
         this.currentPath.push({ x, y });
         this.drawPen(this.currentPath);
@@ -210,7 +216,22 @@ class MarkMyImage {
           };
         }
         break;
-        
+
+      case 'highlighter':
+        if (Math.abs(x - this.startX) > 5 && Math.abs(y - this.startY) > 5) {
+          annotation = {
+            type: 'highlighter',
+            coordinates: {
+              x: Math.min(this.startX, x),
+              y: Math.min(this.startY, y),
+              width: Math.abs(x - this.startX),
+              height: Math.abs(y - this.startY)
+            },
+            color: this.options.strokeColor
+          };
+        }
+        break;
+
       case 'arrow':
         if (Math.abs(x - this.startX) > 5 || Math.abs(y - this.startY) > 5) {
           annotation = {
@@ -340,6 +361,17 @@ class MarkMyImage {
     this.ctx.strokeRect(x, y, width, height);
   }
   
+  drawHighlighter(x, y, width, height, style = {}) {
+    const color = style.color || this.options.strokeColor;
+    // Parse hex color for rgba
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+    this.ctx.fillRect(x, y, width, height);
+    // No stroke for highlighter
+  }
+
   drawArrow(fromX, fromY, toX, toY, style = {}) {
     const headlen = 15;
     const angle = Math.atan2(toY - fromY, toX - fromX);
@@ -399,6 +431,9 @@ class MarkMyImage {
         case 'rectangle':
           this.drawRectangle(ann.coordinates.x, ann.coordinates.y, ann.coordinates.width, ann.coordinates.height, style);
           break;
+        case 'highlighter':
+          this.drawHighlighter(ann.coordinates.x, ann.coordinates.y, ann.coordinates.width, ann.coordinates.height, style);
+          break;
         case 'arrow':
           this.drawArrow(ann.coordinates.startX, ann.coordinates.startY, ann.coordinates.endX, ann.coordinates.endY, style);
           break;
@@ -426,6 +461,7 @@ class MarkMyImage {
   getAnnotationBounds(ann) {
     switch(ann.type) {
       case 'rectangle':
+      case 'highlighter':
         return {
           x: ann.coordinates.x,
           y: ann.coordinates.y,

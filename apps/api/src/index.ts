@@ -23,6 +23,8 @@ import { feedbackRoutes } from './routes/feedback';
 import { uploadRoutes } from './routes/uploads';
 import { eventRoutes } from './routes/events';
 import { commentRoutes } from './routes/comments';
+import { notificationRoutes } from './routes/notifications';
+import { shareRoutes } from './routes/share';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
 
@@ -129,6 +131,8 @@ fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
 fastify.register(uploadRoutes, { prefix: '/api' });
 fastify.register(eventRoutes, { prefix: '/api' });
 fastify.register(commentRoutes, { prefix: '/api' });
+fastify.register(notificationRoutes, { prefix: '/api' });
+fastify.register(shareRoutes, { prefix: '/api' });
 
 const start = async () => {
   try {

@@ -17,19 +17,28 @@ interface Comment {
   };
 }
 
+interface ProjectMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface CommentSectionProps {
   issueId?: string | null;
   feedbackId?: string | null;
   onCommentCountChange?: (count: number) => void;
+  projectMembers?: ProjectMember[];
 }
 
-export default function CommentSection({ issueId, feedbackId, onCommentCountChange }: CommentSectionProps) {
+export default function CommentSection({ issueId, feedbackId, onCommentCountChange, projectMembers = [] }: CommentSectionProps) {
   const { isViewer } = useRole();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<ProjectMember[]>([]);
   const user = useCurrentUser();
 
   const entityId = issueId || feedbackId;
@@ -221,14 +230,60 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
 
       {/* Add comment form — hidden for VIEWER */}
       {!isViewer && (
-        <div className="mt-4">
+        <div className="mt-4 relative">
           <textarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
+            onChange={(e) => {
+              setNewComment(e.target.value);
+              // Detect @mention
+              const text = e.target.value;
+              const cursorPos = e.target.selectionStart;
+              const textBefore = text.slice(0, cursorPos);
+              const mentionMatch = textBefore.match(/@(\w*)$/);
+              if (mentionMatch && projectMembers.length > 0) {
+                const query = mentionMatch[1].toLowerCase();
+                setMentionQuery(query);
+                setMentionResults(
+                  projectMembers.filter(m =>
+                    m.name.toLowerCase().includes(query)
+                  ).slice(0, 5)
+                );
+              } else {
+                setMentionQuery(null);
+                setMentionResults([]);
+              }
+            }}
+            placeholder="Add a comment... (use @name to mention)"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             rows={3}
           />
+          {/* @Mention autocomplete dropdown */}
+          {mentionQuery !== null && mentionResults.length > 0 && (
+            <div className="absolute bottom-full mb-1 left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              {mentionResults.map(member => (
+                <button
+                  key={member.id}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    // Replace the @query with @name
+                    const regex = new RegExp(`@${mentionQuery}$`);
+                    setNewComment(prev => {
+                      const before = prev.slice(0, prev.length);
+                      return before.replace(regex, `@${member.name} `);
+                    });
+                    setMentionQuery(null);
+                    setMentionResults([]);
+                  }}
+                >
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-medium">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-gray-900">{member.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <button
             onClick={handleAddComment}
             disabled={isSubmitting || !newComment.trim()}
