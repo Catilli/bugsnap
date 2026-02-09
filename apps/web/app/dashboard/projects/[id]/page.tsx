@@ -7,7 +7,7 @@ import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import { FilterBar } from '@/components/FilterBar';
 import IssueDrawer from '@/components/IssueDrawer';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Pencil, ExternalLink, RefreshCw, Trash2, BadgeAlert, Globe } from 'lucide-react';
+import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { useRole } from '@/lib/useRole';
@@ -74,8 +74,6 @@ export default function ProjectDetailPage() {
   // Issue drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; issueId: string | null }>({ show: false, issueId: null });
-
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -199,7 +197,6 @@ export default function ProjectDetailPage() {
 
       if (response.ok) {
         setIssues(issues.filter(i => i.id !== issueId));
-        setDeleteConfirm({ show: false, issueId: null });
       }
     } catch (error) {
       // Silently fail on error
@@ -358,9 +355,8 @@ export default function ProjectDetailPage() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <PageHeader
+    <div className="space-y-6">
+      <PageHeader
           icon={
             <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
               <BadgeAlert className="w-5 h-5 text-red-600" />
@@ -408,16 +404,9 @@ export default function ProjectDetailPage() {
             </a>
           }
         />
-      </div>
 
       {/* Issues Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Issues</h2>
-        </div>
-
-        {/* Loading State */}
-        {isIssuesLoading ? (
+      {isIssuesLoading ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
               <RefreshCw className="w-8 h-8 text-gray-400" />
@@ -537,7 +526,6 @@ export default function ProjectDetailPage() {
             )}
           </div>
         )}
-      </div>
 
       {/* Issue Drawer */}
       <IssueDrawer
@@ -553,39 +541,6 @@ export default function ProjectDetailPage() {
         }}
       />
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm.show && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Issue</h3>
-                <p className="text-sm text-gray-500">This action cannot be undone</p>
-              </div>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this issue? All associated data will be permanently removed.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteConfirm({ show: false, issueId: null })}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => deleteConfirm.issueId && handleDeleteIssue(deleteConfirm.issueId)}
-                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

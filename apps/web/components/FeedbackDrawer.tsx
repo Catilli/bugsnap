@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Bug, Lightbulb, Share2, Check, Paperclip, Upload, FileText, Image, Film, ExternalLink } from 'lucide-react';
+import { Bug, Lightbulb, Share2, Check, Paperclip, Upload, FileText, Image, Film, ExternalLink } from 'lucide-react';
+import Drawer from './Drawer';
 import { PriorityBadge } from './PriorityBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
@@ -298,62 +299,45 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
     return <FileText className="w-4 h-4" />;
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full md:w-[600px] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">
-              {feedback?.title ? `${getTypePrefix(feedback.title)} #${getFeedbackNumber(feedback.title) || '1'}` : '...'}
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      isLoading={isLoading}
+      notFound={!feedback}
+      notFoundMessage="Feedback not found"
+      header={
+        <>
+          <span className="text-sm text-gray-500">
+            {feedback?.title ? `${getTypePrefix(feedback.title)} #${getFeedbackNumber(feedback.title) || '1'}` : '...'}
+          </span>
+          {feedback?.type && (
+            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${getTypeStyles(feedback.type)}`}>
+              {getTypeIcon(feedback.type)}
+              {feedback.type === 'BUG' ? 'Bug' : 'Feature'}
             </span>
-            {feedback?.type && (
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${getTypeStyles(feedback.type)}`}>
-                {getTypeIcon(feedback.type)}
-                {feedback.type === 'BUG' ? 'Bug' : 'Feature'}
-              </span>
-            )}
-            {feedback?.status && (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(feedback.status)}`}>
-                {formatStatus(feedback.status)}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {!isViewer && (
-              <button
-                onClick={handleShare}
-                disabled={isSharing}
-                className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
-                title={shareCopied ? 'Link copied!' : 'Share feedback'}
-              >
-                {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : feedback ? (
-          <div className="p-6 space-y-6">
+          )}
+          {feedback?.status && (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(feedback.status)}`}>
+              {formatStatus(feedback.status)}
+            </span>
+          )}
+        </>
+      }
+      headerActions={
+        !isViewer ? (
+          <button
+            onClick={handleShare}
+            disabled={isSharing}
+            className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
+            title={shareCopied ? 'Link copied!' : 'Share feedback'}
+          >
+            {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
+          </button>
+        ) : undefined
+      }
+    >
+      {feedback && <div className="p-6 space-y-6">
             {/* Title */}
             <div>
               <input
@@ -524,13 +508,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
 
             {/* Activity Timeline */}
             <ActivityTimeline feedbackId={feedbackId} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500">Feedback not found</p>
-          </div>
-        )}
-      </div>
-    </>
+      </div>}
+    </Drawer>
   );
 }

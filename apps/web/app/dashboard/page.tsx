@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Plus, RefreshCw, FileText, Search, Trash2, FolderRoot, Grid2x2, List } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { RoleGate } from '@/components/RoleGate';
+import { useDialog } from '@/providers/DialogProvider';
 
 type ViewMode = 'grid' | 'list';
 type SortBy = 'name' | 'date' | 'status' | 'lastViewed';
@@ -34,7 +35,7 @@ export default function DashboardPage() {
   const [orderBy, setOrderBy] = useState<OrderBy>('desc');
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; projectId: string | null }>({ show: false, projectId: null });
+  const { openConfirm } = useDialog();
 
   // Fetch projects from API
   useEffect(() => {
@@ -63,8 +64,17 @@ export default function DashboardPage() {
     fetchProjects();
   }, []);
 
-  // Handle project deletion
-  const handleDeleteProject = async (projectId: string) => {
+  // Handle project deletion with confirmation dialog
+  const confirmDeleteProject = async (projectId: string) => {
+    const confirmed = await openConfirm({
+      title: 'Delete Project',
+      message: 'Are you sure you want to delete this project? All associated issues and data will be permanently removed.',
+      icon: <Trash2 className="w-6 h-6 text-red-600" />,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+
     try {
       const token = getAuthToken();
       if (!token) return;
@@ -77,9 +87,7 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
-        // Remove the deleted project from the list
         setProjects(projects.filter(p => p.id !== projectId));
-        setDeleteConfirm({ show: false, projectId: null });
       }
     } catch (error) {
       // Silently fail on error
@@ -265,7 +273,7 @@ export default function DashboardPage() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setDeleteConfirm({ show: true, projectId: project.id });
+                    confirmDeleteProject(project.id);
                   }}
                   className="absolute top-2 right-2 z-10 p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:text-red-600"
                   title="Delete project"
@@ -404,7 +412,7 @@ export default function DashboardPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setDeleteConfirm({ show: true, projectId: project.id });
+                          confirmDeleteProject(project.id);
                         }}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Delete project"
@@ -420,39 +428,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm.show && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Project</h3>
-                <p className="text-sm text-gray-500">This action cannot be undone</p>
-              </div>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this project? All associated issues and data will be permanently removed.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteConfirm({ show: false, projectId: null })}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => deleteConfirm.projectId && handleDeleteProject(deleteConfirm.projectId)}
-                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

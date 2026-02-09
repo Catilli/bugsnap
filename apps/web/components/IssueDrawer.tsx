@@ -8,6 +8,7 @@ import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
 import ActivityTimeline from './ActivityTimeline';
+import Drawer from './Drawer';
 import { getAuthToken } from '../lib/clerkTokenBridge';
 import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
@@ -344,53 +345,37 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     return <FileText className="w-4 h-4" />;
   };
 
-  if (!isOpen) return null;
-
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full md:w-[600px] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
+      <Drawer
+        isOpen={isOpen}
+        onClose={onClose}
+        isLoading={isLoading}
+        notFound={!issue}
+        notFoundMessage="Issue not found"
+        header={
+          <>
             <span className="text-sm text-gray-500">
               {issue?.title ? `${getTypePrefix(issue.title)} #${getIssueNumber(issue.title) || '1'}` : '...'}
             </span>
             {issue?.type && issue.type !== 'TASK' && <TypeBadge type={issue.type} size="sm" />}
             {issue?.status && <StatusBadge status={issue.status} size="sm" />}
-          </div>
-          <div className="flex items-center gap-2">
-            {hasRole('MANAGER') && (
-              <button
-                onClick={handleShare}
-                disabled={isSharing}
-                className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
-                title={shareCopied ? 'Link copied!' : 'Share issue'}
-              >
-                {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
-              </button>
-            )}
+          </>
+        }
+        headerActions={
+          hasRole('MANAGER') ? (
             <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              onClick={handleShare}
+              disabled={isSharing}
+              className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
+              title={shareCopied ? 'Link copied!' : 'Share issue'}
             >
-              <X className="w-5 h-5 text-gray-600" />
+              {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
             </button>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : issue ? (
-          <div className="p-6 space-y-6">
+          ) : undefined
+        }
+      >
+        {issue && <div className="p-6 space-y-6">
             {/* Title */}
             <div>
               {isViewer ? (
@@ -730,13 +715,8 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
 
             {/* Activity Timeline */}
             <ActivityTimeline issueId={issueId} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500">Issue not found</p>
-          </div>
-        )}
-      </div>
+        </div>}
+      </Drawer>
 
       {/* Screenshot Enlarged Modal */}
       {isScreenshotEnlarged && issue?.screenshotUrl && (
