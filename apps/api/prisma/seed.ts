@@ -35,6 +35,48 @@ const FEEDBACK_ITEMS = [
     title: 'Viewer (VIEWER): Read-only access enforcement',
     description: 'VIEWER gets 403 on all write operations. Frontend hides all edit controls, disables kanban drag-and-drop, hides comment input and submit buttons.',
   },
+  // ── Kanban Bug Dashboard & Reporting ──────────────────────────────
+  {
+    title: 'Kanban Board – workflow stages and status mapping',
+    description:
+      'Visual Kanban Board that summarises all reported bugs/issues for quick overview. ' +
+      'Four workflow stages: NEW (newly reported bugs logged by PM/QA), IN PROGRESS (issues actively being addressed by the dev team), ' +
+      'READY FOR QA (fixes completed and ready for validation/testing), COMPLETED (verified and resolved issues). ' +
+      'Map each stage to the underlying Issue status values and define transition rules (who can move items between stages, validation on transitions). ' +
+      'Tags: Kanban, Reporting, QA cycle.',
+  },
+  {
+    title: 'Multiple Kanban reports per QA cycle with unique URLs',
+    description:
+      'Each QA cycle can generate a separate Kanban report with a unique, shareable URL. ' +
+      'Project Manager / QA can track issues per QA iteration independently. ' +
+      'A new report is generated when a QA round begins; existing reports remain accessible for historical reference. ' +
+      'Tags: Kanban, Reporting, QA cycle.',
+  },
+  {
+    title: 'Unified All-Reports view with filters and historical context',
+    description:
+      'Optional mode to combine multiple Kanban reports into a single, aggregated view for full project visibility. ' +
+      'Filters include: QA cycle, status, priority, assignee, and page. ' +
+      'Maintains historical context from previous QA cycles while enabling high-level tracking across the entire project. ' +
+      'Tags: Kanban, Reporting, QA cycle.',
+  },
+  {
+    title: 'Real-time updates for annotations and issue status in Kanban',
+    description:
+      'Dynamic updates: changes to annotations or issue status are reflected in the Kanban board in real time. ' +
+      'Leverage existing SSE infrastructure or introduce WebSocket/polling as needed so that all team members see the latest state ' +
+      'without manual page refreshes. ' +
+      'Tags: Kanban, Reporting, Real-time.',
+  },
+  {
+    title: 'QA cycle management and advanced filters (priority, assignee, page, tag)',
+    description:
+      'Generate a new report for each QA round or continue tracking using an existing Kanban report. ' +
+      'Advanced filters & views: filter by priority, assignee, page, or tag for focused analysis within a single report or across all reports. ' +
+      'Support creating, naming, and closing QA cycles as first-class entities. ' +
+      'Tags: Kanban, Reporting, QA cycle, Filters.',
+  },
 ];
 
 async function main() {
