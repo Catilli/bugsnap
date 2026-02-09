@@ -36,7 +36,7 @@ const updateIssueSchema = z.object({
   severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).optional(),
-  assignedToId: z.string().uuid().optional(),
+  assignedToId: z.string().uuid().nullable().optional(),
 });
 
 export async function issueRoutes(fastify: FastifyInstance) {

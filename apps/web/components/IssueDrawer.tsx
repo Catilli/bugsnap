@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, MapPin, ExternalLink, Share2, Check, Paperclip, Upload, FileText, Image, Film, Trash2 } from 'lucide-react';
+import { X, MapPin, ExternalLink, Share2, Check, Paperclip, Upload, FileText, Image, Film, Trash2, ChevronDown, UserX } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { TypeBadge } from './TypeBadge';
@@ -22,6 +22,7 @@ interface IssueDrawerProps {
 
 interface Issue {
   id: string;
+  projectId: string;
   title: string;
   description: string | null;
   url: string | null;
@@ -81,6 +82,50 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAssignPicker, setShowAssignPicker] = useState(false);
+  const [projectMembers, setProjectMembers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
+  const fetchProjectMembers = async (projectId: string) => {
+    setIsLoadingMembers(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const members: { id: string; name: string; email: string }[] = [];
+        if (data.owner) members.push(data.owner);
+        if (data.members) {
+          for (const m of data.members) {
+            if (m.user && !members.some((existing) => existing.id === m.user.id)) {
+              members.push(m.user);
+            }
+          }
+        }
+        setProjectMembers(members);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
+  const handleAssignClick = () => {
+    if (!issue) return;
+    setShowAssignPicker(true);
+    if (projectMembers.length === 0) {
+      fetchProjectMembers(issue.projectId);
+    }
+  };
+
+  const handleSelectAssignee = (memberId: string | null) => {
+    updateIssue('assignedToId', memberId);
+    setShowAssignPicker(false);
+  };
 
   // Extract issue/bug/feature number from title
   const getIssueNumber = (title: string) => {
@@ -499,24 +544,84 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             </div>
 
             {/* Assigned To — MANAGER+ can assign, others see read-only */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
               {issue.assignedTo ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
                   <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-sm">
                     {issue.assignedTo.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900">{issue.assignedTo.name}</div>
                     <div className="text-xs text-gray-500">{issue.assignedTo.email}</div>
                   </div>
+                  {hasRole('MANAGER') && (
+                    <button
+                      onClick={handleAssignClick}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Change
+                    </button>
+                  )}
                 </div>
               ) : hasRole('MANAGER') ? (
-                <button className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors text-left">
+                <button
+                  onClick={handleAssignClick}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors text-left"
+                >
                   + Assign user
                 </button>
               ) : (
                 <span className="text-sm text-gray-500">Unassigned</span>
+              )}
+
+              {/* Member picker dropdown */}
+              {showAssignPicker && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowAssignPicker(false)} />
+                  <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
+                    {isLoadingMembers ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
+                      </div>
+                    ) : (
+                      <>
+                        {issue.assignedTo && (
+                          <button
+                            onClick={() => handleSelectAssignee(null)}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-left text-sm text-red-600 border-b border-gray-100"
+                          >
+                            <UserX className="w-4 h-4" />
+                            Unassign
+                          </button>
+                        )}
+                        {projectMembers.map((member) => (
+                          <button
+                            key={member.id}
+                            onClick={() => handleSelectAssignee(member.id)}
+                            className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 text-left ${
+                              issue.assignedTo?.id === member.id ? 'bg-indigo-50' : ''
+                            }`}
+                          >
+                            <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">{member.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{member.email}</div>
+                            </div>
+                            {issue.assignedTo?.id === member.id && (
+                              <Check className="w-4 h-4 text-indigo-600 ml-auto flex-shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                        {projectMembers.length === 0 && !isLoadingMembers && (
+                          <div className="px-3 py-4 text-sm text-gray-500 text-center">No members found</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
