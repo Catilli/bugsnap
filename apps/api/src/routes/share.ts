@@ -61,7 +61,55 @@ export async function shareRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Access shared issue (no auth required)
+  // Create a share token for feedback (DEVELOPER+)
+  fastify.post('/feedback/:feedbackId/share', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch (err) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
+    try {
+      const { feedbackId } = request.params as { feedbackId: string };
+      const userId = (request.user as any)?.id;
+      const userRole = (request.user as any)?.role;
+
+      if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+      if (userRole === 'VIEWER') {
+        return reply.status(403).send({ error: 'Viewers cannot share feedback' });
+      }
+
+      const feedback = await prisma.feedback.findUnique({
+        where: { id: feedbackId },
+      });
+
+      if (!feedback) return reply.status(404).send({ error: 'Feedback not found' });
+
+      const body = request.body as { expiresInDays?: number } | undefined;
+      const expiresAt = body?.expiresInDays
+        ? new Date(Date.now() + body.expiresInDays * 24 * 60 * 60 * 1000)
+        : undefined;
+
+      const shareToken = await prisma.shareToken.create({
+        data: {
+          feedbackId,
+          expiresAt,
+        },
+      });
+
+      return reply.status(201).send({
+        token: shareToken.token,
+        expiresAt: shareToken.expiresAt,
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Failed to create share link' });
+    }
+  });
+
+  // Access shared content (no auth required) — supports both issues and feedback
   fastify.get('/share/:token', async (request, reply) => {
     try {
       const { token } = request.params as { token: string };
@@ -73,6 +121,15 @@ export async function shareRoutes(fastify: FastifyInstance) {
             include: {
               createdBy: { select: { id: true, name: true, email: true } },
               assignedTo: { select: { id: true, name: true, email: true } },
+              comments: {
+                include: { user: { select: { id: true, name: true, email: true } } },
+                orderBy: { createdAt: 'asc' },
+              },
+            },
+          },
+          feedback: {
+            include: {
+              createdBy: { select: { id: true, name: true, email: true } },
               comments: {
                 include: { user: { select: { id: true, name: true, email: true } } },
                 orderBy: { createdAt: 'asc' },
@@ -91,14 +148,18 @@ export async function shareRoutes(fastify: FastifyInstance) {
         return reply.status(410).send({ error: 'Share link has expired' });
       }
 
-      if (!shareToken.issue) {
-        return reply.status(404).send({ error: 'Shared issue not found' });
+      if (shareToken.issue) {
+        return reply.send({ type: 'issue', data: shareToken.issue });
       }
 
-      return reply.send(shareToken.issue);
+      if (shareToken.feedback) {
+        return reply.send({ type: 'feedback', data: shareToken.feedback });
+      }
+
+      return reply.status(404).send({ error: 'Shared content not found' });
     } catch (error) {
       fastify.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch shared issue' });
+      return reply.status(500).send({ error: 'Failed to fetch shared content' });
     }
   });
 }

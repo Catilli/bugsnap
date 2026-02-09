@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma';
 import { z } from 'zod';
 import { requireRole } from '../middleware/requireRole';
 import { sanitizeString } from '../utils/sanitize';
+import { logActivity } from '../utils/activityLogger';
+import { notificationService } from '../services/notificationService';
 
 const createFeedbackSchema = z.object({
   type: z.enum(['BUG', 'FEATURE']),
@@ -79,6 +81,14 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
             },
           },
         },
+      });
+
+      // Log activity
+      logActivity({
+        feedbackId: feedback.id,
+        userId,
+        action: 'created',
+        metadata: { type: data.type, title: feedback.title },
       });
 
       return reply.status(201).send(feedback);
@@ -274,6 +284,32 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // Log activity for each changed field
+      for (const [field, newValue] of Object.entries(updateData)) {
+        const oldValue = (feedback as any)[field];
+        if (oldValue !== newValue) {
+          logActivity({
+            feedbackId,
+            userId,
+            action: field === 'status' ? 'status_changed' : 'updated',
+            field,
+            oldValue: oldValue != null ? String(oldValue) : undefined,
+            newValue: newValue != null ? String(newValue) : undefined,
+          });
+        }
+      }
+
+      // Notify feedback creator on status change (if someone else changed it)
+      if (updateData.status && feedback.createdById !== userId) {
+        notificationService.create({
+          userId: feedback.createdById,
+          type: 'status_changed',
+          title: `Feedback status changed to ${updateData.status}`,
+          message: feedback.title,
+          feedbackId,
+        });
+      }
+
       return reply.send(updatedFeedback);
     } catch (error: any) {
       fastify.log.error(error);
@@ -317,6 +353,14 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
       if (feedback.createdById !== userId) {
         return reply.status(403).send({ error: 'Only the feedback creator can delete this feedback' });
       }
+
+      // Log activity before deletion
+      logActivity({
+        feedbackId,
+        userId,
+        action: 'deleted',
+        metadata: { title: feedback.title },
+      });
 
       await prisma.feedback.delete({
         where: { id: feedbackId },
@@ -377,6 +421,46 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // Log activity
+      logActivity({
+        feedbackId,
+        userId,
+        action: 'commented',
+        metadata: { content: data.content.substring(0, 100) },
+      });
+
+      // Notify feedback creator (if someone else commented)
+      if (feedback.createdById !== userId) {
+        notificationService.create({
+          userId: feedback.createdById,
+          type: 'commented',
+          title: `New comment on your feedback`,
+          message: data.content.substring(0, 100),
+          feedbackId,
+        });
+      }
+
+      // Parse @mentions and notify mentioned users
+      const mentions = data.content.match(/@(\w+)/g);
+      if (mentions) {
+        const mentionedNames = mentions.map((m: string) => m.slice(1));
+        const mentionedUsers = await prisma.user.findMany({
+          where: { name: { in: mentionedNames } },
+          select: { id: true },
+        });
+        for (const mentioned of mentionedUsers) {
+          if (mentioned.id !== userId) {
+            notificationService.create({
+              userId: mentioned.id,
+              type: 'mentioned',
+              title: `You were mentioned in feedback`,
+              message: data.content.substring(0, 100),
+              feedbackId,
+            });
+          }
+        }
+      }
+
       return reply.status(201).send(comment);
     } catch (error: any) {
       fastify.log.error(error);
@@ -431,6 +515,36 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Failed to fetch comments' });
+    }
+  });
+
+  // Get activity log for feedback
+  fastify.get('/:feedbackId/activity', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch (err) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
+    try {
+      const { feedbackId } = request.params as { feedbackId: string };
+
+      const activities = await prisma.activityLog.findMany({
+        where: { feedbackId },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return reply.send(activities);
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch activity' });
     }
   });
 }

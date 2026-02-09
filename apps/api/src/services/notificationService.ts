@@ -9,6 +9,7 @@ export const notificationService = {
     message?: string;
     issueId?: string;
     projectId?: string;
+    feedbackId?: string;
   }) {
     const notification = await prisma.notification.create({
       data: params,
@@ -42,6 +43,7 @@ export const notificationService = {
       include: {
         issue: { select: { id: true, title: true } },
         project: { select: { id: true, name: true } },
+        feedback: { select: { id: true, title: true } },
       },
     });
   },

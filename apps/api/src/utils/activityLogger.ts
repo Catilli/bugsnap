@@ -2,8 +2,9 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 
 export async function logActivity(params: {
-  projectId: string;
+  projectId?: string;
   issueId?: string;
+  feedbackId?: string;
   userId: string;
   action: string;
   field?: string;

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Bug, Lightbulb } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Bug, Lightbulb, Share2, Check, Paperclip, Upload, FileText, Image, Film, ExternalLink } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
+import ActivityTimeline from './ActivityTimeline';
 import { getAuthToken } from '../lib/clerkTokenBridge';
+import { useRole } from '../lib/useRole';
 
 interface FeedbackDrawerProps {
   feedbackId: string | null;
@@ -33,10 +35,27 @@ interface Feedback {
   };
 }
 
+interface Attachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }: FeedbackDrawerProps) {
+  const { isViewer } = useRole();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Extract feedback number from title
   const getFeedbackNumber = (title: string) => {
@@ -171,6 +190,114 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
     }
   };
 
+  const handleShare = async () => {
+    if (!feedbackId) return;
+    setIsSharing(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}/share`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ expiresInDays: 7 }),
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const link = `${window.location.origin}/shared/${data.token}`;
+        setShareLink(link);
+        await navigator.clipboard.writeText(link);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // Fetch attachments when feedback loads
+  useEffect(() => {
+    if (isOpen && feedbackId) {
+      fetchAttachments();
+    }
+  }, [isOpen, feedbackId]);
+
+  const fetchAttachments = async () => {
+    if (!feedbackId) return;
+    try {
+      const token = getAuthToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}/attachments`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.ok) {
+        setAttachments(await response.json());
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const uploadAttachment = async (file: File) => {
+    if (!feedbackId) return;
+    setIsUploading(true);
+    try {
+      const token = getAuthToken();
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}/attachments`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      );
+      if (response.ok) {
+        const attachment = await response.json();
+        setAttachments((prev) => [attachment, ...prev]);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) uploadAttachment(files[0]);
+  }, [feedbackId]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) return <Image className="w-4 h-4" />;
+    if (fileType.startsWith('video/')) return <Film className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -202,6 +329,16 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
             )}
           </div>
           <div className="flex items-center gap-2">
+            {!isViewer && (
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
+                title={shareCopied ? 'Link copied!' : 'Share feedback'}
+              >
+                {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded transition-colors"
@@ -315,8 +452,78 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
               </p>
             </div>
 
+            {/* Attachments */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Paperclip className="w-4 h-4 text-gray-500" />
+                <label className="text-sm font-medium text-gray-700">
+                  Attachments {attachments.length > 0 && `(${attachments.length})`}
+                </label>
+              </div>
+
+              {!isViewer && (
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors mb-3 ${
+                    isDragOver
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadAttachment(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  {isUploading ? (
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600" />
+                      Uploading...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <Upload className="w-4 h-4" />
+                      Drop file here or click to upload
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((att) => (
+                    <a
+                      key={att.id}
+                      href={att.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                    >
+                      <span className="text-gray-400">{getFileIcon(att.fileType)}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-900 truncate">{att.fileName}</div>
+                        <div className="text-xs text-gray-500">{formatFileSize(att.fileSize)}</div>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Comments */}
             <CommentSection feedbackId={feedbackId} />
+
+            {/* Activity Timeline */}
+            <ActivityTimeline feedbackId={feedbackId} />
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">

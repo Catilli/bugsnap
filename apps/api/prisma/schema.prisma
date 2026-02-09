@@ -189,8 +189,12 @@ model Feedback {
   updatedAt   DateTime       @updatedAt
 
   // Relations
-  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  comments  Comment[]
+  createdBy     User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+  shareTokens   ShareToken[]
+  attachments   Attachment[]
 
   @@index([createdById])
   @@index([status])
@@ -199,31 +203,36 @@ model Feedback {
 }
 
 model ShareToken {
-  id        String    @id @default(uuid())
-  token     String    @unique @default(uuid())
-  issueId   String?
-  projectId String?
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
+  id         String    @id @default(uuid())
+  token      String    @unique @default(uuid())
+  issueId    String?
+  projectId  String?
+  feedbackId String?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
 
-  issue   Issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
   @@map("share_tokens")
 }
 
 model Attachment {
-  id        String   @id @default(uuid())
-  issueId   String
-  fileName  String
-  fileUrl   String
-  fileType  String
-  fileSize  Int
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  issueId    String?
+  feedbackId String?
+  fileName   String
+  fileUrl    String
+  fileType   String
+  fileSize   Int
+  createdAt  DateTime @default(now())
 
-  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
   @@index([issueId])
+  @@index([feedbackId])
   @@map("attachments")
 }
 
@@ -235,12 +244,14 @@ model Notification {
   message    String?
   issueId    String?
   projectId  String?
+  feedbackId String?
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  issue   Issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
   @@index([createdAt])
@@ -250,7 +261,8 @@ model Notification {
 model ActivityLog {
   id         String   @id @default(uuid())
   issueId    String?
-  projectId  String
+  feedbackId String?
+  projectId  String?
   userId     String
   action     String   // created, updated, status_changed, assigned, commented, deleted
   field      String?  // which field changed (e.g., "status", "priority", "assignedToId")
@@ -259,11 +271,13 @@ model ActivityLog {
   metadata   Json?    // extra context (e.g., comment snippet)
   createdAt  DateTime @default(now())
 
-  issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  feedback Feedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([issueId])
+  @@index([feedbackId])
   @@index([projectId])
   @@index([userId])
   @@index([createdAt])

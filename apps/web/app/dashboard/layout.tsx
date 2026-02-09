@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bug, Puzzle, X, LogOut, User } from 'lucide-react';
+import { Bug, Puzzle, X, LogOut, User, Users } from 'lucide-react';
 import NotificationBell from '../../components/NotificationBell';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectProvider, useProject } from './ProjectContext';
@@ -165,6 +165,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       >
                         <User className="w-4 h-4" />
                         My Account
+                      </Link>
+                      <Link
+                        href="/dashboard/team"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <Users className="w-4 h-4" />
+                        Team
                       </Link>
                       <button
                         onClick={handleSignOut}

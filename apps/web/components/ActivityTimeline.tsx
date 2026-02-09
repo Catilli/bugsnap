@@ -19,16 +19,17 @@ interface ActivityEntry {
 }
 
 interface ActivityTimelineProps {
-  issueId: string | null;
+  issueId?: string | null;
+  feedbackId?: string | null;
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  created: 'created this issue',
+  created: 'created this',
   status_changed: 'changed status',
   assigned: 'changed assignee',
   commented: 'added a comment',
   updated: 'updated',
-  deleted: 'deleted this issue',
+  deleted: 'deleted this',
 };
 
 function formatFieldChange(field: string, oldValue: string, newValue: string): string {
@@ -67,22 +68,25 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-export default function ActivityTimeline({ issueId }: ActivityTimelineProps) {
+export default function ActivityTimeline({ issueId, feedbackId }: ActivityTimelineProps) {
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const entityId = issueId || feedbackId;
+  const entityType = issueId ? 'issues' : 'feedback';
+
   useEffect(() => {
-    if (!issueId) return;
+    if (!entityId) return;
     fetchActivity();
-  }, [issueId]);
+  }, [entityId]);
 
   const fetchActivity = async () => {
-    if (!issueId) return;
+    if (!entityId) return;
     setIsLoading(true);
     try {
       const token = getAuthToken();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/activity`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/${entityType}/${entityId}/activity`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {

@@ -241,3 +241,59 @@ The core product loop is functional:
 | `Dockerfile` | Docker build for API (Node 20 Alpine) |
 | `render.yaml` | Render deployment config |
 | `turbo.json` | Turborepo pipeline config |
+
+---
+
+## Open Architecture TODOs
+
+> Extracted 2026-02-09 by scanning for unresolved gaps, "Not Implemented", "Partial", and non-struck-through items.
+
+### Checklist
+
+- [ ] **XSS Input Sanitization** — Zod validates request *structure* but does not sanitize HTML/script content in user-supplied strings (issue titles, comments, feedback descriptions). React's JSX auto-escaping protects the dashboard (no unsafe innerHTML usage found), but raw strings are stored in the DB — any non-React consumer (email templates, extension, third-party API clients) would be vulnerable. Adding `sanitize-html` on the API write path provides defense-in-depth. *Related:* [Identified Gaps > Security #5](#security), `apps/api/src/routes/issues.ts`, `apps/api/src/routes/feedback.ts`, `apps/api/src/routes/comments.ts`, `apps/web/components/CommentSection.tsx`. *Constraint:* Must not break legitimate content; keep allow-list minimal.
+
+- [ ] **Health Check Alerting** — The `/health` endpoint exists (`apps/api/src/index.ts:81-89`) but nothing monitors it. An external uptime monitor (e.g., UptimeRobot, Render native health checks, or a GitHub Actions cron) should ping `/health` and alert on failure. *Related:* [Identified Gaps > Reliability #3](#reliability), `apps/api/src/index.ts`. *Constraint:* Free-tier compatible; should cover both API and DB connectivity.
+
+- [ ] **Screenshot Durability** — Screenshots are stored as external URLs (`screenshotUrl String?` in Prisma schema). If the source (e.g., a data URL or third-party host) goes down, the image is lost. Screenshots should be uploaded to Cloudinary (already integrated) and the returned URL persisted. *Related:* [Identified Gaps > Data #3](#data), `apps/api/prisma/schema.prisma:107`, `apps/api/src/routes/issues.ts:180`, `apps/api/src/lib/cloudinary.ts`. *Constraint:* Cloudinary free tier has 25 GB storage / 25 GB bandwidth monthly.
+
+- [ ] **Custom Domain Configuration** — Both frontend and backend use platform default subdomains (`bugsnap-web-dun.vercel.app`, `bugsnap-xgfd.onrender.com`). Custom domains improve branding, trust, and cookie scoping. *Related:* [Infrastructure & DevOps table](#infrastructure--devops), `apps/web/vercel.json`, `render.yaml`. *Constraint:* Requires DNS access and TLS cert provisioning (auto on both platforms).
+
+- [ ] **Paid Hosting Tier** — Render free tier has cold-start delays (~30s) and limited resources (512 MB RAM, shared CPU). Upgrade eliminates cold starts and enables persistent Redis/BullMQ connections. *Related:* [Identified Gaps > Reliability #4](#reliability), [Recommended Next Steps #16](#low-priority). *Constraint:* Render Starter is $7/mo; evaluate actual traffic before committing.
+
+- [ ] **Safari Extension** — No Xcode project or Safari Web Extension wrapper exists. Requires macOS + Xcode. Chrome extension code can be adapted via Safari's Web Extension converter tool. *Related:* [Frontend table](#frontend), [Phase 2 table](#phase-2--not-yet-built), [Recommended Next Steps #18](#low-priority-1). *Constraint:* macOS-only build; smallest browser market share among targets.
+
+- [ ] **Expand Test Coverage** — Only 1 test file exists (`apps/api/src/__tests__/projects.test.ts`) with 12 test cases covering project CRUD. Auth routes, OAuth, comments, feedback, issues, uploads, and middleware have zero test coverage. *Related:* [Infrastructure & DevOps table](#infrastructure--devops), `apps/api/vitest.config.ts`. *Note:* Doc inconsistency — lines referencing "25 tests" should read "12 tests" (actual count).
+
+### Needs Clarification
+
+- [ ] **CSRF Protection** — The doc lists "No CSRF protection" as a security gap ([Identified Gaps > Security #4](#security)), but the app uses `localStorage` + `Authorization: Bearer` headers — not cookies. CSRF attacks exploit auto-attached cookies, so this architecture is **inherently CSRF-resistant**. *Action:* Verify the Chrome/Firefox extensions also use `Authorization` headers (not cookies), then either close this gap as "Not Applicable" or document the rationale in the Security section.
+
+### Suggested Next Steps
+
+#### High Priority (security & data integrity)
+
+| # | TODO | Why |
+|---|------|-----|
+| 1 | **XSS Input Sanitization** | OWASP Top 10 risk. Although React auto-escapes on the dashboard, raw strings in the DB are a stored-XSS vector for any non-React consumer (emails, extension, future API clients). Low effort with `sanitize-html` on the API write path. |
+| 2 | **Screenshot Durability** | Data loss risk. Cloudinary integration already exists — this is mostly wiring screenshot capture through the existing upload route. Medium effort. |
+| 3 | **Expand Test Coverage** | Auth, issues, feedback, and comments are untested. Regressions ship silently. Start with auth routes (highest blast radius). Medium effort. |
+
+#### Medium Priority (reliability & operations)
+
+| # | TODO | Why |
+|---|------|-----|
+| 4 | **Health Check Alerting** | The endpoint exists but nobody's watching. A free UptimeRobot monitor takes 5 minutes to set up. Trivial effort. |
+| 5 | **Custom Domain** | Improves user trust and enables proper cookie scoping if auth ever moves to httpOnly cookies. Low effort (DNS + platform config). |
+
+#### Low Priority (nice-to-have)
+
+| # | TODO | Why |
+|---|------|-----|
+| 6 | **Paid Hosting Tier** | Cold starts hurt DX/UX but aren't critical until real user traffic. Evaluate after traffic baseline. |
+| 7 | **Safari Extension** | Smallest desktop browser share. Requires macOS toolchain. Defer unless user demand appears. |
+
+#### Cross-Cutting Concerns
+
+- **Security** spans item #1 (XSS) and the CSRF clarification. Consider a security-focused pass: sanitization + CSP headers + review of all rendering contexts.
+- **Observability** spans items #3 (tests) and #4 (alerting). Expanding tests and adding uptime monitoring together gives a much stronger safety net.
+- **Data resilience** spans item #2 (screenshots) and the existing backup scripts. Ensuring screenshots go through Cloudinary completes the data durability story.
