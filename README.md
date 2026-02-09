@@ -14,8 +14,8 @@ BugSnap is a web-based application that helps teams capture, annotate, and manag
 |----------|-------------|
 | [Technical Architecture](./docs/TECH_ARCHITECTURE.md) | Full architecture audit — frontend, backend, database, infrastructure, identified gaps, and recommended next steps |
 | [Core Features Audit](./docs/CORE_FEATURES.md) | Read-only codebase analysis of 46 features across 7 categories with implementation status and evidence |
-| [User Roles & Permissions](./docs/user-roles-permissions-progress.md) | Implementation tracker for the 4-role RBAC system -- capabilities, status, and verification steps |
-| [Kanban Bug Dashboard & Reporting](./docs/Kanban%20Bug%20Dashboard%20%26%20Reporting.md) | Audit and implementation tracker for the Kanban dashboard, QA cycle reports, unified views, and real-time updates |
+| [User Roles & Permissions](./docs/USER_ROLES.md) | Implementation tracker for the 4-role RBAC system -- capabilities, status, and verification steps |
+| [Kanban Dashboard](./docs/KANBAN_DASHBOARD.md) | Audit and implementation tracker for the Kanban dashboard, QA cycle reports, unified views, and real-time updates |
 
 
 ## 🏗️ Project Structure
@@ -148,7 +148,7 @@ From the API directory:
 - ✅ Kanban board with drag-and-drop (role-gated)
 - ✅ Issue filtering and sorting (by date, priority, status)
 - ✅ Reusable FilterBar and PageHeader components
-- ✅ Browser extension integration
+- ✅ Browser extension integration (Chrome & Firefox with screen recording)
 - ✅ PostgreSQL database with Prisma ORM
 - ✅ Issue creation with custom titles and auto-numbering
 - ✅ Screenshot capture and annotation tools
@@ -159,13 +159,19 @@ From the API directory:
 - ✅ OAuth login (Google, GitHub)
 - ✅ Rate limiting
 - ✅ Error tracking (Sentry)
+- ✅ Shareable issue and feedback links
+- ✅ File attachments (upload + drag-and-drop)
+- ✅ Activity timeline and audit logging
+- ✅ Notification system (split by issue/feedback)
+- ✅ Admin dashboard with system stats and user management
+- ✅ Team management UI
+- ✅ Feedback system (bug reports & feature requests)
+- ✅ Shared Drawer component and DialogProvider
+- ✅ XSS sanitization and security hardening
 
 ### Planned
-- 🔲 Shareable issue links
 - 🔲 Third-party integrations (Jira, Linear, GitHub)
-- 🔲 Advanced filtering and search
 - 🔲 Issue templates
-- 🔲 Email notifications
 - 🔲 Admin settings panel (workflows, statuses, priorities)
 - 🔲 Report export
 
@@ -175,10 +181,13 @@ The database schema includes:
 - Users (with authentication and roles)
 - Projects (bug tracking projects)
 - ProjectMembers (project access control with per-project roles)
-- Issues (bug reports)
+- Issues (bug reports with severity, priority, assignee)
 - Annotations (visual annotations on issues)
-- Comments (issue comments and collaboration)
-- Feedback and FeedbackComments
+- Comments (issue and feedback comments)
+- Feedback and FeedbackComments (bug reports & feature requests)
+- Attachments (file uploads on issues and feedback)
+- Notifications (split by issue/feedback category)
+- ShareTokens (shareable links with expiry)
 - PasswordResetTokens
 
 See [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma) for the complete schema definition.
@@ -230,18 +239,38 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.4.0
+**Current Version**: v0.6.0
 
-**Next Steps**: Implement shareable issue links and admin settings panel
+**Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
 **Recent Updates**:
-- Added 4-role RBAC system (ADMIN, MANAGER, DEVELOPER, VIEWER)
-- Unified filter components into slot-based FilterBar
-- Renamed Task entity to Issue across the project
-- Reusable KanbanBoard and PageHeader components
+- Split notifications by type (bell for issues, bug icon for feedback)
+- Shared Drawer component and global DialogProvider
+- Removed Resolved kanban column, renamed QA to Ready for QA
+- Admin dashboard with system stats and user management
+- Screen recording in browser extensions (Chrome & Firefox)
 
 
 ## 📝 Changelog
+
+### v0.6.0 (February 2026)
+- ✅ Split notifications by type — bell icon for issues, bug icon for feedback
+- ✅ Extracted shared Drawer component and global DialogProvider (Promise-based confirm dialogs)
+- ✅ Removed Resolved kanban column, renamed QA to Ready for QA
+- ✅ Admin dashboard with system stats, user management, and data export
+- ✅ Team management UI
+- ✅ Screen recording capability in Chrome and Firefox extensions
+- ✅ Feedback system parity (attachments, share links, comments, activity timeline)
+- ✅ Health check alerting and shared content pages
+- ✅ XSS sanitization and screenshot CDN upload
+
+### v0.5.0 (February 2026)
+- ✅ Activity timeline and audit logging
+- ✅ Notification system with email queue (Resend + Redis)
+- ✅ Issue severity field and QA status column
+- ✅ File attachments with upload and drag-and-drop
+- ✅ Shareable issue and feedback links (token-based, 7-day expiry)
+- ✅ Browser extension enhancements
 
 ### v0.4.0 (February 2026)
 - ✅ Added roles & permissions system (ADMIN, MANAGER, DEVELOPER, VIEWER)
