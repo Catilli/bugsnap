@@ -413,7 +413,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                     setIssue({ ...issue, description: e.target.value });
                   }}
                   onBlur={(e) => updateIssue('description', e.target.value)}
-                  className="text-gray-600 w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="text-gray-600 w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
                   placeholder="Add description..."
                   rows={3}
                 />

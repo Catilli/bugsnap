@@ -36,7 +36,7 @@ export default function Drawer({
   if (!isOpen) return null;
 
   return (
-    <>
+    <div className="!m-0">
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
@@ -74,6 +74,6 @@ export default function Drawer({
           children
         )}
       </div>
-    </>
+    </div>
   );
 }
