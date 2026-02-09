@@ -3,15 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bug, Puzzle, X, LogOut, User, Users } from 'lucide-react';
+import { Bug, Puzzle, X, LogOut, User, Users, Shield } from 'lucide-react';
 import NotificationBell from '../../components/NotificationBell';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectProvider, useProject } from './ProjectContext';
+import { useRole } from '../../lib/useRole';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout, checkAuth } = useAuthStore();
   const { projectName } = useProject();
+  const { isAdmin } = useRole();
   const [extensionInstalled, setExtensionInstalled] = useState<boolean | null>(null);
   const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -174,6 +176,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         <Users className="w-4 h-4" />
                         Team
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          href="/dashboard/admin"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          <Shield className="w-4 h-4" />
+                          Admin
+                        </Link>
+                      )}
                       <button
                         onClick={handleSignOut}
                         className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
