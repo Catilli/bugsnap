@@ -16,8 +16,9 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       const userId = (request.user as any)?.id;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const { unread } = request.query as { unread?: string };
-      const notifications = await notificationService.getForUser(userId, unread === 'true');
+      const { unread, category } = request.query as { unread?: string; category?: string };
+      const cat = category === 'issue' || category === 'feedback' ? category : undefined;
+      const notifications = await notificationService.getForUser(userId, unread === 'true', cat);
       return reply.send(notifications);
     } catch (error) {
       fastify.log.error(error);
@@ -62,7 +63,9 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       const userId = (request.user as any)?.id;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      await notificationService.markAllRead(userId);
+      const { category } = request.body as { category?: string } || {};
+      const cat = category === 'issue' || category === 'feedback' ? category : undefined;
+      await notificationService.markAllRead(userId, cat);
       return reply.send({ success: true });
     } catch (error) {
       fastify.log.error(error);

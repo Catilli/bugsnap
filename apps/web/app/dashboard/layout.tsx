@@ -95,17 +95,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
           {/* Right side - Bug icon and Avatar Menu */}
           <div className="flex items-center gap-3">
-            {/* Notifications */}
-            <NotificationBell />
+            {/* Issue Notifications */}
+            <NotificationBell
+              category="issue"
+              title="Issue Notifications"
+              emptyMessage="No issue notifications"
+            />
 
-            {/* Bug Report Button */}
-            <Link
-              href="/dashboard/feedback"
-              className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Bug Reports & Feature Requests"
-            >
-              <Bug className="w-5 h-5" />
-            </Link>
+            {/* Feedback Notifications */}
+            <NotificationBell
+              category="feedback"
+              icon={<Bug className="w-5 h-5" />}
+              title="Feedback Notifications"
+              emptyMessage="No feedback notifications"
+              hoverColorClass="hover:text-red-500"
+            />
 
             {/* Install Extension Button */}
             <div className="relative">

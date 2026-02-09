@@ -32,11 +32,18 @@ export const notificationService = {
     return notification;
   },
 
-  async getForUser(userId: string, unreadOnly?: boolean) {
+  async getForUser(userId: string, unreadOnly?: boolean, category?: 'issue' | 'feedback') {
+    const categoryFilter = category === 'issue'
+      ? { feedbackId: null }
+      : category === 'feedback'
+        ? { feedbackId: { not: null } }
+        : {};
+
     return prisma.notification.findMany({
       where: {
         userId,
         ...(unreadOnly ? { read: false } : {}),
+        ...categoryFilter,
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -55,9 +62,15 @@ export const notificationService = {
     });
   },
 
-  async markAllRead(userId: string) {
+  async markAllRead(userId: string, category?: 'issue' | 'feedback') {
+    const categoryFilter = category === 'issue'
+      ? { feedbackId: null }
+      : category === 'feedback'
+        ? { feedbackId: { not: null } }
+        : {};
+
     await prisma.notification.updateMany({
-      where: { userId, read: false },
+      where: { userId, read: false, ...categoryFilter },
       data: { read: true },
     });
   },
