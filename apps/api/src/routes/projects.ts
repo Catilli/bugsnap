@@ -3,14 +3,15 @@ import { prisma } from '../lib/prisma';
 import { cacheInvalidate } from '../lib/redis';
 import { z } from 'zod';
 import { requireRole } from '../middleware/requireRole';
+import { sanitizeString } from '../utils/sanitize';
 
 const createProjectSchema = z.object({
-  name: z.string().min(1, 'Project name is required'),
+  name: z.string().min(1, 'Project name is required').transform(sanitizeString),
   websiteUrl: z.string().url('Must be a valid URL'),
 });
 
 const updateProjectSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().min(1).transform(sanitizeString).optional(),
   websiteUrl: z.string().url('Must be a valid URL').optional(),
 });
 

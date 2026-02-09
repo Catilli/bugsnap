@@ -3,11 +3,13 @@ import { prisma } from '../lib/prisma';
 import { z } from 'zod';
 import { emitIssueEvent } from '../lib/eventBus';
 import { cacheInvalidate } from '../lib/redis';
+import { sanitizeString } from '../utils/sanitize';
+import { processScreenshotUrl } from '../utils/processScreenshot';
 
 const createIssueSchema = z.object({
   projectId: z.string().uuid(),
-  title: z.string().min(1, 'Issue title is required'),
-  description: z.string().optional(),
+  title: z.string().min(1, 'Issue title is required').transform(sanitizeString),
+  description: z.string().transform(sanitizeString).optional(),
   url: z.string().optional(),
   screenshotUrl: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
@@ -18,14 +20,14 @@ const createIssueSchema = z.object({
   annotations: z.array(z.object({
     type: z.enum(['pen', 'rectangle', 'arrow', 'text']),
     coordinates: z.any(),
-    content: z.string().optional(),
+    content: z.string().transform(sanitizeString).optional(),
     color: z.string().optional(),
   })).optional(),
 });
 
 const updateIssueSchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
+  title: z.string().min(1).transform(sanitizeString).optional(),
+  description: z.string().transform(sanitizeString).optional(),
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
@@ -127,6 +129,14 @@ export async function issueRoutes(fastify: FastifyInstance) {
 
       const data = createIssueSchema.parse(request.body);
 
+      // Upload data-URL screenshots to Cloudinary CDN
+      let screenshotUrl = data.screenshotUrl;
+      try {
+        screenshotUrl = await processScreenshotUrl(data.screenshotUrl);
+      } catch (error) {
+        fastify.log.error(error, 'Failed to upload screenshot to Cloudinary');
+      }
+
       // Verify user has access to project
       const project = await prisma.project.findUnique({
         where: { id: data.projectId },
@@ -177,7 +187,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
           type: issueType,
           description: data.description,
           url: data.url,
-          screenshotUrl: data.screenshotUrl,
+          screenshotUrl,
           priority: data.priority,
           visibility: data.visibility,
           assignedToId: data.assignedToId,

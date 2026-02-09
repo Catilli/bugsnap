@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { loginSchema, registerSchema } from '@bugsnap/shared';
 import { authService } from '../services/authService';
 import { z } from 'zod';
+import { sanitizeString } from '../utils/sanitize';
 
 const authRateLimit = {
   config: {
@@ -28,7 +29,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     authRateLimit,
     async (request, reply) => {
       const validated = registerSchema.parse(request.body);
-      const { email, password, name } = validated;
+      const { email, password, name: rawName } = validated;
+      const name = sanitizeString(rawName);
 
       const user = await authService.register(email, password, name);
       const token = fastify.jwt.sign(
@@ -156,7 +158,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = request.user.id;
 
       const profileSchema = z.object({
-        name: z.string().min(1, 'Name is required'),
+        name: z.string().min(1, 'Name is required').transform(sanitizeString),
         email: z.string().email('Invalid email address'),
       });
 

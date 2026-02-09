@@ -2,24 +2,25 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { z } from 'zod';
 import { requireRole } from '../middleware/requireRole';
+import { sanitizeString } from '../utils/sanitize';
 
 const createFeedbackSchema = z.object({
   type: z.enum(['BUG', 'FEATURE']),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
+  title: z.string().min(1, 'Title is required').transform(sanitizeString),
+  description: z.string().transform(sanitizeString).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
 });
 
 const updateFeedbackSchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
+  title: z.string().min(1).transform(sanitizeString).optional(),
+  description: z.string().transform(sanitizeString).optional(),
   status: z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   type: z.enum(['BUG', 'FEATURE']).optional(),
 });
 
 const createCommentSchema = z.object({
-  content: z.string().min(1, 'Comment content is required'),
+  content: z.string().min(1, 'Comment content is required').transform(sanitizeString),
 });
 
 export async function feedbackRoutes(fastify: FastifyInstance) {

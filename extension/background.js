@@ -54,7 +54,7 @@ async function fetchProjects(token) {
 
 async function fetchNextTaskNumber(token, projectId) {
   try {
-    const response = await fetch(`http://localhost:3001/api/projects/${projectId}/next-task-number`, {
+    const response = await fetch(`http://localhost:3001/api/projects/${projectId}/next-issue-number`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -100,7 +100,7 @@ async function fetchProjectMembers(token, projectId) {
 
 async function createTask(token, payload) {
   try {
-    const response = await fetch('http://localhost:3001/api/tasks', {
+    const response = await fetch('http://localhost:3001/api/issues', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -2,9 +2,10 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
 import { emitIssueEvent } from '../lib/eventBus';
 import { z } from 'zod';
+import { sanitizeString } from '../utils/sanitize';
 
 const createCommentSchema = z.object({
-  content: z.string().min(1, 'Comment content is required'),
+  content: z.string().min(1, 'Comment content is required').transform(sanitizeString),
 });
 
 export async function commentRoutes(fastify: FastifyInstance) {
