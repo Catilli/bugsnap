@@ -129,13 +129,6 @@ From the API directory:
 - `npm run lint` - Lint TypeScript files
 - `npm run type-check` - Run TypeScript type checking
 
-### Quick Start Scripts
-
-For Windows users, you can use the provided batch files:
-
-- `start-dev.bat` - Start both API and web servers
-- `clean-restart.bat` - Clean cache and restart servers
-
 ## 📋 Features
 
 ### Current
