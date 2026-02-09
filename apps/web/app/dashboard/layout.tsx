@@ -109,13 +109,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               title="Feedback Notifications"
               emptyMessage="No feedback notifications"
               hoverColorClass="hover:text-red-500"
+              onIconClick={() => router.push('/dashboard/feedback')}
             />
 
             {/* Install Extension Button */}
             <div className="relative">
               <Link
                 href="/dashboard/install-extension"
-                className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-indigo-600 rounded-lg transition-colors"
                 title="Install Extension"
               >
                 <Puzzle className="w-5 h-5" />

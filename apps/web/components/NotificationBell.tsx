@@ -22,6 +22,7 @@ interface NotificationBellProps {
   title?: string;
   emptyMessage?: string;
   hoverColorClass?: string;
+  onIconClick?: () => void;
 }
 
 export default function NotificationBell({
@@ -30,6 +31,7 @@ export default function NotificationBell({
   title = 'Notifications',
   emptyMessage = 'No notifications',
   hoverColorClass = 'hover:text-gray-700',
+  onIconClick,
 }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -52,9 +54,15 @@ export default function NotificationBell({
       });
 
       if (response.ok) {
-        const data = await response.json();
+        let data: Notification[] = await response.json();
+        // Client-side filter as fallback in case backend doesn't support category yet
+        if (category === 'issue') {
+          data = data.filter((n) => !n.feedback);
+        } else if (category === 'feedback') {
+          data = data.filter((n) => !!n.feedback);
+        }
         setNotifications(data);
-        setUnreadCount(data.filter((n: Notification) => !n.read).length);
+        setUnreadCount(data.filter((n) => !n.read).length);
       }
     } catch {
       // Silently fail
@@ -133,13 +141,16 @@ export default function NotificationBell({
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 text-gray-500 ${hoverColorClass} hover:bg-gray-100 rounded-lg transition-colors relative`}
+        onClick={onIconClick || (() => setIsOpen(!isOpen))}
+        className={`p-2 text-gray-500 ${hoverColorClass} rounded-lg transition-colors relative`}
         title={title}
       >
         {icon || <Bell className="w-5 h-5" />}
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+          <span
+            onClick={onIconClick ? (e) => { e.stopPropagation(); setIsOpen(!isOpen); } : undefined}
+            className={`absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center${onIconClick ? ' cursor-pointer hover:bg-red-600' : ''}`}
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
