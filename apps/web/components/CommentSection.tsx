@@ -194,7 +194,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                       <textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y text-sm"
                         rows={2}
                       />
                       <div className="flex gap-2 mt-1">
@@ -254,7 +254,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
               }
             }}
             placeholder="Add a comment... (use @name to mention)"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
             rows={3}
           />
           {/* @Mention autocomplete dropdown */}
