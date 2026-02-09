@@ -13,6 +13,11 @@ class BugSnapUI {
     this.projectMembers = [];
     this.selectedAssignees = [];
     this.userEmail = null;
+    this.recording = null;
+    this.mediaRecorder = null;
+    this.recordedChunks = [];
+    this.recordingStartTime = null;
+    this.recordingTimerInterval = null;
     this.init();
   }
 
@@ -392,6 +397,28 @@ class BugSnapUI {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
       </button>
 
+      <!-- Divider -->
+      <div style="width: 1px; height: 24px; background: #e5e7eb; margin: 0 4px;"></div>
+
+      <!-- Record Screen Button -->
+      <button id="bugsnap-record-btn" style="
+        background: white;
+        border: 1px solid #e5e7eb;
+        color: #6b7280;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.2s;
+      " title="Record Screen">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="7"/></svg>
+        <span>Record</span>
+      </button>
+
       <!-- Spacer -->
       <div style="flex: 1;"></div>
 
@@ -533,6 +560,15 @@ class BugSnapUI {
       }
     };
 
+    // Setup record button
+    document.getElementById('bugsnap-record-btn').onclick = () => {
+      if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+        this.stopRecording();
+      } else {
+        this.startRecording();
+      }
+    };
+
     // Setup save/cancel buttons
     document.getElementById('bugsnap-cancel-annotation').onclick = () => {
       document.body.style.overflow = ''; // Re-enable scrolling
@@ -549,6 +585,154 @@ class BugSnapUI {
   }
 
 
+
+  async startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { mediaSource: 'tab', frameRate: 30 },
+        audio: false,
+      });
+
+      this.recordedChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm';
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) this.recordedChunks.push(e.data);
+      };
+
+      this.mediaRecorder.onstop = () => {
+        this.recording = new Blob(this.recordedChunks, { type: 'video/webm' });
+        stream.getTracks().forEach((t) => t.stop());
+        this.updateRecordButton(false);
+        clearInterval(this.recordingTimerInterval);
+      };
+
+      // If user stops sharing via browser UI, handle gracefully
+      stream.getVideoTracks()[0].onended = () => {
+        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+          this.mediaRecorder.stop();
+        }
+      };
+
+      this.mediaRecorder.start(1000); // Collect data every second
+      this.recordingStartTime = Date.now();
+      this.updateRecordButton(true);
+
+      // Update timer display
+      this.recordingTimerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        const timerEl = document.getElementById('bugsnap-record-timer');
+        if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+      }, 1000);
+    } catch (err) {
+      // User cancelled the picker or permission denied
+      console.log('Recording cancelled or failed:', err.message);
+    }
+  }
+
+  stopRecording() {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
+  }
+
+  updateRecordButton(isRecording) {
+    const btn = document.getElementById('bugsnap-record-btn');
+    if (!btn) return;
+
+    // Clear existing children
+    while (btn.firstChild) btn.removeChild(btn.firstChild);
+
+    if (isRecording) {
+      btn.style.background = '#fef2f2';
+      btn.style.borderColor = '#ef4444';
+      btn.style.color = '#ef4444';
+
+      // Stop icon (square)
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '16');
+      svg.setAttribute('height', '16');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', '#ef4444');
+      svg.setAttribute('stroke-width', '2');
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', '6');
+      rect.setAttribute('y', '6');
+      rect.setAttribute('width', '12');
+      rect.setAttribute('height', '12');
+      rect.setAttribute('rx', '1');
+      svg.appendChild(rect);
+      btn.appendChild(svg);
+
+      // Timer
+      const timer = document.createElement('span');
+      timer.id = 'bugsnap-record-timer';
+      timer.style.fontVariantNumeric = 'tabular-nums';
+      timer.textContent = '00:00';
+      btn.appendChild(timer);
+
+      // "Stop" label
+      const label = document.createElement('span');
+      label.textContent = 'Stop';
+      btn.appendChild(label);
+    } else {
+      const hasRecording = !!this.recording;
+      btn.style.background = hasRecording ? '#f0fdf4' : 'white';
+      btn.style.borderColor = hasRecording ? '#22c55e' : '#e5e7eb';
+      btn.style.color = hasRecording ? '#16a34a' : '#6b7280';
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '16');
+      svg.setAttribute('height', '16');
+      svg.setAttribute('viewBox', '0 0 24 24');
+
+      if (hasRecording) {
+        // Checkmark icon
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', '#16a34a');
+        svg.setAttribute('stroke-width', '2');
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'M22 11.08V12a10 10 0 1 1-5.93-9.14');
+        svg.appendChild(path1);
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        path2.setAttribute('points', '22 4 12 14.01 9 11.01');
+        svg.appendChild(path2);
+      } else {
+        // Red circle (record) icon
+        svg.setAttribute('fill', '#ef4444');
+        svg.setAttribute('stroke', 'none');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '7');
+        svg.appendChild(circle);
+      }
+
+      btn.appendChild(svg);
+      const label = document.createElement('span');
+      label.textContent = hasRecording ? 'Recorded' : 'Record';
+      btn.appendChild(label);
+    }
+  }
+
+  blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Remove the data URL prefix to get raw base64
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
 
   async showTaskForm() {
     // First, fetch the next task number
@@ -986,7 +1170,25 @@ class BugSnapUI {
             return;
           }
 
-          this.showSuccess();
+          // Upload screen recording as attachment if one was captured
+          if (this.recording && response.task && response.task.id) {
+            submitBtn.textContent = 'Uploading recording...';
+            this.blobToBase64(this.recording).then((base64Data) => {
+              chrome.runtime.sendMessage({
+                action: 'uploadRecording',
+                token,
+                issueId: response.task.id,
+                recordingBase64: base64Data,
+              }, (uploadResponse) => {
+                if (uploadResponse && uploadResponse.error) {
+                  console.warn('Recording upload failed:', uploadResponse.error);
+                }
+                this.showSuccess();
+              });
+            });
+          } else {
+            this.showSuccess();
+          }
         });
       });
     } catch (error) {
@@ -1039,6 +1241,22 @@ class BugSnapUI {
     this.selectedAnnotationIndex = null;
     this.isTagging = false;
     this.selectedAssignees = [];
+
+    // Clean up recording state
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
+    if (this.mediaRecorder && this.mediaRecorder.stream) {
+      this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+    this.mediaRecorder = null;
+    this.recording = null;
+    this.recordedChunks = [];
+    if (this.recordingTimerInterval) {
+      clearInterval(this.recordingTimerInterval);
+      this.recordingTimerInterval = null;
+    }
+    this.recordingStartTime = null;
 
     // Remove pin marker
     if (this.pinMarker) {

@@ -31,6 +31,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(error => sendResponse({ error: error.message }));
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === 'uploadRecording') {
+    uploadRecording(request.token, request.issueId, request.recordingBase64)
+      .then(sendResponse)
+      .catch(error => sendResponse({ error: error.message }));
+    return true;
+  }
 });
 
 async function fetchProjects(token) {
@@ -116,6 +123,40 @@ async function createTask(token, payload) {
 
     const task = await response.json();
     return { task };
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function uploadRecording(token, issueId, base64Data) {
+  try {
+    // Convert base64 to blob
+    const byteChars = atob(base64Data);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'video/webm' });
+
+    const formData = new FormData();
+    formData.append('file', blob, `recording-${Date.now()}.webm`);
+
+    const response = await fetch(`http://localhost:3001/api/issues/${issueId}/attachments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to upload recording');
+    }
+
+    const attachment = await response.json();
+    return { attachment };
   } catch (error) {
     throw error;
   }
