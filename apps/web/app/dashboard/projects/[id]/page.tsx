@@ -51,8 +51,7 @@ interface Issue {
 const PROJECT_COLUMNS: ColumnConfig[] = [
   { status: 'open', title: 'New', color: 'yellow' },
   { status: 'in_progress', title: 'In Progress', color: 'blue' },
-  { status: 'qa', title: 'QA', color: 'purple' },
-  { status: 'resolved', title: 'Resolved', color: 'teal' },
+  { status: 'qa', title: 'Ready for QA', color: 'purple' },
   { status: 'closed', title: 'Completed', color: 'green' },
 ];
 
