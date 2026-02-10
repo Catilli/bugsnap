@@ -1,7 +1,7 @@
 # BugSnap - Technical Architecture Audit
 
-**Version:** 0.4.0
-**Audit Date:** 2026-02-07
+**Version:** 0.8.0
+**Audit Date:** 2026-02-11
 **Repository:** Turborepo monorepo with npm workspaces
 
 ---
@@ -55,7 +55,7 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | JWT Authentication | Implemented | `@fastify/jwt` 9.1, 7-day tokens, bcrypt password hashing, startup validation of `JWT_SECRET`. Auth plugin wrapped with `fastify-plugin` (fp) to break encapsulation — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts`, `apps/api/src/index.ts` |
 | Auth Service | Implemented | Full auth service: register, login, password change, password reset (crypto token + SHA-256 hash, 1h TTL), OAuth user linking — `apps/api/src/services/authService.ts` |
 | Email Service | Implemented | Resend SDK with lazy initialization, branded HTML password reset emails — `apps/api/src/services/emailService.ts` |
-| API Routes | Implemented | 8 route modules: auth, oauth, projects, projectMembers, issues, comments, feedback, uploads — `apps/api/src/routes/` |
+| API Routes | Implemented | 9 route modules: auth, oauth, projects, projectMembers, issues, comments, feedback, uploads, users — `apps/api/src/routes/` |
 | CORS Configuration | Implemented | Explicit `ALLOWED_ORIGINS` env-based allowlist + chrome-extension + localhost (dev only) — `apps/api/src/index.ts:35-59` |
 | Error Handling | Implemented | Custom Fastify error handler plugin — `apps/api/src/plugins/errorHandler.ts` |
 | Input Validation | Implemented | Zod 3.22 for request validation — `apps/api/package.json` |
@@ -203,7 +203,7 @@ The core product loop is functional:
 | `apps/web/vercel.json` | Vercel build configuration |
 | `apps/api/package.json` | Backend dependencies and scripts |
 | `apps/api/src/index.ts` | Fastify server entry point |
-| `apps/api/src/routes/` | API route modules (auth, oauth, projects, issues, comments, feedback, members, uploads) |
+| `apps/api/src/routes/` | API route modules (auth, oauth, projects, issues, comments, feedback, members, uploads, users) |
 | `apps/api/src/plugins/` | Fastify plugins (auth with fastify-plugin, errorHandler) |
 | `apps/api/src/services/authService.ts` | Auth service (register, login, password reset, OAuth) |
 | `apps/api/src/services/emailService.ts` | Resend email service (password reset emails) |

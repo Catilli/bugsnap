@@ -165,7 +165,7 @@ From the API directory:
 - ✅ Activity timeline and audit logging
 - ✅ Notification system (split by issue/feedback)
 - ✅ Admin dashboard with system stats and user management
-- ✅ Team management UI
+- ✅ Team management UI with admin-only member creation
 - ✅ Feedback system (bug reports & feature requests)
 - ✅ Shared Drawer component and DialogProvider
 - ✅ XSS sanitization and security hardening
@@ -240,17 +240,23 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.7.0
+**Current Version**: v0.8.0
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
 **Recent Updates**:
+- Admin-only team member creation (POST /api/users endpoint + Add Member modal)
+- Auth preHandler fix for user routes (GET, POST, PATCH)
 - Input sanitization hardening (URL protocol validation, Zod for all inputs, email HTML injection fix)
-- Frontend safe-URL guard for defense-in-depth
-- Security documentation
 
 
 ## 📝 Changelog
+
+### v0.8.0 (February 2026)
+- ✅ Admin-only team member creation — `POST /api/users` with Zod validation, bcrypt password hashing, and duplicate email detection
+- ✅ "Add Member" modal on team page — admin-only button, role selection, error handling
+- ✅ Fixed missing auth `preHandler` on user routes (`GET /users`, `POST /users`, `PATCH /users/:userId/role`)
+- ✅ New users onboard via "Forgot Password" flow (temp password never exposed)
 
 ### v0.7.0 (February 2026)
 - ✅ URL sanitization (`sanitizeUrl` / `zSanitizedUrl`) rejecting `javascript:`, `data:`, `vbscript:` protocols

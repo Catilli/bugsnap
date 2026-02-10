@@ -25,6 +25,7 @@ Full system access. ADMIN bypasses every guard on both backend and frontend.
 |--------|-----------|----------------------|-------|
 | Done | Manage projects (CRUD) | ADMIN bypass in project routes | [`projects.ts`](../apps/api/src/routes/projects.ts) |
 | Done | Manage teams and user access | ADMIN bypass in projectMemberService | [`projectMembers.ts`](../apps/api/src/routes/projectMembers.ts), [`projectMemberService.ts`](../apps/api/src/services/projectMemberService.ts) |
+| Done | Add new users to the system | ADMIN-only `POST /users` with temp password + Forgot Password onboarding | [`users.ts`](../apps/api/src/routes/users.ts), [`team/page.tsx`](../apps/web/app/dashboard/team/page.tsx) |
 | Done | Assign and reassign issues across teams | ADMIN bypass in issue PATCH | [`issues.ts`](../apps/api/src/routes/issues.ts) |
 | Done | View all projects (including non-member) | `getUserProjects` returns ALL for ADMIN | [`projectMemberService.ts`](../apps/api/src/services/projectMemberService.ts) |
 | Done | Delete any issue or comment | ADMIN bypass in delete handlers | [`issues.ts`](../apps/api/src/routes/issues.ts), [`comments.ts`](../apps/api/src/routes/comments.ts) |
@@ -90,6 +91,9 @@ Quick-reference for every protected route.
 
 | Method | Route | Minimum Role | Scope | Notes |
 |--------|-------|-------------|-------|-------|
+| POST | `/users` | ADMIN | Global | Create user (admin-only) |
+| GET | `/users` | MANAGER | Global | List all users |
+| PATCH | `/users/:userId/role` | ADMIN | Global | Change user role |
 | POST | `/projects` | DEVELOPER | Global | Create project |
 | GET | `/projects/:id` | -- (member check) | Project | ADMIN sees all |
 | PATCH | `/projects/:id` | MANAGER / Owner | Project | Manual check |
@@ -175,4 +179,4 @@ Quick-reference for every protected route.
 
 ---
 
-*Last updated: 2026-02-07*
+*Last updated: 2026-02-11*

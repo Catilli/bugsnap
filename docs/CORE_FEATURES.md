@@ -1,6 +1,6 @@
 # BugSnap — Core Features Audit
 
-> **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-10
+> **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-11
 > **Scope:** Read-only codebase analysis — no code changes
 > **Commit:** `692eaae` (original) | `5df8ed3` (latest update)
 >
@@ -12,12 +12,12 @@
 
 | Status | Count | Meaning |
 |--------|-------|---------|
-| ✅ Implemented | 42 | Feature is fully functional |
-| 🟡 Partial | 1 | Feature exists but has gaps |
+| ✅ Implemented | 43 | Feature is fully functional |
+| 🟡 Partial | 0 | Feature exists but has gaps |
 | ❌ Not Implemented | 3 | Feature is missing entirely |
 | **Total** | **46** | |
 
-**Completion rate:** 91% fully implemented, 2% partial, 7% missing.
+**Completion rate:** 93% fully implemented, 0% partial, 7% missing.
 
 ---
 
@@ -113,7 +113,7 @@
 |---------|--------|----------|
 | Shareable project/issue links | ✅ Implemented | `ShareToken` model with unique token + optional expiry. `routes/share.ts` — `POST /issues/:id/share`, `POST /feedback/:feedbackId/share`, `GET /share/:token` (no auth). Share button in `IssueDrawer.tsx` and `FeedbackDrawer.tsx`. **RESOLVED** |
 | Role-based permissions | ✅ Implemented | 4-role hierarchy (ADMIN > MANAGER > DEVELOPER > VIEWER). Global guards (`requireRole`), project-scoped guards (`requireProjectRole`), frontend `useRole`/`useProjectRole` hooks, `<RoleGate>` component. **RESOLVED** — ADMIN role and VIEWER enforcement added |
-| Team member management | 🟡 Partial | API: add/remove/update at `routes/projectMembers.ts` (MANAGER only). Frontend member list on project detail page. No standalone invite form |
+| Team member management | ✅ Implemented | API: add/remove/update at `routes/projectMembers.ts` (MANAGER only). Frontend member list on project detail page. Admin-only `POST /users` endpoint + "Add Member" modal on team page for creating new users. **RESOLVED** — standalone user creation added |
 | External stakeholder access | ❌ Not implemented | `schema.prisma:107` — `visibility` field with `members_and_clients` option exists, but no mechanism to grant access without a registered account |
 
 ---

@@ -133,6 +133,7 @@ html: `<p>Hi ${sanitizeString(user.name)},</p>`;
 | Notification query/body | `notificationQuerySchema` / `readAllBodySchema` | N/A (enum validated) | Zod `.parse()` |
 | Share body | `shareBodySchema` | N/A (numeric validated) | Zod `.parse()` |
 | User role update | `updateRoleSchema` | N/A (enum validated) | Zod `.parse()` |
+| Create user (admin) | `createUserSchema` | `name` | Zod `.transform()` via `zSanitizedString()` |
 
 ### Frontend `safeHref()` Coverage
 
