@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Users, Mail, Shield, Calendar, ChevronDown } from 'lucide-react';
+import { Users, Mail, Shield, Calendar, ChevronDown, UserPlus, X } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
 import { FilterBar } from '@/components/FilterBar';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
@@ -63,6 +63,14 @@ export default function TeamPage() {
 
   // Role editing
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+
+  // Add member modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState<UserRole>('DEVELOPER');
+  const [addError, setAddError] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   const hasActiveFilters = roleFilter !== null || searchQuery !== '';
 
@@ -143,6 +151,54 @@ export default function TeamPage() {
     }
   };
 
+  const handleAddMember = async () => {
+    if (!newMemberEmail.trim() || !newMemberName.trim()) {
+      setAddError('Name and email are required.');
+      return;
+    }
+
+    setIsAdding(true);
+    setAddError(null);
+
+    try {
+      const response = await authFetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: newMemberEmail.trim(),
+            name: newMemberName.trim(),
+            role: newMemberRole,
+          }),
+        }
+      );
+
+      if (response.status === 409) {
+        setAddError('A user with this email already exists.');
+        return;
+      }
+
+      if (response.status === 403) {
+        setAddError('You do not have permission to add users.');
+        return;
+      }
+
+      if (!response.ok) {
+        setAddError('Failed to add member. Please try again.');
+        return;
+      }
+
+      const created = await response.json();
+      setMembers((prev) => [...prev, created]);
+      setShowAddModal(false);
+    } catch {
+      setAddError('Failed to add member. Please try again.');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -183,6 +239,23 @@ export default function TeamPage() {
         }
         title="Team"
         description={`${members.length} member${members.length !== 1 ? 's' : ''} in your workspace`}
+        primaryAction={
+          isAdmin ? (
+            <button
+              onClick={() => {
+                setNewMemberEmail('');
+                setNewMemberName('');
+                setNewMemberRole('DEVELOPER');
+                setAddError(null);
+                setShowAddModal(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              Add Member
+            </button>
+          ) : undefined
+        }
       />
 
       {/* Filters */}
@@ -296,6 +369,95 @@ export default function TeamPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Add Member Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowAddModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Add Team Member</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="add-name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  id="add-name"
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="add-email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="add-email"
+                  type="email"
+                  value={newMemberEmail}
+                  onChange={(e) => setNewMemberEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="add-role" className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  id="add-role"
+                  value={newMemberRole}
+                  onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="DEVELOPER">Developer</option>
+                  <option value="VIEWER">Viewer</option>
+                </select>
+              </div>
+
+              {addError && (
+                <p className="text-sm text-red-600">{addError}</p>
+              )}
+
+              <p className="text-xs text-gray-500">
+                New member will need to use "Forgot Password" to set their password.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddMember}
+                  disabled={isAdding}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAdding ? 'Adding...' : 'Add Member'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
