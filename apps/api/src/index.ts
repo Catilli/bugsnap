@@ -30,12 +30,10 @@ import { adminRoutes } from './routes/admin';
 import { qaCycleRoutes } from './routes/qaCycles';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
+import { validateJwtSecret } from './utils/validateEnv';
 
-// Fail hard if JWT_SECRET is not set
-if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET environment variable is required');
-  process.exit(1);
-}
+// Validate JWT_SECRET (existence + strength)
+const jwtSecret = validateJwtSecret();
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -102,7 +100,7 @@ fastify.register(multipart, {
 
 // Register JWT plugin
 fastify.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET!,
+  secret: jwtSecret,
 });
 
 fastify.register(errorHandler);
