@@ -59,6 +59,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mentionableUsers, setMentionableUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [drawerView, setDrawerView] = useState<'comments' | 'activity'>('comments');
 
   // Extract feedback number from title
   const getFeedbackNumber = (title: string) => {
@@ -499,11 +500,41 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
               )}
             </div>
 
-            {/* Comments */}
-            <CommentSection feedbackId={feedbackId} projectMembers={mentionableUsers} />
+            {/* Comments / Activity Toggle */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex rounded-lg bg-gray-100 p-1 mb-4" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={drawerView === 'comments'}
+                  onClick={() => setDrawerView('comments')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    drawerView === 'comments'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Comments
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={drawerView === 'activity'}
+                  onClick={() => setDrawerView('activity')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    drawerView === 'activity'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Activity
+                </button>
+              </div>
 
-            {/* Activity Timeline */}
-            <ActivityTimeline feedbackId={feedbackId} />
+              {drawerView === 'comments' ? (
+                <CommentSection feedbackId={feedbackId} projectMembers={mentionableUsers} />
+              ) : (
+                <ActivityTimeline feedbackId={feedbackId} />
+              )}
+            </div>
       </div>}
     </Drawer>
   );

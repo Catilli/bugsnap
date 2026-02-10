@@ -91,6 +91,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const [showAssignPicker, setShowAssignPicker] = useState(false);
   const [projectMembers, setProjectMembers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [drawerView, setDrawerView] = useState<'comments' | 'activity'>('comments');
 
   const fetchProjectMembers = async (projectId: string) => {
     setIsLoadingMembers(true);
@@ -696,15 +697,45 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
               )}
             </div>
 
-            {/* Comments */}
-            <CommentSection
-              issueId={issueId}
-              onCommentCountChange={(count) => onCommentCountChange?.(issueId!, count)}
-              projectMembers={projectMembers}
-            />
+            {/* Comments / Activity Toggle */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex rounded-lg bg-gray-100 p-1 mb-4" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={drawerView === 'comments'}
+                  onClick={() => setDrawerView('comments')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    drawerView === 'comments'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Comments
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={drawerView === 'activity'}
+                  onClick={() => setDrawerView('activity')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    drawerView === 'activity'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Activity
+                </button>
+              </div>
 
-            {/* Activity Timeline */}
-            <ActivityTimeline issueId={issueId} />
+              {drawerView === 'comments' ? (
+                <CommentSection
+                  issueId={issueId}
+                  onCommentCountChange={(count) => onCommentCountChange?.(issueId!, count)}
+                  projectMembers={projectMembers}
+                />
+              ) : (
+                <ActivityTimeline issueId={issueId} />
+              )}
+            </div>
         </div>}
       </Drawer>
 
