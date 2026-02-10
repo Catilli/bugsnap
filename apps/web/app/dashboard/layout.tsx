@@ -114,13 +114,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
             {/* Install Extension Button */}
             <div className="relative">
-              <Link
-                href="/dashboard/install-extension"
+              <button
+                onClick={() => router.push('/dashboard/install-extension')}
                 className="p-2 text-gray-500 hover:text-indigo-600 rounded-lg transition-colors"
                 title="Install Extension"
               >
                 <Puzzle className="w-5 h-5" />
-              </Link>
+              </button>
 
               {extensionInstalled === false && !bubbleDismissed && (
                 <div className="absolute top-full right-0 mt-2 w-64 bg-indigo-600 text-white rounded-lg shadow-lg p-3 z-50">
