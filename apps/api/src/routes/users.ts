@@ -42,7 +42,15 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/users — create a new user (ADMIN only)
-  fastify.post('/users', async (request, reply) => {
+  fastify.post('/users', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
     const currentUserId = (request.user as any)?.id;
     if (!currentUserId) {
       return reply.status(401).send({ error: 'Unauthorized' });
@@ -89,7 +97,15 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/users — list all users (MANAGER+ only)
-  fastify.get('/users', async (request, reply) => {
+  fastify.get('/users', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
     const userId = (request.user as any)?.id;
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
@@ -146,7 +162,15 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // PATCH /api/users/:userId/role — update user role (ADMIN only)
-  fastify.patch('/users/:userId/role', async (request, reply) => {
+  fastify.patch('/users/:userId/role', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
     const currentUserId = (request.user as any)?.id;
     if (!currentUserId) {
       return reply.status(401).send({ error: 'Unauthorized' });
