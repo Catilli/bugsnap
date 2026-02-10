@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAuthToken } from '../lib/clerkTokenBridge';
+import { authFetch } from '../lib/api';
 
 interface ActivityEntry {
   id: string;
@@ -84,10 +84,8 @@ export default function ActivityTimeline({ issueId, feedbackId }: ActivityTimeli
     if (!entityId) return;
     setIsLoading(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/${entityType}/${entityId}/activity`,
-        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {
         setActivity(await response.json());

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import { Bell } from 'lucide-react';
 import { getAuthToken } from '../lib/clerkTokenBridge';
+import { authFetch } from '../lib/api';
 
 interface Notification {
   id: string;
@@ -42,16 +43,13 @@ export default function NotificationBell({
 
   const fetchNotifications = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
       const params = new URLSearchParams();
       if (category) params.set('category', category);
       const qs = params.toString();
 
-      const response = await fetch(`${apiUrl}/api/notifications${qs ? `?${qs}` : ''}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await authFetch(`${apiUrl}/api/notifications${qs ? `?${qs}` : ''}`);
 
       if (response.ok) {
         let data: Notification[] = await response.json();
@@ -88,12 +86,10 @@ export default function NotificationBell({
 
   const markAsRead = async (id: string) => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
-      await fetch(`${apiUrl}/api/notifications/${id}/read`, {
+      await authFetch(`${apiUrl}/api/notifications/${id}/read`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       setNotifications(prev =>
@@ -107,15 +103,11 @@ export default function NotificationBell({
 
   const markAllRead = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
-      await fetch(`${apiUrl}/api/notifications/read-all`, {
+      await authFetch(`${apiUrl}/api/notifications/read-all`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(category ? { category } : {}),
       });
 

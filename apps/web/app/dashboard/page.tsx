@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
 import { Plus, RefreshCw, FileText, Search, Trash2, FolderRoot, Grid2x2, List } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { authFetch } from '@/lib/api';
 import { RoleGate } from '@/components/RoleGate';
 import { useDialog } from '@/providers/DialogProvider';
 
@@ -41,14 +42,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const token = getAuthToken();
-        if (!token) return;
+        if (!getAuthToken()) return;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        const response = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`);
 
         if (response.ok) {
           const data = await response.json();
@@ -76,14 +72,10 @@ export default function DashboardPage() {
     if (!confirmed) return;
 
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`, {
+      const response = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (response.ok) {

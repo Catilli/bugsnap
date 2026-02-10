@@ -79,9 +79,9 @@ fastify.register(cors, {
     // Reject unknown origins (false = no CORS headers, browser blocks the request)
     callback(null, false);
   },
-  credentials: true,
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Type', 'Authorization'],
   preflightContinue: false,
   optionsSuccessStatus: 204,
@@ -106,6 +106,28 @@ fastify.register(fastifyJwt, {
 
 fastify.register(errorHandler);
 fastify.register(authPlugin);
+
+// CSRF protection — require X-Requested-With header on state-changing requests.
+// Browsers block cross-origin custom headers without a preflight that passes CORS,
+// so a malicious site cannot forge these requests.
+const CSRF_EXEMPT = new Set(['/health', '/api']);
+fastify.addHook('onRequest', async (request, reply) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    // Exempt public endpoints (health check, shared links)
+    if (CSRF_EXEMPT.has(request.url) || request.url.startsWith('/api/share/')) return;
+    const xrw = request.headers['x-requested-with'];
+    if (xrw !== 'BugSnap') {
+      reply.status(403).send({ error: 'Forbidden — missing CSRF header' });
+    }
+  }
+});
+
+// Security response headers
+fastify.addHook('onSend', async (_request, reply) => {
+  reply.header('X-Content-Type-Options', 'nosniff');
+  reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  reply.header('X-Frame-Options', 'DENY');
+});
 
 // Health check route
 fastify.get('/health', async () => {

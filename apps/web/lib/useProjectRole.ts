@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { getAuthToken } from './clerkTokenBridge';
+import { authFetch } from './api';
 
 export type UserRole = 'ADMIN' | 'MANAGER' | 'DEVELOPER' | 'VIEWER';
 
@@ -38,16 +39,14 @@ export function useProjectRole(projectId: string | null) {
     }
 
     const fetchProjectRole = async () => {
-      const token = getAuthToken();
-      if (!token) {
+      if (!getAuthToken()) {
         setIsLoading(false);
         return;
       }
 
       try {
-        const response = await fetch(
+        const response = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (response.ok) {

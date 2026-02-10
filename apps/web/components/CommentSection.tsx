@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Check, X } from 'lucide-react';
-import { getAuthToken } from '../lib/clerkTokenBridge';
+import { authFetch } from '../lib/api';
 import { useCurrentUser } from '../lib/useCurrentUser';
 import { useRole } from '../lib/useRole';
 
@@ -50,23 +50,13 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
     }
   }, [entityId]);
 
-  const getHeaders = () => {
-    const token = getAuthToken();
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    };
-  };
-
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   const fetchComments = async () => {
     if (!entityId) return;
 
     try {
-      const response = await fetch(`${apiUrl}/api/${basePath}/comments`, {
-        headers: getHeaders(),
-      });
+      const response = await authFetch(`${apiUrl}/api/${basePath}/comments`);
 
       if (response.ok) {
         const data = await response.json();
@@ -83,9 +73,9 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${apiUrl}/api/${basePath}/comments`, {
+      const response = await authFetch(`${apiUrl}/api/${basePath}/comments`, {
         method: 'POST',
-        headers: getHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newComment.trim() }),
       });
 
@@ -107,9 +97,9 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
     if (!editContent.trim()) return;
 
     try {
-      const response = await fetch(`${apiUrl}/api/comments/${commentId}`, {
+      const response = await authFetch(`${apiUrl}/api/comments/${commentId}`, {
         method: 'PATCH',
-        headers: getHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: editContent.trim() }),
       });
 
@@ -128,9 +118,8 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
     if (!confirm('Delete this comment?')) return;
 
     try {
-      const response = await fetch(`${apiUrl}/api/comments/${commentId}`, {
+      const response = await authFetch(`${apiUrl}/api/comments/${commentId}`, {
         method: 'DELETE',
-        headers: getHeaders(),
       });
 
       if (response.ok) {

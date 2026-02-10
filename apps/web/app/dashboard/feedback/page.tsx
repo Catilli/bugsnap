@@ -8,6 +8,7 @@ import FeedbackDrawer from '../../../components/FeedbackDrawer';
 import { PageHeader } from '../../../components/PageHeader';
 import { FilterBar } from '@/components/FilterBar';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { authFetch } from '@/lib/api';
 import { RoleGate } from '@/components/RoleGate';
 import { useRole } from '@/lib/useRole';
 
@@ -118,21 +119,15 @@ export default function FeedbackPage() {
 
   // Fetch all feedback
   const fetchFeedback = useCallback(async () => {
-    const token = getAuthToken();
-    if (!token) {
+    if (!getAuthToken()) {
       setError('Not authenticated');
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
       );
 
       if (!response.ok) throw new Error('Failed to fetch feedback');
@@ -159,17 +154,13 @@ export default function FeedbackPage() {
     description: string;
     priority: string | null;
   }) => {
-    const token = getAuthToken();
-    if (!token) throw new Error('Not authenticated');
+    if (!getAuthToken()) throw new Error('Not authenticated');
 
-    const response = await fetch(
+    const response = await authFetch(
       `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: data.type,
           title: data.title,
@@ -190,8 +181,7 @@ export default function FeedbackPage() {
 
   // Handle status change (drag and drop)
   const handleStatusChange = async (feedbackId: string, newStatus: string) => {
-    const token = getAuthToken();
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     const uppercaseStatus = statusToUppercase(newStatus);
 
@@ -205,14 +195,11 @@ export default function FeedbackPage() {
     );
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: uppercaseStatus }),
         }
       );

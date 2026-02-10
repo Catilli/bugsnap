@@ -5,6 +5,7 @@ import { Users, Mail, Shield, Calendar, ChevronDown } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
 import { FilterBar } from '@/components/FilterBar';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { authFetch } from '@/lib/api';
 import { useRole, UserRole } from '@/lib/useRole';
 
 interface TeamMember {
@@ -84,17 +85,15 @@ export default function TeamPage() {
   }, [members, roleFilter, searchQuery]);
 
   const fetchMembers = useCallback(async () => {
-    const token = getAuthToken();
-    if (!token) {
+    if (!getAuthToken()) {
       setError('Not authenticated');
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users`,
-        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.status === 403) {
@@ -120,18 +119,14 @@ export default function TeamPage() {
   }, [fetchMembers]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    const token = getAuthToken();
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/${userId}/role`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ role: newRole }),
         }
       );

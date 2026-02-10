@@ -7,6 +7,7 @@ export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'BugSnap',
   },
 });
 
@@ -23,6 +24,29 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Authenticated fetch wrapper — automatically injects Authorization and
+ * X-Requested-With (CSRF) headers. Use instead of raw fetch() for API calls.
+ *
+ * Accepts the same arguments as native fetch(). The `headers` option is
+ * merged (caller headers win on conflict).
+ */
+export async function authFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const token = getAuthToken();
+  const extra: Record<string, string> = { 'X-Requested-With': 'BugSnap' };
+  if (token) extra['Authorization'] = `Bearer ${token}`;
+
+  const merged = new Headers(init?.headers);
+  for (const [k, v] of Object.entries(extra)) {
+    if (!merged.has(k)) merged.set(k, v);
+  }
+
+  return fetch(input, { ...init, headers: merged });
+}
 
 // Response interceptor to handle errors
 api.interceptors.response.use(

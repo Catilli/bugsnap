@@ -44,7 +44,8 @@ async function fetchProjects(token) {
   try {
     const response = await fetch('http://localhost:3001/api/projects', {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'BugSnap'
       }
     });
 
@@ -64,7 +65,8 @@ async function fetchNextTaskNumber(token, projectId) {
     const response = await fetch(`http://localhost:3001/api/projects/${projectId}/next-issue-number`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'BugSnap'
       }
     });
 
@@ -84,7 +86,8 @@ async function fetchProjectMembers(token, projectId) {
     const response = await fetch(`http://localhost:3001/api/projects/${projectId}/members`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'BugSnap'
       }
     });
 
@@ -111,7 +114,8 @@ async function createTask(token, payload) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'BugSnap'
       },
       body: JSON.stringify(payload)
     });
@@ -146,6 +150,7 @@ async function uploadRecording(token, issueId, base64Data) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'BugSnap',
       },
       body: formData,
     });

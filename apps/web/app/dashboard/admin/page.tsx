@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { authFetch } from '@/lib/api';
 import { useRole, UserRole } from '@/lib/useRole';
 
 interface AdminStats {
@@ -151,8 +152,7 @@ export default function AdminPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   const fetchData = useCallback(async () => {
-    const token = getAuthToken();
-    if (!token) {
+    if (!getAuthToken()) {
       setError('Not authenticated');
       setIsLoading(false);
       return;
@@ -160,12 +160,8 @@ export default function AdminPage() {
 
     try {
       const [statsRes, usersRes] = await Promise.all([
-        fetch(`${apiUrl}/api/admin/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${apiUrl}/api/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        authFetch(`${apiUrl}/api/admin/stats`),
+        authFetch(`${apiUrl}/api/users`),
       ]);
 
       if (statsRes.status === 403 || usersRes.status === 403) {
@@ -197,16 +193,12 @@ export default function AdminPage() {
   }, [fetchData]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    const token = getAuthToken();
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     try {
-      const response = await fetch(`${apiUrl}/api/users/${userId}/role`, {
+      const response = await authFetch(`${apiUrl}/api/users/${userId}/role`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       });
 
@@ -215,9 +207,7 @@ export default function AdminPage() {
           prev.map((m) => (m.id === userId ? { ...m, role: newRole as UserRole } : m))
         );
         // Refresh stats since role counts changed
-        const statsRes = await fetch(`${apiUrl}/api/admin/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const statsRes = await authFetch(`${apiUrl}/api/admin/stats`);
         if (statsRes.ok) {
           setStats(await statsRes.json());
         }
@@ -230,14 +220,11 @@ export default function AdminPage() {
   };
 
   const handleExportIssues = async () => {
-    const token = getAuthToken();
-    if (!token) return;
+    if (!getAuthToken()) return;
 
     setExporting(true);
     try {
-      const response = await fetch(`${apiUrl}/api/admin/export/issues`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await authFetch(`${apiUrl}/api/admin/export/issues`);
 
       if (!response.ok) throw new Error('Export failed');
 

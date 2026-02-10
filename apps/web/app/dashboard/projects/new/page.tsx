@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { authFetch } from '@/lib/api';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -20,20 +21,15 @@ export default function NewProjectPage() {
     setError(null);
 
     try {
-      const token = getAuthToken();
-      
-      if (!token) {
+      if (!getAuthToken()) {
         setError('You must be logged in to create a project');
         router.push('/login');
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
+      const response = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 

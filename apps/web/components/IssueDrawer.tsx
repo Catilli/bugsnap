@@ -9,7 +9,7 @@ import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
 import ActivityTimeline from './ActivityTimeline';
 import Drawer from './Drawer';
-import { getAuthToken } from '../lib/clerkTokenBridge';
+import { authFetch } from '../lib/api';
 import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
 import { RoleGate } from './RoleGate';
@@ -90,10 +90,8 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const fetchProjectMembers = async (projectId: string) => {
     setIsLoadingMembers(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
-        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {
         const data = await response.json();
@@ -187,14 +185,8 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
 
     setIsLoading(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
       );
 
       if (response.ok) {
@@ -213,15 +205,11 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
 
     setIsSaving(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ [field]: value }),
         }
       );
@@ -241,15 +229,11 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     if (!issueId) return;
     setIsSharing(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/share`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ expiresInDays: 7 }),
         }
       );
@@ -278,10 +262,8 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const fetchAttachments = async () => {
     if (!issueId) return;
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/attachments`,
-        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {
         setAttachments(await response.json());
@@ -295,14 +277,12 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     if (!issueId) return;
     setIsUploading(true);
     try {
-      const token = getAuthToken();
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}/attachments`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         }
       );

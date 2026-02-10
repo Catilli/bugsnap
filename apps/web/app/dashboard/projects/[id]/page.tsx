@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, Settings, UserPlus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
+import { authFetch } from '@/lib/api';
 import { useRole } from '@/lib/useRole';
 import { RoleGate } from '@/components/RoleGate';
 import { useDialog } from '@/providers/DialogProvider';
@@ -111,16 +112,12 @@ export default function ProjectDetailPage() {
     if (!inviteEmail.trim()) return;
     setIsInviting(true);
     try {
-      const token = getAuthToken();
-      if (!token) return;
-      const response = await fetch(
+      if (!getAuthToken()) return;
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
         }
       );
@@ -154,13 +151,11 @@ export default function ProjectDetailPage() {
     if (!confirmed) return;
 
     try {
-      const token = getAuthToken();
-      if (!token) return;
-      const response = await fetch(
+      if (!getAuthToken()) return;
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
         }
       );
       if (response.ok) {
@@ -243,17 +238,13 @@ export default function ProjectDetailPage() {
     );
 
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus }),
         }
       );
@@ -275,16 +266,12 @@ export default function ProjectDetailPage() {
   // Handle issue deletion
   const handleDeleteIssue = async (issueId: string) => {
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/issues/${issueId}`,
         {
           method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
@@ -300,16 +287,10 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const token = getAuthToken();
-        if (!token) return;
+        if (!getAuthToken()) return;
 
-        const response = await fetch(
+        const response = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
         );
 
         if (response.ok) {
@@ -328,11 +309,9 @@ export default function ProjectDetailPage() {
     // Fetch project members
     const fetchMembers = async () => {
       try {
-        const token = getAuthToken();
-        if (!token) return;
-        const response = await fetch(
+        if (!getAuthToken()) return;
+        const response = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
-          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (response.ok) {
           const data = await response.json();
@@ -393,16 +372,10 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchIssues = async () => {
       try {
-        const token = getAuthToken();
-        if (!token) return;
+        if (!getAuthToken()) return;
 
-        const response = await fetch(
+        const response = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/issues`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
         );
 
         if (response.ok) {
@@ -437,17 +410,13 @@ export default function ProjectDetailPage() {
 
     setIsSavingName(true);
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: editedName.trim() }),
         }
       );

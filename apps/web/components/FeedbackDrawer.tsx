@@ -7,7 +7,7 @@ import { PriorityBadge } from './PriorityBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
 import ActivityTimeline from './ActivityTimeline';
-import { getAuthToken } from '../lib/clerkTokenBridge';
+import { authFetch } from '../lib/api';
 import { useRole } from '../lib/useRole';
 
 interface FeedbackDrawerProps {
@@ -140,14 +140,8 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
 
     setIsLoading(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
       );
 
       if (response.ok) {
@@ -166,15 +160,11 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
 
     setIsSaving(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ [field]: value }),
         }
       );
@@ -195,15 +185,11 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
     if (!feedbackId) return;
     setIsSharing(true);
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}/share`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ expiresInDays: 7 }),
         }
       );
@@ -232,10 +218,8 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
   const fetchAttachments = async () => {
     if (!feedbackId) return;
     try {
-      const token = getAuthToken();
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}/attachments`,
-        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.ok) {
         setAttachments(await response.json());
@@ -249,14 +233,12 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
     if (!feedbackId) return;
     setIsUploading(true);
     try {
-      const token = getAuthToken();
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch(
+      const response = await authFetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/feedback/${feedbackId}/attachments`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         }
       );

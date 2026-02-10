@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { getAuthToken } from './clerkTokenBridge';
+import { authFetch } from './api';
 
 interface CurrentUser {
   id: string;
@@ -31,13 +32,11 @@ export function useCurrentUser() {
     }
 
     const fetchUser = async () => {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!getAuthToken()) return;
 
       try {
-        const response = await fetch(
+        const response = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/me`,
-          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (response.ok) {
