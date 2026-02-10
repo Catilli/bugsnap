@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '../../store/authStore';
+import { notifyError } from '../../lib/toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -14,19 +15,17 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      notifyError('Passwords do not match');
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      notifyError('Password must be at least 8 characters long');
       return;
     }
 
@@ -35,7 +34,7 @@ export default function RegisterPage() {
       router.push('/dashboard');
     } catch (err: any) {
       const errorMessage = err.response?.data?.error?.message || err.message || 'Registration failed. Please try again.';
-      setError(errorMessage);
+      notifyError(errorMessage);
     }
   };
 
@@ -48,12 +47,6 @@ export default function RegisterPage() {
           </h1>
           <p className="text-gray-600 mt-2">Create your account</p>
         </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>

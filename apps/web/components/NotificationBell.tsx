@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, ReactNode } from 'react';
 import { Bell } from 'lucide-react';
 import { getAuthToken } from '../lib/clerkTokenBridge';
 import { authFetch } from '../lib/api';
+import { notifyError } from '../lib/toast';
 
 interface Notification {
   id: string;
@@ -63,7 +64,7 @@ export default function NotificationBell({
         setUnreadCount(data.filter((n) => !n.read).length);
       }
     } catch {
-      // Silently fail
+      notifyError('Failed to load notifications');
     }
   };
 
@@ -97,7 +98,7 @@ export default function NotificationBell({
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {
-      // Silently fail
+      notifyError('Failed to mark notification as read');
     }
   };
 
@@ -114,7 +115,7 @@ export default function NotificationBell({
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch {
-      // Silently fail
+      notifyError('Failed to mark notifications as read');
     }
   };
 

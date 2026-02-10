@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Plus, RefreshCw, FileText, Search, Trash2, FolderRoot, Grid2x2, List } from 'lucide-react';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { authFetch } from '@/lib/api';
+import { notifyError } from '@/lib/toast';
 import { RoleGate } from '@/components/RoleGate';
 import { useDialog } from '@/providers/DialogProvider';
 
@@ -50,8 +51,8 @@ export default function DashboardPage() {
           const data = await response.json();
           setProjects(data);
         }
-      } catch (error) {
-        // Silently fail on error
+      } catch {
+        notifyError('Failed to load projects');
       } finally {
         setIsLoading(false);
       }
@@ -81,8 +82,8 @@ export default function DashboardPage() {
       if (response.ok) {
         setProjects(projects.filter(p => p.id !== projectId));
       }
-    } catch (error) {
-      // Silently fail on error
+    } catch {
+      notifyError('Failed to delete project');
     }
   };
 

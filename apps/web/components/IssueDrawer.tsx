@@ -10,6 +10,7 @@ import CommentSection from './CommentSection';
 import ActivityTimeline from './ActivityTimeline';
 import Drawer from './Drawer';
 import { authFetch } from '../lib/api';
+import { notifyError } from '../lib/toast';
 import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
 import { RoleGate } from './RoleGate';
@@ -107,7 +108,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
         setProjectMembers(members);
       }
     } catch {
-      // Silently fail
+      notifyError('Failed to load project members');
     } finally {
       setIsLoadingMembers(false);
     }
@@ -193,8 +194,8 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
         const data = await response.json();
         setIssue(data);
       }
-    } catch (error) {
-      // Silently fail
+    } catch {
+      notifyError('Failed to load issue details');
     } finally {
       setIsLoading(false);
     }
@@ -218,8 +219,8 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
         const updatedIssue = await response.json();
         setIssue(updatedIssue);
       }
-    } catch (error) {
-      // Silently fail
+    } catch {
+      notifyError('Failed to update issue');
     } finally {
       setIsSaving(false);
     }
@@ -246,7 +247,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
         setTimeout(() => setShareCopied(false), 2000);
       }
     } catch {
-      // Silently fail
+      notifyError('Failed to create share link');
     } finally {
       setIsSharing(false);
     }
@@ -269,7 +270,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
         setAttachments(await response.json());
       }
     } catch {
-      // Silently fail
+      notifyError('Failed to load attachments');
     }
   };
 
@@ -291,7 +292,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
         setAttachments((prev) => [attachment, ...prev]);
       }
     } catch {
-      // Silently fail
+      notifyError('Failed to upload attachment');
     } finally {
       setIsUploading(false);
     }

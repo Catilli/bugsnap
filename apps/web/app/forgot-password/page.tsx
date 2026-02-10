@@ -2,18 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { notifyError } from '../../lib/toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
@@ -30,7 +29,7 @@ export default function ForgotPasswordPage() {
 
       setIsSubmitted(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to send reset link. Please try again.');
+      notifyError(err.message || 'Failed to send reset link. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -60,12 +59,6 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <>
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
             <p className="text-sm text-gray-600 mb-6">
               Enter the email address associated with your account and we&apos;ll send you a link to reset your password.
             </p>

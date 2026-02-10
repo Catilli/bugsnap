@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../../store/authStore';
 import { api } from '../../../lib/api';
+import { notifySuccess, notifyError } from '../../../lib/toast';
 
 export default function AccountPage() {
   const { user, checkAuth } = useAuthStore();
@@ -10,28 +11,22 @@ export default function AccountPage() {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState('');
-  const [profileError, setProfileError] = useState('');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [passwordError, setPasswordError] = useState('');
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileError('');
-    setProfileSuccess('');
     setProfileLoading(true);
 
     try {
       await api.put('/api/auth/profile', { name, email });
       await checkAuth();
-      setProfileSuccess('Profile updated successfully.');
+      notifySuccess('Profile updated successfully.');
     } catch (err: any) {
-      setProfileError(err.response?.data?.error?.message || 'Failed to update profile.');
+      notifyError(err.response?.data?.error?.message || 'Failed to update profile.');
     } finally {
       setProfileLoading(false);
     }
@@ -39,16 +34,14 @@ export default function AccountPage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
 
     if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters.');
+      notifyError('New password must be at least 8 characters.');
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordError('New passwords do not match.');
+      notifyError('New passwords do not match.');
       return;
     }
 
@@ -56,12 +49,12 @@ export default function AccountPage() {
 
     try {
       await api.put('/api/auth/password', { currentPassword, newPassword });
-      setPasswordSuccess('Password changed successfully.');
+      notifySuccess('Password changed successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (err: any) {
-      setPasswordError(err.response?.data?.error?.message || 'Failed to change password.');
+      notifyError(err.response?.data?.error?.message || 'Failed to change password.');
     } finally {
       setPasswordLoading(false);
     }
@@ -77,17 +70,6 @@ export default function AccountPage() {
       {/* Profile Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
-
-        {profileSuccess && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
-            {profileSuccess}
-          </div>
-        )}
-        {profileError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-            {profileError}
-          </div>
-        )}
 
         <form onSubmit={handleProfileUpdate} className="space-y-4">
           <div>
@@ -147,17 +129,6 @@ export default function AccountPage() {
       {/* Change Password Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
-
-        {passwordSuccess && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
-            {passwordSuccess}
-          </div>
-        )}
-        {passwordError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-            {passwordError}
-          </div>
-        )}
 
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div>

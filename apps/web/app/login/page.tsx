@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '../../store/authStore';
+import { notifyError } from '../../lib/toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,7 +26,6 @@ function LoginContent() {
   const { login, isLoading, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
   // If already authenticated (e.g. user navigated to /login manually),
   // redirect to dashboard instead of showing the login form.
@@ -41,7 +41,7 @@ function LoginContent() {
     const oauthError = searchParams.get('error');
 
     if (oauthError) {
-      setError(oauthError === 'no_email' ? 'Could not retrieve email from provider.' : 'OAuth login failed. Please try again.');
+      notifyError(oauthError === 'no_email' ? 'Could not retrieve email from provider.' : 'OAuth login failed. Please try again.');
       return;
     }
 
@@ -51,7 +51,7 @@ function LoginContent() {
           await useAuthStore.getState().handleOAuthCallback(token);
           router.push('/dashboard');
         } catch {
-          setError('OAuth login failed. Please try again.');
+          notifyError('OAuth login failed. Please try again.');
         }
       })();
     }
@@ -59,7 +59,6 @@ function LoginContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     try {
       await login(email, password);
@@ -67,7 +66,7 @@ function LoginContent() {
     } catch (err: any) {
       const data = err.response?.data;
       const errorMessage = data?.error?.message || data?.message || err.message || 'Login failed. Please check your credentials and try again.';
-      setError(errorMessage);
+      notifyError(errorMessage);
     }
   };
 
@@ -80,12 +79,6 @@ function LoginContent() {
           </h1>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>

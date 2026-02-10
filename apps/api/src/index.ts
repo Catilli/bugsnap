@@ -117,7 +117,7 @@ fastify.addHook('onRequest', async (request, reply) => {
     if (CSRF_EXEMPT.has(request.url) || request.url.startsWith('/api/share/')) return;
     const xrw = request.headers['x-requested-with'];
     if (xrw !== 'BugSnap') {
-      reply.status(403).send({ error: 'Forbidden — missing CSRF header' });
+      return reply.status(403).send({ error: 'Forbidden — missing CSRF header' });
     }
   }
 });

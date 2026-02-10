@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { notifyError } from '../../lib/toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,7 +26,6 @@ function ResetPasswordContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (!token) {
@@ -53,15 +53,14 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      notifyError('Password must be at least 8 characters');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      notifyError('Passwords do not match');
       return;
     }
 
@@ -81,7 +80,7 @@ function ResetPasswordContent() {
 
       setIsSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password. Please try again.');
+      notifyError(err.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -111,12 +110,6 @@ function ResetPasswordContent() {
           </div>
         ) : (
           <>
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">

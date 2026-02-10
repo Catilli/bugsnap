@@ -15,7 +15,7 @@ import { useRole } from '@/lib/useRole';
 import { RoleGate } from '@/components/RoleGate';
 import { useDialog } from '@/providers/DialogProvider';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { notifySuccess, notifyError } from '@/lib/toast';
 
 interface Project {
   id: string;
@@ -126,15 +126,15 @@ export default function ProjectDetailPage() {
         if (member.user && !projectMembers.some(m => m.id === member.user.id)) {
           setProjectMembers(prev => [...prev, member.user]);
         }
-        toast.success(`${inviteEmail.trim()} has been added to the project`);
+        notifySuccess(`${inviteEmail.trim()} has been added to the project`);
         setInviteEmail('');
         setInviteOpen(false);
       } else {
         const err = await response.json().catch(() => null);
-        toast.error(err?.error || 'Failed to invite user');
+        notifyError(err?.error || 'Failed to invite user');
       }
     } catch {
-      toast.error('Failed to invite user');
+      notifyError('Failed to invite user');
     } finally {
       setIsInviting(false);
     }
@@ -159,13 +159,13 @@ export default function ProjectDetailPage() {
         }
       );
       if (response.ok) {
-        toast.success('Project and all its data have been deleted');
+        notifySuccess('Project and all its data have been deleted');
         router.push('/dashboard');
       } else {
-        toast.error('Failed to delete project');
+        notifyError('Failed to delete project');
       }
     } catch {
-      toast.error('Failed to delete project');
+      notifyError('Failed to delete project');
     }
   };
 
@@ -260,6 +260,7 @@ export default function ProjectDetailPage() {
       setIssues((prev) =>
         prev.map((i) => (i.id === issueId ? { ...i, status: previousStatus } : i))
       );
+      notifyError('Failed to update issue status');
     }
   };
 
@@ -278,8 +279,8 @@ export default function ProjectDetailPage() {
       if (response.ok) {
         setIssues(issues.filter(i => i.id !== issueId));
       }
-    } catch (error) {
-      // Silently fail on error
+    } catch {
+      notifyError('Failed to delete issue');
     }
   };
 
@@ -299,8 +300,8 @@ export default function ProjectDetailPage() {
           setEditedName(data.name);
           setProjectName(data.name);
         }
-      } catch (error) {
-        // Silently fail on error
+      } catch {
+        notifyError('Failed to load project');
       }
     };
 
@@ -382,8 +383,8 @@ export default function ProjectDetailPage() {
           const data = await response.json();
           setIssues(data);
         }
-      } catch (error) {
-        // Silently fail on error
+      } catch {
+        notifyError('Failed to load issues');
       } finally {
         setIsIssuesLoading(false);
       }

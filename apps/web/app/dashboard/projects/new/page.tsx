@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { authFetch } from '@/lib/api';
+import { notifyError, notifySuccess } from '@/lib/toast';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -13,16 +14,14 @@ export default function NewProjectPage() {
     websiteUrl: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null);
 
     try {
       if (!getAuthToken()) {
-        setError('You must be logged in to create a project');
+        notifyError('You must be logged in to create a project');
         router.push('/login');
         return;
       }
@@ -38,12 +37,11 @@ export default function NewProjectPage() {
         throw new Error(errorData.error || 'Failed to create project');
       }
 
-      const project = await response.json();
-
-      // Redirect to dashboard
+      await response.json();
+      notifySuccess('Project created successfully');
       router.push('/dashboard');
     } catch (error: any) {
-      setError(error.message || 'Failed to create project');
+      notifyError(error.message || 'Failed to create project');
     } finally {
       setIsSubmitting(false);
     }
@@ -77,13 +75,6 @@ export default function NewProjectPage() {
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
-
           {/* Project Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
