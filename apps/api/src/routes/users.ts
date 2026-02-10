@@ -14,6 +14,24 @@ const updateRoleSchema = z.object({
 });
 
 export async function userRoutes(fastify: FastifyInstance) {
+  // GET /api/users/mentionable — lightweight list for @mention autocomplete (any auth'd user)
+  fastify.get('/users/mentionable', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (_request, reply) => {
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return reply.send(users);
+  });
+
   // GET /api/users — list all users (MANAGER+ only)
   fastify.get('/users', async (request, reply) => {
     const userId = (request.user as any)?.id;

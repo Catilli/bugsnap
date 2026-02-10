@@ -7,6 +7,7 @@ import { authRoutes } from '../../routes/auth';
 import { projectRoutes } from '../../routes/projects';
 import { issueRoutes } from '../../routes/issues';
 import { commentRoutes } from '../../routes/comments';
+import { userRoutes } from '../../routes/users';
 
 const TEST_JWT_SECRET = 'test-jwt-secret-for-testing';
 
@@ -63,6 +64,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.register(projectRoutes, { prefix: '/api' });
   app.register(issueRoutes, { prefix: '/api' });
   app.register(commentRoutes, { prefix: '/api' });
+  app.register(userRoutes, { prefix: '/api' });
 
   await app.ready();
   return app;

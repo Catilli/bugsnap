@@ -700,6 +700,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             <CommentSection
               issueId={issueId}
               onCommentCountChange={(count) => onCommentCountChange?.(issueId!, count)}
+              projectMembers={projectMembers}
             />
 
             {/* Activity Timeline */}

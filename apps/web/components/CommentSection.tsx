@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pencil, Trash2, Check, X } from 'lucide-react';
 import { authFetch } from '../lib/api';
 import { useCurrentUser } from '../lib/useCurrentUser';
@@ -39,7 +39,22 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
   const [editContent, setEditContent] = useState('');
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<ProjectMember[]>([]);
+  const [editMentionQuery, setEditMentionQuery] = useState<string | null>(null);
+  const [editMentionResults, setEditMentionResults] = useState<ProjectMember[]>([]);
   const user = useCurrentUser();
+
+  const renderCommentContent = (content: string): React.ReactNode => {
+    const parts = content.split(/(@\w+)/g);
+    return parts.map((part, i) =>
+      /^@\w+/.test(part) ? (
+        <span key={i} className="text-indigo-600 font-medium bg-indigo-50 px-1 rounded">
+          {part}
+        </span>
+      ) : (
+        <React.Fragment key={i}>{part}</React.Fragment>
+      ),
+    );
+  };
 
   const entityId = issueId || feedbackId;
   const basePath = issueId ? `issues/${issueId}` : `feedback/${feedbackId}`;
@@ -179,13 +194,53 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                   </div>
 
                   {isEditing ? (
-                    <div>
+                    <div className="relative">
                       <textarea
                         value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
+                        onChange={(e) => {
+                          setEditContent(e.target.value);
+                          const text = e.target.value;
+                          const cursorPos = e.target.selectionStart;
+                          const textBefore = text.slice(0, cursorPos);
+                          const mentionMatch = textBefore.match(/@(\w*)$/);
+                          if (mentionMatch && projectMembers.length > 0) {
+                            const query = mentionMatch[1].toLowerCase();
+                            setEditMentionQuery(query);
+                            setEditMentionResults(
+                              projectMembers.filter(m =>
+                                m.name.toLowerCase().includes(query)
+                              ).slice(0, 5)
+                            );
+                          } else {
+                            setEditMentionQuery(null);
+                            setEditMentionResults([]);
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y text-sm"
                         rows={2}
                       />
+                      {editMentionQuery !== null && editMentionResults.length > 0 && (
+                        <div className="absolute bottom-full mb-1 left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                          {editMentionResults.map(member => (
+                            <button
+                              key={member.id}
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const regex = new RegExp(`@${editMentionQuery}$`);
+                                setEditContent(prev => prev.replace(regex, `@${member.name} `));
+                                setEditMentionQuery(null);
+                                setEditMentionResults([]);
+                              }}
+                            >
+                              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-medium">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-gray-900">{member.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex gap-2 mt-1">
                         <button
                           onClick={() => handleEditComment(comment.id)}
@@ -198,6 +253,8 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                           onClick={() => {
                             setEditingId(null);
                             setEditContent('');
+                            setEditMentionQuery(null);
+                            setEditMentionResults([]);
                           }}
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
                         >
@@ -206,7 +263,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-700">{comment.content}</p>
+                    <p className="text-sm text-gray-700">{renderCommentContent(comment.content)}</p>
                   )}
                 </div>
               </div>

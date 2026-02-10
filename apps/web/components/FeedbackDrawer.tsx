@@ -58,6 +58,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mentionableUsers, setMentionableUsers] = useState<{ id: string; name: string; email: string }[]>([]);
 
   // Extract feedback number from title
   const getFeedbackNumber = (title: string) => {
@@ -128,6 +129,18 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
     }
     return 'bg-purple-100 text-purple-800';
   };
+
+  // Fetch mentionable users when drawer opens
+  useEffect(() => {
+    if (isOpen && feedbackId && mentionableUsers.length === 0) {
+      authFetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/mentionable`,
+      )
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => setMentionableUsers(data))
+        .catch(() => {});
+    }
+  }, [isOpen, feedbackId]);
 
   // Fetch feedback details when drawer opens
   useEffect(() => {
@@ -487,7 +500,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
             </div>
 
             {/* Comments */}
-            <CommentSection feedbackId={feedbackId} />
+            <CommentSection feedbackId={feedbackId} projectMembers={mentionableUsers} />
 
             {/* Activity Timeline */}
             <ActivityTimeline feedbackId={feedbackId} />

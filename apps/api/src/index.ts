@@ -11,7 +11,6 @@ dotenv.config();
 import { initSentry } from './lib/sentry';
 initSentry();
 
-import { prisma } from './lib/prisma';
 import { errorHandler } from './plugins/errorHandler';
 import { authPlugin } from './plugins/auth';
 import { authRoutes } from './routes/auth';
@@ -31,6 +30,8 @@ import { qaCycleRoutes } from './routes/qaCycles';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
 import { validateJwtSecret } from './utils/validateEnv';
+import { getHealthReport } from './services/healthCheck';
+import { healthMonitor } from './services/healthMonitor';
 
 // Validate JWT_SECRET (existence + strength)
 const jwtSecret = validateJwtSecret();
@@ -129,14 +130,10 @@ fastify.addHook('onSend', async (_request, reply) => {
 });
 
 // Health check route
-fastify.get('/health', async () => {
-  try {
-    // Check database connection
-    await prisma.$queryRaw`SELECT 1`;
-    return { status: 'ok', database: 'connected', timestamp: new Date().toISOString() };
-  } catch (error) {
-    return { status: 'error', database: 'disconnected', timestamp: new Date().toISOString() };
-  }
+fastify.get('/health', async (_request, reply) => {
+  const report = await getHealthReport();
+  const statusCode = report.status === 'unhealthy' ? 503 : 200;
+  return reply.status(statusCode).send(report);
 });
 
 // API routes
@@ -165,6 +162,7 @@ const start = async () => {
     const port = parseInt(process.env.PORT || '3001', 10);
     await fastify.listen({ port, host: '0.0.0.0' });
     startWorkers();
+    healthMonitor.start();
     console.log(`Server running on http://localhost:${port}`);
   } catch (err) {
     fastify.log.error(err);
@@ -174,6 +172,7 @@ const start = async () => {
 
 // Graceful shutdown
 const shutdown = async () => {
+  healthMonitor.stop();
   await fastify.close();
   await closeQueues();
   await disconnectRedis();
