@@ -7,7 +7,7 @@ import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import { FilterBar } from '@/components/FilterBar';
 import IssueDrawer from '@/components/IssueDrawer';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, Settings, UserPlus, Trash2, FlaskConical } from 'lucide-react';
+import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, UserPlus, Trash2, FlaskConical, Share2, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
@@ -184,23 +184,31 @@ export default function ProjectDetailPage() {
   }, [cycleFilter]);
 
   // Settings dropdown & invite modal
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'DEVELOPER' | 'VIEWER' | 'MANAGER'>('DEVELOPER');
   const [isInviting, setIsInviting] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
+  const shareRef = useRef<HTMLDivElement>(null);
 
-  // Close settings dropdown on outside click
+  // Close share dropdown on outside click or Escape
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
+    if (!shareOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+        setShareOpen(false);
       }
     };
-    if (settingsOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [settingsOpen]);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShareOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [shareOpen]);
 
   const handleInviteUser = async () => {
     if (!inviteEmail.trim()) return;
@@ -594,39 +602,51 @@ export default function ProjectDetailPage() {
                 Open website
               </a>
               {hasRole('MANAGER') && (
-                <div className="relative" ref={settingsRef}>
+                <>
+                  <div className="relative" ref={shareRef}>
+                    <button
+                      onClick={() => setShareOpen(!shareOpen)}
+                      aria-label="Share project"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Share
+                    </button>
+                    {shareOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                        <button
+                          onClick={() => {
+                            setShareOpen(false);
+                            setInviteOpen(true);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
+                        >
+                          <UserPlus className="w-4 h-4 text-gray-500" />
+                          Invite User
+                        </button>
+                        <button
+                          onClick={() => {
+                            const url = `${window.location.origin}/dashboard/projects/${projectId}`;
+                            navigator.clipboard.writeText(url);
+                            notifySuccess('Project link copied to clipboard');
+                            setShareOpen(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
+                        >
+                          <Link2 className="w-4 h-4 text-gray-500" />
+                          Copy Project Link
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button
-                    onClick={() => setSettingsOpen(!settingsOpen)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Project settings"
+                    onClick={confirmDeleteProject}
+                    aria-label="Delete project"
+                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <Settings className="w-5 h-5" />
+                    <Trash2 className="w-5 h-5" />
                   </button>
-                  {settingsOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-                      <button
-                        onClick={() => {
-                          setSettingsOpen(false);
-                          setInviteOpen(true);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Invite User
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSettingsOpen(false);
-                          confirmDeleteProject();
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete Project
-                      </button>
-                    </div>
-                  )}
-                </div>
+                </>
               )}
             </div>
           }
