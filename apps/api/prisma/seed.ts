@@ -82,7 +82,7 @@ const FEEDBACK_ITEMS = [
 async function main() {
   // Find admin user to promote
   const adminUser = await prisma.user.findUnique({
-    where: { email: 'developer2018team@gmail.com' },
+    where: { email: 'cath@murphconsulting.us' },
   });
 
   if (!adminUser) {
@@ -92,7 +92,7 @@ async function main() {
       console.error('ERROR: No users exist in the database. Please register at least one user first.');
       process.exit(1);
     }
-    console.log(`WARNING: developer2018team@gmail.com not found. Using ${firstUser.email} as creator.`);
+    console.log(`WARNING: cath@murphconsulting.us not found. Using ${firstUser.email} as creator.`);
 
     await createFeedbackItems(firstUser.id);
     return;
