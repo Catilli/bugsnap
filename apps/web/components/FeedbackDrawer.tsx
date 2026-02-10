@@ -9,6 +9,7 @@ import CommentSection from './CommentSection';
 import ActivityTimeline from './ActivityTimeline';
 import { authFetch } from '../lib/api';
 import { useRole } from '../lib/useRole';
+import { safeHref } from '../lib/safeUrl';
 
 interface FeedbackDrawerProps {
   feedbackId: string | null;
@@ -468,7 +469,7 @@ export default function FeedbackDrawer({ feedbackId, isOpen, onClose, onUpdate }
                   {attachments.map((att) => (
                     <a
                       key={att.id}
-                      href={att.fileUrl}
+                      href={safeHref(att.fileUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"

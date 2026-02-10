@@ -672,7 +672,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                   {attachments.map((att) => (
                     <a
                       key={att.id}
-                      href={att.fileUrl}
+                      href={safeHref(att.fileUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"

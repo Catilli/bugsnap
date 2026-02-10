@@ -13,10 +13,10 @@ BugSnap is a web-based application that helps teams capture, annotate, and manag
 | Document | Description |
 |----------|-------------|
 | [Technical Architecture](./docs/TECH_ARCHITECTURE.md) | Full architecture audit — frontend, backend, database, infrastructure, identified gaps, and recommended next steps |
+| [Input Sanitization](./docs/SECURITY_INPUT_SANITIZATION.md) | Security guide for input validation, HTML sanitization, URL safety, and defense-in-depth patterns |
 | [Core Features Audit](./docs/CORE_FEATURES.md) | Read-only codebase analysis of 46 features across 7 categories with implementation status and evidence |
 | [User Roles & Permissions](./docs/USER_ROLES.md) | Implementation tracker for the 4-role RBAC system -- capabilities, status, and verification steps |
 | [Kanban Dashboard](./docs/KANBAN_DASHBOARD.md) | Audit and implementation tracker for the Kanban dashboard, QA cycle reports, unified views, and real-time updates |
-| [Input Sanitization](./docs/SECURITY_INPUT_SANITIZATION.md) | Security guide for input validation, HTML sanitization, URL safety, and defense-in-depth patterns |
 
 
 ## 🏗️ Project Structure
