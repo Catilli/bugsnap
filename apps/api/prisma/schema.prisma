@@ -111,7 +111,8 @@ model Issue {
   title           String
   description     String?   @db.Text
   url             String?
-  screenshotUrl   String?
+  screenshotUrl       String?
+  screenshotBackupUrl String?
   status          String    @default("open") // open, in_progress, resolved, closed
   priority        String?   // low, medium, high, critical (optional, no default)
   severity        String?   // low, medium, high, critical (separate from priority)

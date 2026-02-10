@@ -15,6 +15,7 @@ import { notifyError } from '../lib/toast';
 import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
 import { RoleGate } from './RoleGate';
+import { ScreenshotImage } from './ScreenshotImage';
 
 interface IssueDrawerProps {
   issueId: string | null;
@@ -31,6 +32,7 @@ interface Issue {
   description: string | null;
   url: string | null;
   screenshotUrl: string | null;
+  screenshotBackupUrl: string | null;
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical' | null;
   severity?: 'low' | 'medium' | 'high' | 'critical' | null;
@@ -443,8 +445,9 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                   className="relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer group h-96"
                   onClick={() => setIsScreenshotEnlarged(true)}
                 >
-                  <img
+                  <ScreenshotImage
                     src={issue.screenshotUrl}
+                    backupSrc={issue.screenshotBackupUrl}
                     alt="Screenshot"
                     className="w-full h-full object-cover"
                   />
@@ -717,8 +720,9 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             >
               <X className="w-6 h-6 text-white" />
             </button>
-            <img
+            <ScreenshotImage
               src={issue.screenshotUrl}
+              backupSrc={issue.screenshotBackupUrl}
               alt="Screenshot (enlarged)"
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}

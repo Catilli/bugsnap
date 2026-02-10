@@ -161,12 +161,15 @@ export async function issueRoutes(fastify: FastifyInstance) {
 
       const data = createIssueSchema.parse(request.body);
 
-      // Upload data-URL screenshots to Cloudinary CDN
+      // Upload data-URL screenshots to Cloudinary CDN + R2 backup
       let screenshotUrl = data.screenshotUrl;
+      let screenshotBackupUrl: string | undefined;
       try {
-        screenshotUrl = await processScreenshotUrl(data.screenshotUrl);
+        const result = await processScreenshotUrl(data.screenshotUrl);
+        screenshotUrl = result.screenshotUrl;
+        screenshotBackupUrl = result.screenshotBackupUrl;
       } catch (error) {
-        fastify.log.error(error, 'Failed to upload screenshot to Cloudinary');
+        fastify.log.error(error, 'Failed to upload screenshot');
       }
 
       // Verify user has access to project
@@ -220,6 +223,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
           description: data.description,
           url: data.url,
           screenshotUrl,
+          screenshotBackupUrl,
           priority: data.priority,
           severity: data.severity,
           visibility: data.visibility,

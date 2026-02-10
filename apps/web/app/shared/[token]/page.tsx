@@ -7,6 +7,7 @@ import { PriorityBadge } from '@/components/PriorityBadge';
 import { TypeBadge } from '@/components/TypeBadge';
 import { Bug, MessageSquare, Calendar, User, ExternalLink, MapPin } from 'lucide-react';
 import { safeHref } from '@/lib/safeUrl';
+import { ScreenshotImage } from '@/components/ScreenshotImage';
 
 interface SharedUser {
   id: string;
@@ -27,6 +28,7 @@ interface SharedIssue {
   description: string | null;
   url: string | null;
   screenshotUrl: string | null;
+  screenshotBackupUrl: string | null;
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical' | null;
   severity?: 'low' | 'medium' | 'high' | 'critical' | null;
@@ -196,8 +198,9 @@ function IssueCard({ issue }: { issue: SharedIssue }) {
         {issue.screenshotUrl && (
           <div>
             <label className="block text-sm font-medium text-gray-500 mb-2">Screenshot</label>
-            <img
+            <ScreenshotImage
               src={issue.screenshotUrl}
+              backupSrc={issue.screenshotBackupUrl}
               alt="Screenshot"
               className="w-full rounded-lg border border-gray-200 max-h-96 object-cover"
             />
