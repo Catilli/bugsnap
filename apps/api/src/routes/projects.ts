@@ -3,16 +3,16 @@ import { prisma } from '../lib/prisma';
 import { cacheInvalidate } from '../lib/redis';
 import { z } from 'zod';
 import { requireRole } from '../middleware/requireRole';
-import { sanitizeString } from '../utils/sanitize';
+import { sanitizeString, sanitizeUrl } from '../utils/sanitize';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').transform(sanitizeString),
-  websiteUrl: z.string().url('Must be a valid URL'),
+  websiteUrl: z.string().url('Must be a valid URL').transform(sanitizeUrl),
 });
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).transform(sanitizeString).optional(),
-  websiteUrl: z.string().url('Must be a valid URL').optional(),
+  websiteUrl: z.string().url('Must be a valid URL').transform(sanitizeUrl).optional(),
 });
 
 export async function projectRoutes(fastify: FastifyInstance) {

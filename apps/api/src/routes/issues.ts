@@ -3,23 +3,51 @@ import { prisma } from '../lib/prisma';
 import { z } from 'zod';
 import { emitIssueEvent } from '../lib/eventBus';
 import { cacheInvalidate } from '../lib/redis';
-import { sanitizeString } from '../utils/sanitize';
+import { sanitizeString, sanitizeUrl } from '../utils/sanitize';
 import { processScreenshotUrl } from '../utils/processScreenshot';
 import { logActivity } from '../utils/activityLogger';
 import { notificationService } from '../services/notificationService';
+
+// Permissive environment data schema — all fields optional, passthrough for unknown keys
+const environmentDataSchema = z.object({
+  browser: z.string().optional(),
+  browserVersion: z.string().optional(),
+  os: z.string().optional(),
+  screenResolution: z.string().optional(),
+  viewportSize: z.string().optional(),
+  url: z.string().optional(),
+  pageTitle: z.string().transform(sanitizeString).optional(),
+  userAgent: z.string().optional(),
+  timestamp: z.string().optional(),
+  timezone: z.string().optional(),
+  consoleErrors: z.array(z.string()).optional(),
+  networkRequests: z.array(z.string()).optional(),
+}).passthrough();
+
+const issueTypeEnum = z.enum(['BUG', 'FEATURE', 'TASK']);
+const priorityEnum = z.enum(['low', 'medium', 'high', 'critical']);
+
+const issueQuerySchema = z.object({
+  type: z.string().max(50).optional(),
+  status: z.string().max(100).optional(),
+  priority: z.string().max(100).optional(),
+  search: z.string().max(200).optional(),
+  assignedToId: z.string().uuid().optional(),
+  groupBy: z.enum(['url']).optional(),
+});
 
 const createIssueSchema = z.object({
   projectId: z.string().uuid(),
   title: z.string().min(1, 'Issue title is required').transform(sanitizeString),
   description: z.string().transform(sanitizeString).optional(),
-  url: z.string().optional(),
+  url: z.string().url().transform(sanitizeUrl).optional(),
   screenshotUrl: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-  type: z.enum(['BUG', 'FEATURE', 'TASK']).default('TASK'),
+  priority: priorityEnum.optional(),
+  severity: priorityEnum.optional(),
+  type: issueTypeEnum.default('TASK'),
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
-  environmentData: z.any().optional(),
+  environmentData: environmentDataSchema.optional(),
   annotations: z.array(z.object({
     type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
     coordinates: z.any(),
@@ -80,7 +108,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Get the type from query params (default to TASK)
-      const { type } = request.query as { type?: string };
+      const { type } = z.object({ type: issueTypeEnum.optional() }).parse(request.query);
       const issueType = type || 'TASK';
 
       // Get the last issue of this type to determine next number
@@ -196,7 +224,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
           severity: data.severity,
           visibility: data.visibility,
           assignedToId: data.assignedToId,
-          environmentData: data.environmentData,
+          environmentData: data.environmentData as any,
           createdById: userId,
           // Create annotations if provided
           annotations: data.annotations ? {
@@ -289,14 +317,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Parse query params for filtering
-      const { type, status, priority, search, assignedToId, groupBy } = request.query as {
-        type?: string;
-        status?: string;
-        priority?: string;
-        search?: string;
-        assignedToId?: string;
-        groupBy?: string;
-      };
+      const { type, status, priority, search, assignedToId, groupBy } = issueQuerySchema.parse(request.query);
 
       // Build where clause with filters
       const whereClause: any = { projectId };

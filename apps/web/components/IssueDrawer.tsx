@@ -8,6 +8,7 @@ import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
 import ActivityTimeline from './ActivityTimeline';
+import { safeHref } from '../lib/safeUrl';
 import Drawer from './Drawer';
 import { authFetch } from '../lib/api';
 import { notifyError } from '../lib/toast';
@@ -457,7 +458,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                 <a
-                  href={issue.url}
+                  href={safeHref(issue.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-sm break-all"

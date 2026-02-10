@@ -25,6 +25,13 @@ const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment content is required').transform(sanitizeString),
 });
 
+const feedbackQuerySchema = z.object({
+  type: z.string().max(50).optional(),
+  status: z.string().max(100).optional(),
+  priority: z.string().max(100).optional(),
+  search: z.string().max(200).optional(),
+});
+
 export async function feedbackRoutes(fastify: FastifyInstance) {
   // Create new feedback
   fastify.post('/', {
@@ -118,12 +125,7 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const { type, status, priority, search } = request.query as {
-        type?: string;
-        status?: string;
-        priority?: string;
-        search?: string;
-      };
+      const { type, status, priority, search } = feedbackQuerySchema.parse(request.query);
 
       const whereClause: any = {};
 

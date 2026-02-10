@@ -1,5 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
+import { z } from 'zod';
+
+const roleEnum = z.enum(['ADMIN', 'MANAGER', 'DEVELOPER', 'VIEWER']);
+
+const usersQuerySchema = z.object({
+  search: z.string().max(200).optional(),
+  role: roleEnum.optional(),
+});
+
+const updateRoleSchema = z.object({
+  role: roleEnum,
+});
 
 export async function userRoutes(fastify: FastifyInstance) {
   // GET /api/users — list all users (MANAGER+ only)
@@ -19,7 +31,7 @@ export async function userRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Insufficient permissions' });
     }
 
-    const { search, role } = request.query as { search?: string; role?: string };
+    const { search, role } = usersQuerySchema.parse(request.query);
 
     const where: any = {};
 
@@ -30,7 +42,7 @@ export async function userRoutes(fastify: FastifyInstance) {
       ];
     }
 
-    if (role && ['ADMIN', 'MANAGER', 'DEVELOPER', 'VIEWER'].includes(role)) {
+    if (role) {
       where.role = role;
     }
 
@@ -76,11 +88,7 @@ export async function userRoutes(fastify: FastifyInstance) {
     }
 
     const { userId } = request.params as { userId: string };
-    const { role } = request.body as { role: string };
-
-    if (!['ADMIN', 'MANAGER', 'DEVELOPER', 'VIEWER'].includes(role)) {
-      return reply.status(400).send({ error: 'Invalid role' });
-    }
+    const { role } = updateRoleSchema.parse(request.body);
 
     // Prevent self-demotion
     if (userId === currentUserId) {
@@ -89,7 +97,7 @@ export async function userRoutes(fastify: FastifyInstance) {
 
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { role: role as any },
+      data: { role },
       select: {
         id: true,
         name: true,

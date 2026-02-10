@@ -1,5 +1,17 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { notificationService } from '../services/notificationService';
+
+const categoryEnum = z.enum(['issue', 'feedback']);
+
+const notificationQuerySchema = z.object({
+  unread: z.enum(['true', 'false']).optional(),
+  category: categoryEnum.optional(),
+});
+
+const readAllBodySchema = z.object({
+  category: categoryEnum.optional(),
+}).optional();
 
 export async function notificationRoutes(fastify: FastifyInstance) {
   // Get notifications for current user
@@ -16,9 +28,8 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       const userId = (request.user as any)?.id;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const { unread, category } = request.query as { unread?: string; category?: string };
-      const cat = category === 'issue' || category === 'feedback' ? category : undefined;
-      const notifications = await notificationService.getForUser(userId, unread === 'true', cat);
+      const { unread, category } = notificationQuerySchema.parse(request.query);
+      const notifications = await notificationService.getForUser(userId, unread === 'true', category);
       return reply.send(notifications);
     } catch (error) {
       fastify.log.error(error);
@@ -63,9 +74,8 @@ export async function notificationRoutes(fastify: FastifyInstance) {
       const userId = (request.user as any)?.id;
       if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 
-      const { category } = request.body as { category?: string } || {};
-      const cat = category === 'issue' || category === 'feedback' ? category : undefined;
-      await notificationService.markAllRead(userId, cat);
+      const parsed = readAllBodySchema.parse(request.body);
+      await notificationService.markAllRead(userId, parsed?.category);
       return reply.send({ success: true });
     } catch (error) {
       fastify.log.error(error);

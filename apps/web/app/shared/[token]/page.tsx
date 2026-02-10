@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { PriorityBadge } from '@/components/PriorityBadge';
 import { TypeBadge } from '@/components/TypeBadge';
 import { Bug, MessageSquare, Calendar, User, ExternalLink, MapPin } from 'lucide-react';
+import { safeHref } from '@/lib/safeUrl';
 
 interface SharedUser {
   id: string;
@@ -208,7 +209,7 @@ function IssueCard({ issue }: { issue: SharedIssue }) {
           <div className="flex items-center gap-2 text-sm text-indigo-600">
             <MapPin className="w-4 h-4 flex-shrink-0" />
             <a
-              href={issue.url}
+              href={safeHref(issue.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="truncate hover:underline"

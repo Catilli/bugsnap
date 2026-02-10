@@ -1,5 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma';
+import { z } from 'zod';
+
+const shareBodySchema = z.object({
+  expiresInDays: z.number().int().positive().max(365).optional(),
+}).optional();
 
 export async function shareRoutes(fastify: FastifyInstance) {
   // Create a share token for an issue (MANAGER+)
@@ -38,7 +43,7 @@ export async function shareRoutes(fastify: FastifyInstance) {
       }
 
       // Parse optional expiry from body
-      const body = request.body as { expiresInDays?: number } | undefined;
+      const body = shareBodySchema.parse(request.body);
       const expiresAt = body?.expiresInDays
         ? new Date(Date.now() + body.expiresInDays * 24 * 60 * 60 * 1000)
         : undefined;
@@ -87,7 +92,7 @@ export async function shareRoutes(fastify: FastifyInstance) {
 
       if (!feedback) return reply.status(404).send({ error: 'Feedback not found' });
 
-      const body = request.body as { expiresInDays?: number } | undefined;
+      const body = shareBodySchema.parse(request.body);
       const expiresAt = body?.expiresInDays
         ? new Date(Date.now() + body.expiresInDays * 24 * 60 * 60 * 1000)
         : undefined;

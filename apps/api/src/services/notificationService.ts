@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { enqueue, emailQueue } from '../lib/queue';
+import { sanitizeString } from '../utils/sanitize';
 
 export const notificationService = {
   async create(params: {
@@ -25,7 +26,7 @@ export const notificationService = {
       enqueue(emailQueue, 'notification-email', {
         to: user.email,
         subject: params.title,
-        html: `<p>Hi ${user.name},</p><p>${params.message || params.title}</p><p>— BugSnap</p>`,
+        html: `<p>Hi ${sanitizeString(user.name || '')},</p><p>${sanitizeString(params.message || params.title)}</p><p>— BugSnap</p>`,
       });
     }
 

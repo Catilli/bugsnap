@@ -16,6 +16,7 @@ BugSnap is a web-based application that helps teams capture, annotate, and manag
 | [Core Features Audit](./docs/CORE_FEATURES.md) | Read-only codebase analysis of 46 features across 7 categories with implementation status and evidence |
 | [User Roles & Permissions](./docs/USER_ROLES.md) | Implementation tracker for the 4-role RBAC system -- capabilities, status, and verification steps |
 | [Kanban Dashboard](./docs/KANBAN_DASHBOARD.md) | Audit and implementation tracker for the Kanban dashboard, QA cycle reports, unified views, and real-time updates |
+| [Input Sanitization](./docs/SECURITY_INPUT_SANITIZATION.md) | Security guide for input validation, HTML sanitization, URL safety, and defense-in-depth patterns |
 
 
 ## 🏗️ Project Structure
@@ -239,19 +240,27 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.6.0
+**Current Version**: v0.7.0
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
 **Recent Updates**:
-- Split notifications by type (bell for issues, bug icon for feedback)
-- Shared Drawer component and global DialogProvider
-- Removed Resolved kanban column, renamed QA to Ready for QA
-- Admin dashboard with system stats and user management
-- Screen recording in browser extensions (Chrome & Firefox)
+- Input sanitization hardening (URL protocol validation, Zod for all inputs, email HTML injection fix)
+- Frontend safe-URL guard for defense-in-depth
+- Security documentation
 
 
 ## 📝 Changelog
+
+### v0.7.0 (February 2026)
+- ✅ URL sanitization (`sanitizeUrl` / `zSanitizedUrl`) rejecting `javascript:`, `data:`, `vbscript:` protocols
+- ✅ Replaced `z.any()` on `environmentData` with proper permissive schema
+- ✅ Zod validation for all query parameters (issues, feedback, users, notifications)
+- ✅ Zod validation for missing body schemas (share, user role update)
+- ✅ Fixed email HTML injection in notification service
+- ✅ Frontend `safeHref()` guard on all user-provided URL links
+- ✅ Sanitization test suite (backend + frontend)
+- ✅ Added `SECURITY_INPUT_SANITIZATION.md` internal guide
 
 ### v0.6.0 (February 2026)
 - ✅ Split notifications by type — bell icon for issues, bug icon for feedback
