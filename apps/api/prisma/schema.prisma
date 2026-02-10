@@ -59,6 +59,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   activityLogs        ActivityLog[]
   notifications       Notification[]
+  createdQACycles     QACycle[]  @relation("QACycleCreator")
 
   @@unique([oauthProvider, oauthId])
   @@map("users")
@@ -77,6 +78,7 @@ model Project {
   createdBy      User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
   members        ProjectMember[]
   issues         Issue[]
+  qaCycles       QACycle[]
   activityLogs   ActivityLog[]
   notifications  Notification[]
   shareTokens    ShareToken[]
@@ -131,6 +133,7 @@ model Issue {
   notifications Notification[]
   shareTokens   ShareToken[]
   attachments   Attachment[]
+  qaCycles      QACycleIssue[]
 
   @@index([projectId])
   @@index([createdById])
@@ -282,6 +285,38 @@ model ActivityLog {
   @@index([userId])
   @@index([createdAt])
   @@map("activity_logs")
+}
+
+model QACycle {
+  id          String    @id @default(uuid())
+  projectId   String
+  title       String
+  description String?   @db.Text
+  status      String    @default("open")  // open, in_progress, completed
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation("QACycleCreator", fields: [createdById], references: [id])
+  issues      QACycleIssue[]
+
+  @@index([projectId])
+  @@index([status])
+  @@map("qa_cycles")
+}
+
+model QACycleIssue {
+  id         String   @id @default(uuid())
+  qaCycleId  String
+  issueId    String
+  addedAt    DateTime @default(now())
+
+  qaCycle    QACycle  @relation(fields: [qaCycleId], references: [id], onDelete: Cascade)
+  issue      Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@unique([qaCycleId, issueId])
+  @@map("qa_cycle_issues")
 }
 
 model PasswordResetToken {

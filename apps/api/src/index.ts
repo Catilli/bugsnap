@@ -27,6 +27,7 @@ import { notificationRoutes } from './routes/notifications';
 import { shareRoutes } from './routes/share';
 import { userRoutes } from './routes/users';
 import { adminRoutes } from './routes/admin';
+import { qaCycleRoutes } from './routes/qaCycles';
 import { disconnectRedis } from './lib/redis';
 import { startWorkers, closeQueues } from './lib/queue';
 
@@ -159,6 +160,7 @@ fastify.register(notificationRoutes, { prefix: '/api' });
 fastify.register(shareRoutes, { prefix: '/api' });
 fastify.register(userRoutes, { prefix: '/api' });
 fastify.register(adminRoutes, { prefix: '/api' });
+fastify.register(qaCycleRoutes, { prefix: '/api' });
 
 const start = async () => {
   try {

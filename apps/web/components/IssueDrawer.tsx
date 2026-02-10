@@ -21,6 +21,7 @@ interface IssueDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onCommentCountChange?: (issueId: string, count: number) => void;
+  extraActions?: React.ReactNode;
 }
 
 interface Issue {
@@ -71,7 +72,7 @@ interface Attachment {
   createdAt: string;
 }
 
-export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange }: IssueDrawerProps) {
+export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange, extraActions }: IssueDrawerProps) {
   const { role, hasRole, isViewer } = useRole();
   const currentUser = useAuthStore((s) => s.user);
   const [issue, setIssue] = useState<Issue | null>(null);
@@ -345,16 +346,19 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
           </>
         }
         headerActions={
-          hasRole('MANAGER') ? (
-            <button
-              onClick={handleShare}
-              disabled={isSharing}
-              className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
-              title={shareCopied ? 'Link copied!' : 'Share issue'}
-            >
-              {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
-            </button>
-          ) : undefined
+          <div className="flex items-center gap-1">
+            {extraActions}
+            {hasRole('MANAGER') && (
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-indigo-600"
+                title={shareCopied ? 'Link copied!' : 'Share issue'}
+              >
+                {shareCopied ? <Check className="w-5 h-5 text-green-600" /> : <Share2 className="w-5 h-5" />}
+              </button>
+            )}
+          </div>
         }
       >
         {issue && <div className="p-6 space-y-6">

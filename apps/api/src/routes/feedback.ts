@@ -5,6 +5,7 @@ import { requireRole } from '../middleware/requireRole';
 import { sanitizeString } from '../utils/sanitize';
 import { logActivity } from '../utils/activityLogger';
 import { notificationService } from '../services/notificationService';
+import { emitFeedbackEvent } from '../lib/eventBus';
 
 const createFeedbackSchema = z.object({
   type: z.enum(['BUG', 'FEATURE']),
@@ -97,6 +98,8 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         action: 'created',
         metadata: { type: data.type, title: feedback.title },
       });
+
+      emitFeedbackEvent({ type: 'feedback:created', data: feedback as any });
 
       return reply.status(201).send(feedback);
     } catch (error: any) {
@@ -312,6 +315,8 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
         });
       }
 
+      emitFeedbackEvent({ type: 'feedback:updated', data: updatedFeedback as any });
+
       return reply.send(updatedFeedback);
     } catch (error: any) {
       fastify.log.error(error);
@@ -367,6 +372,8 @@ export async function feedbackRoutes(fastify: FastifyInstance) {
       await prisma.feedback.delete({
         where: { id: feedbackId },
       });
+
+      emitFeedbackEvent({ type: 'feedback:deleted', data: { id: feedbackId } });
 
       return reply.send({ message: 'Feedback deleted successfully' });
     } catch (error) {

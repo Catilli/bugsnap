@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Bug, Plus, Lightbulb } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { KanbanBoard } from '../../../components/kanban/KanbanBoard';
 import { FeedbackForm } from '../../../components/FeedbackForm';
 import FeedbackDrawer from '../../../components/FeedbackDrawer';
@@ -74,6 +75,8 @@ const feedbackToKanbanIssue = (feedback: Feedback): KanbanIssue => ({
 
 export default function FeedbackPage() {
   const { isViewer } = useRole();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,16 +84,39 @@ export default function FeedbackPage() {
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Filter state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<('BUG' | 'FEATURE')[]>([]);
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  // URL-persisted filter state
+  const initTypes = searchParams.get('type')?.split(',').filter((t): t is 'BUG' | 'FEATURE' => t === 'BUG' || t === 'FEATURE') || [];
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [typeFilter, setTypeFilter] = useState<('BUG' | 'FEATURE')[]>(initTypes);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(searchParams.get('priority') || null);
+
+  // Sync filter changes to URL
+  const updateUrlFilters = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
 
   const toggleType = (type: 'BUG' | 'FEATURE') => {
-    setTypeFilter((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
+    setTypeFilter((prev) => {
+      const next = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type];
+      updateUrlFilters({ type: next.length > 0 ? next.join(',') : null });
+      return next;
+    });
   };
+
+  const setSearchQueryWithUrl = useCallback((value: string) => {
+    setSearchQuery(value);
+    updateUrlFilters({ search: value || null });
+  }, [updateUrlFilters]);
+
+  const setPriorityFilterWithUrl = useCallback((value: string | null) => {
+    setPriorityFilter(value);
+    updateUrlFilters({ priority: value });
+  }, [updateUrlFilters]);
 
   const hasActiveFilters = typeFilter.length > 0 || priorityFilter !== null || searchQuery !== '';
 
@@ -98,6 +124,7 @@ export default function FeedbackPage() {
     setSearchQuery('');
     setTypeFilter([]);
     setPriorityFilter(null);
+    router.replace('?', { scroll: false });
   };
 
   // Filter feedback then convert to kanban format
@@ -146,6 +173,38 @@ export default function FeedbackPage() {
   useEffect(() => {
     fetchFeedback();
   }, [fetchFeedback]);
+
+  // SSE: Subscribe to real-time feedback updates
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const eventSource = new EventSource(
+      `${apiUrl}/api/feedback/events?token=${encodeURIComponent(token)}`,
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'feedback:created') {
+          setFeedbackList((prev) => [data.data, ...prev]);
+        } else if (data.type === 'feedback:updated') {
+          setFeedbackList((prev) =>
+            prev.map((item) => (item.id === data.data.id ? { ...item, ...data.data } : item)),
+          );
+        } else if (data.type === 'feedback:deleted') {
+          setFeedbackList((prev) => prev.filter((item) => item.id !== data.data.id));
+        }
+      } catch {
+        // Ignore parse errors (keepalive, connected events)
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   // Handle feedback submission
   const handleSubmitFeedback = async (data: {
@@ -287,7 +346,7 @@ export default function FeedbackPage() {
       {/* Filters */}
       <FilterBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={setSearchQueryWithUrl}
         searchPlaceholder="Search feedback..."
         slots={[
           {
@@ -319,7 +378,7 @@ export default function FeedbackPage() {
               { label: 'Medium', value: 'medium' },
               { label: 'Low', value: 'low' },
             ],
-            onChange: setPriorityFilter,
+            onChange: setPriorityFilterWithUrl,
           },
         ]}
         showClear={hasActiveFilters}

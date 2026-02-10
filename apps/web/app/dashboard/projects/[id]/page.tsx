@@ -1,13 +1,14 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useProject } from '../../ProjectContext';
 import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import { FilterBar } from '@/components/FilterBar';
 import IssueDrawer from '@/components/IssueDrawer';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, Settings, UserPlus, Trash2 } from 'lucide-react';
+import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, Settings, UserPlus, Trash2, FlaskConical } from 'lucide-react';
+import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { authFetch } from '@/lib/api';
@@ -83,12 +84,104 @@ export default function ProjectDetailPage() {
   // Issue drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
-  // Filter state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
-  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
-  const [groupByUrl, setGroupByUrl] = useState(false);
+
+  // URL-persisted filter state
+  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [typeFilter, setTypeFilter] = useState<string | null>(searchParams.get('type') || null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(searchParams.get('priority') || null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(searchParams.get('status') || null);
+  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(searchParams.get('assignee') || null);
+  const [groupByUrl, setGroupByUrl] = useState(searchParams.get('groupByUrl') === 'true');
+
+  // Sync filter changes to URL
+  const updateUrlFilters = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
+
+  // Wrapped setters that also update URL
+  const setSearchQueryWithUrl = useCallback((value: string) => {
+    setSearchQuery(value);
+    updateUrlFilters({ search: value || null });
+  }, [updateUrlFilters]);
+
+  const setTypeFilterWithUrl = useCallback((value: string | null) => {
+    setTypeFilter(value);
+    updateUrlFilters({ type: value });
+  }, [updateUrlFilters]);
+
+  const setPriorityFilterWithUrl = useCallback((value: string | null) => {
+    setPriorityFilter(value);
+    updateUrlFilters({ priority: value });
+  }, [updateUrlFilters]);
+
+  const setStatusFilterWithUrl = useCallback((value: string | null) => {
+    setStatusFilter(value);
+    updateUrlFilters({ status: value });
+  }, [updateUrlFilters]);
+
+  const setAssigneeFilterWithUrl = useCallback((value: string | null) => {
+    setAssigneeFilter(value);
+    updateUrlFilters({ assignee: value });
+  }, [updateUrlFilters]);
+
+  const toggleGroupByUrl = useCallback(() => {
+    const newValue = !groupByUrl;
+    setGroupByUrl(newValue);
+    updateUrlFilters({ groupByUrl: newValue ? 'true' : null });
+  }, [groupByUrl, updateUrlFilters]);
+
+  // QA Cycle filter
+  const [cycleFilter, setCycleFilter] = useState<string | null>(searchParams.get('cycle') || null);
+  const [qaCycles, setQaCycles] = useState<{ id: string; title: string }[]>([]);
+
+  const setCycleFilterWithUrl = useCallback((value: string | null) => {
+    setCycleFilter(value);
+    updateUrlFilters({ cycle: value });
+  }, [updateUrlFilters]);
+
+  // Fetch QA cycles for filter dropdown
+  useEffect(() => {
+    const fetchCycles = async () => {
+      if (!getAuthToken()) return;
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/qa-cycles`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setQaCycles(data.map((c: any) => ({ id: c.id, title: c.title })));
+        }
+      } catch { /* ignore */ }
+    };
+    fetchCycles();
+  }, [projectId]);
+
+  // When cycle filter is active, fetch cycle issues
+  const [cycleIssueIds, setCycleIssueIds] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (!cycleFilter) {
+      setCycleIssueIds(null);
+      return;
+    }
+    const fetchCycleIssues = async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/qa-cycles/${cycleFilter}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setCycleIssueIds(new Set(data.issues.map((ci: any) => ci.issue.id)));
+        }
+      } catch { /* ignore */ }
+    };
+    fetchCycleIssues();
+  }, [cycleFilter]);
 
   // Settings dropdown & invite modal
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -182,8 +275,10 @@ export default function ProjectDetailPage() {
 
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
+      if (cycleIssueIds && !cycleIssueIds.has(issue.id)) return false;
       if (typeFilter && issue.type !== typeFilter) return false;
       if (priorityFilter && issue.priority !== priorityFilter) return false;
+      if (statusFilter && issue.status !== statusFilter) return false;
       if (assigneeFilter && issue.assignedTo?.id !== assigneeFilter) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -193,7 +288,7 @@ export default function ProjectDetailPage() {
       }
       return true;
     });
-  }, [issues, typeFilter, priorityFilter, assigneeFilter, searchQuery]);
+  }, [issues, cycleIssueIds, typeFilter, priorityFilter, statusFilter, assigneeFilter, searchQuery]);
 
   const groupedByUrl = useMemo(() => {
     if (!groupByUrl) return null;
@@ -206,14 +301,17 @@ export default function ProjectDetailPage() {
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
   }, [filteredIssues, groupByUrl]);
 
-  const hasActiveFilters = typeFilter !== null || priorityFilter !== null || assigneeFilter !== null || searchQuery !== '';
+  const hasActiveFilters = typeFilter !== null || priorityFilter !== null || statusFilter !== null || assigneeFilter !== null || cycleFilter !== null || searchQuery !== '';
 
   const clearFilters = () => {
     setSearchQuery('');
     setTypeFilter(null);
     setPriorityFilter(null);
+    setStatusFilter(null);
     setAssigneeFilter(null);
+    setCycleFilter(null);
     setGroupByUrl(false);
+    router.replace('?', { scroll: false });
   };
 
   const openIssueDrawer = (issueId: string) => {
@@ -554,6 +652,20 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-1 border-b border-gray-200">
+        <span className="px-4 py-2 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">
+          Issues
+        </span>
+        <Link
+          href={`/dashboard/projects/${projectId}/cycles`}
+          className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5"
+        >
+          <FlaskConical className="w-4 h-4" />
+          QA Cycles
+        </Link>
+      </div>
+
       {/* Issues Section */}
       {isIssuesLoading ? (
           <div className="text-center py-12">
@@ -576,7 +688,7 @@ export default function ProjectDetailPage() {
           <div className="space-y-4">
             <FilterBar
               searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              onSearchChange={setSearchQueryWithUrl}
               searchPlaceholder="Search issues..."
               slots={[
                 {
@@ -589,7 +701,20 @@ export default function ProjectDetailPage() {
                     { label: 'Feature', value: 'FEATURE' },
                     { label: 'Task', value: 'TASK' },
                   ],
-                  onChange: setTypeFilter,
+                  onChange: setTypeFilterWithUrl,
+                },
+                {
+                  kind: 'select',
+                  key: 'status',
+                  placeholder: 'All Statuses',
+                  value: statusFilter,
+                  options: [
+                    { label: 'New', value: 'open' },
+                    { label: 'In Progress', value: 'in_progress' },
+                    { label: 'Ready for QA', value: 'qa' },
+                    { label: 'Completed', value: 'closed' },
+                  ],
+                  onChange: setStatusFilterWithUrl,
                 },
                 {
                   kind: 'select',
@@ -602,7 +727,7 @@ export default function ProjectDetailPage() {
                     { label: 'Medium', value: 'medium' },
                     { label: 'Low', value: 'low' },
                   ],
-                  onChange: setPriorityFilter,
+                  onChange: setPriorityFilterWithUrl,
                 },
                 ...(assigneeOptions.length > 0
                   ? [
@@ -612,7 +737,19 @@ export default function ProjectDetailPage() {
                         placeholder: 'All Assignees',
                         value: assigneeFilter,
                         options: assigneeOptions,
-                        onChange: setAssigneeFilter,
+                        onChange: setAssigneeFilterWithUrl,
+                      },
+                    ]
+                  : []),
+                ...(qaCycles.length > 0
+                  ? [
+                      {
+                        kind: 'select' as const,
+                        key: 'cycle',
+                        placeholder: 'All Cycles',
+                        value: cycleFilter,
+                        options: qaCycles.map((c) => ({ label: c.title, value: c.id })),
+                        onChange: setCycleFilterWithUrl,
                       },
                     ]
                   : []),
@@ -623,7 +760,7 @@ export default function ProjectDetailPage() {
                   icon: <Globe className="w-4 h-4" />,
                   active: groupByUrl,
                   activeClassName: 'bg-indigo-600 text-white',
-                  onClick: () => setGroupByUrl(!groupByUrl),
+                  onClick: toggleGroupByUrl,
                 },
               ]}
               showClear={hasActiveFilters}
