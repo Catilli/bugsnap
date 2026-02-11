@@ -582,14 +582,27 @@ export async function issueRoutes(fastify: FastifyInstance) {
           const action = field === 'status' ? 'status_changed'
             : field === 'assignedToId' ? 'assigned'
             : 'updated';
+
+          let oldValue = String((issue as any)[field] ?? '');
+          let newValue = String(updateData[field] ?? '');
+
+          // Resolve user names for assignee changes instead of logging raw UUIDs
+          if (field === 'assignedToId') {
+            if (issue.assignedToId) {
+              const oldUser = await prisma.user.findUnique({ where: { id: issue.assignedToId }, select: { name: true } });
+              oldValue = oldUser?.name || oldValue;
+            }
+            newValue = (updatedIssue as any).assignedTo?.name || newValue;
+          }
+
           logActivity({
             projectId: issue.projectId,
             issueId,
             userId,
             action,
             field,
-            oldValue: String((issue as any)[field] ?? ''),
-            newValue: String(updateData[field] ?? ''),
+            oldValue,
+            newValue,
           });
         }
       }

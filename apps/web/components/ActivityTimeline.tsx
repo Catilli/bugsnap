@@ -32,7 +32,7 @@ const ACTION_LABELS: Record<string, string> = {
   deleted: 'deleted this',
 };
 
-function formatFieldChange(field: string, oldValue: string, newValue: string): string {
+function formatFieldChange(field: string, oldValue: string, newValue: string, action?: string): string {
   const fieldLabels: Record<string, string> = {
     status: 'status',
     title: 'title',
@@ -41,14 +41,16 @@ function formatFieldChange(field: string, oldValue: string, newValue: string): s
     visibility: 'visibility',
     description: 'description',
   };
-  const label = fieldLabels[field] || field;
+  // Skip label prefix when ACTION_LABELS already includes the field name
+  const skipLabel = action === 'assigned' || action === 'status_changed';
+  const label = skipLabel ? '' : (fieldLabels[field] || field);
   if (oldValue && newValue) {
-    return `${label} from "${oldValue}" to "${newValue}"`;
+    return label ? `${label} from "${oldValue}" to "${newValue}"` : `from ${oldValue} to ${newValue}`;
   }
   if (newValue) {
-    return `${label} to "${newValue}"`;
+    return label ? `${label} to "${newValue}"` : `to ${newValue}`;
   }
-  return label;
+  return label || field;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -121,7 +123,7 @@ export default function ActivityTimeline({ issueId, feedbackId }: ActivityTimeli
                 {ACTION_LABELS[entry.action] || entry.action}
                 {entry.field && entry.action !== 'commented' && (
                   <span className="text-gray-500">
-                    {' '}{formatFieldChange(entry.field, entry.oldValue || '', entry.newValue || '')}
+                    {' '}{formatFieldChange(entry.field, entry.oldValue || '', entry.newValue || '', entry.action)}
                   </span>
                 )}
               </p>
