@@ -17,7 +17,6 @@ import {
   Eye,
   Camera,
   Users,
-  Flag,
   Keyboard,
   ShieldCheck,
   HelpCircle,
@@ -384,7 +383,7 @@ export default function InstallExtensionPage() {
                 <li>Navigate to any website</li>
                 <li>Click "Start Annotating" in the popup</li>
                 <li>Click any element on the page to annotate it</li>
-                <li>Fill in the task title, description, and priority</li>
+                <li>Fill in the task title and description</li>
                 <li>Click "Create Task"</li>
                 <li>The task will appear in your project dashboard!</li>
               </ol>
@@ -430,13 +429,6 @@ export default function InstallExtensionPage() {
             <div>
               <h4 className="font-semibold text-gray-900">Assignee Selection</h4>
               <p className="text-sm text-gray-600">Search and assign team members with autocomplete</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <Flag className="w-5 h-5 text-green-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-gray-900">Priority Levels</h4>
-              <p className="text-sm text-gray-600">Set task priority: Not Set, Low, Medium, High, Critical</p>
             </div>
           </div>
           <div className="flex items-start gap-3">

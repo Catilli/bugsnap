@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, MapPin, ExternalLink, Share2, Check, Paperclip, Upload, FileText, Image, Film, Trash2, ChevronDown, UserX } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
-import { PriorityBadge } from './PriorityBadge';
+
 import { TypeBadge } from './TypeBadge';
 import ButtonDropdown from './ButtonDropdown';
 import CommentSection from './CommentSection';
@@ -35,8 +35,6 @@ interface Issue {
   screenshotUrl: string | null;
   screenshotBackupUrl: string | null;
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical' | null;
-  severity?: 'low' | 'medium' | 'high' | 'critical' | null;
   type?: 'BUG' | 'FEATURE' | 'TASK';
   createdAt: string;
   updatedAt: string;
@@ -478,46 +476,6 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                 </a>
               </div>
             )}
-
-            {/* Priority & Severity — MANAGER+ can edit, others see read-only */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                {hasRole('MANAGER') ? (
-                  <select
-                    value={issue.priority || ''}
-                    onChange={(e) => updateIssue('priority', e.target.value || null)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                  >
-                    <option value="">Not Set</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                ) : (
-                  <span className="text-sm text-gray-600 capitalize">{issue.priority || 'Not set'}</span>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Severity</label>
-                {hasRole('MANAGER') ? (
-                  <select
-                    value={issue.severity || ''}
-                    onChange={(e) => updateIssue('severity', e.target.value || null)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                  >
-                    <option value="">Not Set</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                ) : (
-                  <span className="text-sm text-gray-600 capitalize">{issue.severity || 'Not set'}</span>
-                )}
-              </div>
-            </div>
 
             {/* Assigned To — MANAGER+ can assign, others see read-only */}
             <div className="relative">

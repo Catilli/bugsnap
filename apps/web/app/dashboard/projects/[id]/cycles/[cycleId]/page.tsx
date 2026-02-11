@@ -20,7 +20,6 @@ interface Issue {
   description: string | null;
   type?: 'BUG' | 'FEATURE' | 'TASK';
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical' | null;
   createdBy: { id: string; name: string; email: string };
   assignedTo: { id: string; name: string; email: string } | null;
   _count: { comments: number };
@@ -418,7 +417,7 @@ export default function CycleDetailPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{issue.title}</p>
-                      <p className="text-xs text-gray-500">{issue.status} {issue.priority ? `/ ${issue.priority}` : ''}</p>
+                      <p className="text-xs text-gray-500">{issue.status}</p>
                     </div>
                   </label>
                 ))

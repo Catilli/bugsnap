@@ -35,8 +35,6 @@ interface Issue {
   url: string | null;
   screenshotUrl: string | null;
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical' | null;
-  severity?: 'low' | 'medium' | 'high' | 'critical' | null;
   createdAt: string;
   updatedAt: string;
   createdBy: {
@@ -89,7 +87,6 @@ export default function ProjectDetailPage() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [typeFilter, setTypeFilter] = useState<string | null>(searchParams.get('type') || null);
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(searchParams.get('priority') || null);
   const [statusFilter, setStatusFilter] = useState<string | null>(searchParams.get('status') || null);
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(searchParams.get('assignee') || null);
   const [groupByUrl, setGroupByUrl] = useState(searchParams.get('groupByUrl') === 'true');
@@ -113,11 +110,6 @@ export default function ProjectDetailPage() {
   const setTypeFilterWithUrl = useCallback((value: string | null) => {
     setTypeFilter(value);
     updateUrlFilters({ type: value });
-  }, [updateUrlFilters]);
-
-  const setPriorityFilterWithUrl = useCallback((value: string | null) => {
-    setPriorityFilter(value);
-    updateUrlFilters({ priority: value });
   }, [updateUrlFilters]);
 
   const setStatusFilterWithUrl = useCallback((value: string | null) => {
@@ -198,6 +190,7 @@ export default function ProjectDetailPage() {
   const [emailSuggestions, setEmailSuggestions] = useState<{ id: string; name: string; email: string }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchUsers = useCallback((query: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -225,7 +218,10 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!shareOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Skip if the target was removed from the DOM (e.g. suggestion re-rendered away)
+      if (!target.isConnected) return;
+      if (shareRef.current && !shareRef.current.contains(target)) {
         setShareOpen(false);
         setAccessDropdownOpen(false);
       }
@@ -324,7 +320,6 @@ export default function ProjectDetailPage() {
     return issues.filter((issue) => {
       if (cycleIssueIds && !cycleIssueIds.has(issue.id)) return false;
       if (typeFilter && issue.type !== typeFilter) return false;
-      if (priorityFilter && issue.priority !== priorityFilter) return false;
       if (statusFilter && issue.status !== statusFilter) return false;
       if (assigneeFilter && issue.assignedTo?.id !== assigneeFilter) return false;
       if (searchQuery) {
@@ -335,7 +330,7 @@ export default function ProjectDetailPage() {
       }
       return true;
     });
-  }, [issues, cycleIssueIds, typeFilter, priorityFilter, statusFilter, assigneeFilter, searchQuery]);
+  }, [issues, cycleIssueIds, typeFilter, statusFilter, assigneeFilter, searchQuery]);
 
   const groupedByUrl = useMemo(() => {
     if (!groupByUrl) return null;
@@ -348,12 +343,11 @@ export default function ProjectDetailPage() {
     return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
   }, [filteredIssues, groupByUrl]);
 
-  const hasActiveFilters = typeFilter !== null || priorityFilter !== null || statusFilter !== null || assigneeFilter !== null || cycleFilter !== null || searchQuery !== '';
+  const hasActiveFilters = typeFilter !== null || statusFilter !== null || assigneeFilter !== null || cycleFilter !== null || searchQuery !== '';
 
   const clearFilters = () => {
     setSearchQuery('');
     setTypeFilter(null);
-    setPriorityFilter(null);
     setStatusFilter(null);
     setAssigneeFilter(null);
     setCycleFilter(null);
@@ -659,8 +653,11 @@ export default function ProjectDetailPage() {
                                   searchUsers(currentQuery);
                                 }}
                                 onKeyDown={(e) => e.key === 'Enter' && handleInviteUser()}
-                                onFocus={() => { if (emailSuggestions.length > 0) setShowSuggestions(true); }}
-                                onBlur={() => { setTimeout(() => setShowSuggestions(false), 150); }}
+                                onFocus={() => {
+                                  if (blurTimeoutRef.current) { clearTimeout(blurTimeoutRef.current); blurTimeoutRef.current = null; }
+                                  if (emailSuggestions.length > 0) setShowSuggestions(true);
+                                }}
+                                onBlur={() => { blurTimeoutRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
                                 placeholder="Email, separated by commas"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                                 autoFocus
@@ -912,19 +909,6 @@ export default function ProjectDetailPage() {
                   ],
                   onChange: setStatusFilterWithUrl,
                 },
-                {
-                  kind: 'select',
-                  key: 'priority',
-                  placeholder: 'All Priorities',
-                  value: priorityFilter,
-                  options: [
-                    { label: 'Critical', value: 'critical' },
-                    { label: 'High', value: 'high' },
-                    { label: 'Medium', value: 'medium' },
-                    { label: 'Low', value: 'low' },
-                  ],
-                  onChange: setPriorityFilterWithUrl,
-                },
                 ...(assigneeOptions.length > 0
                   ? [
                       {
@@ -982,16 +966,6 @@ export default function ProjectDetailPage() {
                         >
                           <StatusBadge status={issue.status} size="sm" />
                           <span className="text-sm text-gray-900 flex-1 truncate">{issue.title}</span>
-                          {issue.priority && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              issue.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                              issue.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                              issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-600'
-                            }`}>
-                              {issue.priority}
-                            </span>
-                          )}
                         </button>
                       ))}
                     </div>

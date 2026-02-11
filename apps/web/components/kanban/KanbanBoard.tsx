@@ -10,7 +10,6 @@ interface Issue {
   description: string | null;
   type?: 'BUG' | 'FEATURE' | 'TASK';
   status: string;
-  priority: 'low' | 'medium' | 'high' | 'critical' | null;
   createdBy: {
     id: string;
     name: string;

@@ -25,12 +25,10 @@ const environmentDataSchema = z.object({
 }).passthrough();
 
 const issueTypeEnum = z.enum(['BUG', 'FEATURE', 'TASK']);
-const priorityEnum = z.enum(['low', 'medium', 'high', 'critical']);
 
 const issueQuerySchema = z.object({
   type: z.string().max(50).optional(),
   status: z.string().max(100).optional(),
-  priority: z.string().max(100).optional(),
   search: z.string().max(200).optional(),
   assignedToId: z.string().uuid().optional(),
   groupBy: z.enum(['url']).optional(),
@@ -42,8 +40,6 @@ const createIssueSchema = z.object({
   description: z.string().transform(sanitizeString).optional(),
   url: z.string().url().transform(sanitizeUrl).optional(),
   screenshotUrl: z.string().optional(),
-  priority: priorityEnum.optional(),
-  severity: priorityEnum.optional(),
   type: issueTypeEnum.default('TASK'),
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
@@ -60,8 +56,6 @@ const updateIssueSchema = z.object({
   title: z.string().min(1).transform(sanitizeString).optional(),
   description: z.string().transform(sanitizeString).optional(),
   status: z.enum(['open', 'in_progress', 'qa', 'resolved', 'closed']).optional(),
-  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).optional(),
   assignedToId: z.string().uuid().nullable().optional(),
@@ -224,8 +218,6 @@ export async function issueRoutes(fastify: FastifyInstance) {
           url: data.url,
           screenshotUrl,
           screenshotBackupUrl,
-          priority: data.priority,
-          severity: data.severity,
           visibility: data.visibility,
           assignedToId: data.assignedToId,
           environmentData: data.environmentData as any,
@@ -321,7 +313,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Parse query params for filtering
-      const { type, status, priority, search, assignedToId, groupBy } = issueQuerySchema.parse(request.query);
+      const { type, status, search, assignedToId, groupBy } = issueQuerySchema.parse(request.query);
 
       // Build where clause with filters
       const whereClause: any = { projectId };
@@ -339,14 +331,6 @@ export async function issueRoutes(fastify: FastifyInstance) {
         const statuses = status.split(',').filter(Boolean);
         if (statuses.length > 0) {
           whereClause.status = { in: statuses };
-        }
-      }
-
-      // Filter by priority (comma-separated)
-      if (priority) {
-        const priorities = priority.split(',').filter(Boolean);
-        if (priorities.length > 0) {
-          whereClause.priority = { in: priorities };
         }
       }
 
@@ -541,10 +525,10 @@ export async function issueRoutes(fastify: FastifyInstance) {
       const effectiveRole = isAdmin ? 'ADMIN' : isProjectOwner ? 'MANAGER' : (membership?.role ?? 'VIEWER');
       const roleLevel: Record<string, number> = { VIEWER: 0, DEVELOPER: 1, MANAGER: 2, ADMIN: 3 };
 
-      // MANAGER-only fields: assignedToId, priority
-      if (updateData.assignedToId !== undefined || updateData.priority !== undefined) {
+      // MANAGER-only fields: assignedToId
+      if (updateData.assignedToId !== undefined) {
         if (roleLevel[effectiveRole] < roleLevel['MANAGER']) {
-          return reply.status(403).send({ error: 'Only MANAGER or higher can change assignee or priority' });
+          return reply.status(403).send({ error: 'Only MANAGER or higher can change assignee' });
         }
       }
 
@@ -591,7 +575,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       await cacheInvalidate('user:*:projects');
 
       // Log activity for each changed field
-      const fieldsToTrack = ['status', 'priority', 'severity', 'title', 'description', 'type', 'visibility', 'assignedToId'] as const;
+      const fieldsToTrack = ['status', 'title', 'description', 'type', 'visibility', 'assignedToId'] as const;
       for (const field of fieldsToTrack) {
         if (updateData[field] !== undefined && (issue as any)[field] !== updateData[field]) {
           const action = field === 'status' ? 'status_changed'

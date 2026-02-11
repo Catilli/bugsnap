@@ -115,8 +115,6 @@ model Issue {
   screenshotUrl       String?
   screenshotBackupUrl String?
   status          String    @default("open") // open, in_progress, resolved, closed
-  priority        String?   // low, medium, high, critical (optional, no default)
-  severity        String?   // low, medium, high, critical (separate from priority)
   type            IssueType @default(TASK)   // BUG, FEATURE, TASK
   environmentData Json?
   visibility      String    @default("members") // members, members_and_clients
@@ -141,7 +139,6 @@ model Issue {
   @@index([createdById])
   @@index([assignedToId])
   @@index([status])
-  @@index([priority])
   @@index([type])
   @@map("tasks")
 }

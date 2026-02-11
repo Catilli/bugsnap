@@ -75,11 +75,10 @@ export async function adminRoutes(fastify: FastifyInstance) {
         orderBy: { createdAt: 'desc' },
       });
 
-      const header = 'id,title,status,priority,severity,type,project,assignee,createdBy,createdAt';
+      const header = 'id,title,status,type,project,assignee,createdBy,createdAt';
       const rows = issues.map((issue) => {
         const escapeCsv = (val: string | null | undefined) => {
           if (val == null) return '';
-          // Wrap in quotes if it contains comma, quote, or newline
           if (val.includes(',') || val.includes('"') || val.includes('\n')) {
             return `"${val.replace(/"/g, '""')}"`;
           }
@@ -90,8 +89,6 @@ export async function adminRoutes(fastify: FastifyInstance) {
           issue.id,
           escapeCsv(issue.title),
           issue.status,
-          issue.priority || '',
-          issue.severity || '',
           issue.type,
           escapeCsv(issue.project.name),
           escapeCsv(issue.assignedTo?.name || ''),

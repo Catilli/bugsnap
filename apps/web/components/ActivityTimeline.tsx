@@ -35,8 +35,6 @@ const ACTION_LABELS: Record<string, string> = {
 function formatFieldChange(field: string, oldValue: string, newValue: string): string {
   const fieldLabels: Record<string, string> = {
     status: 'status',
-    priority: 'priority',
-    severity: 'severity',
     title: 'title',
     assignedToId: 'assignee',
     type: 'type',

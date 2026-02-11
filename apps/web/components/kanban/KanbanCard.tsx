@@ -2,7 +2,6 @@
 
 import { MessageSquare } from 'lucide-react';
 import { TypeBadge } from '../TypeBadge';
-import { PriorityBadge } from '../PriorityBadge';
 
 interface KanbanCardProps {
   issue: {
@@ -11,7 +10,6 @@ interface KanbanCardProps {
     description: string | null;
     type?: 'BUG' | 'FEATURE' | 'TASK';
     status: string;
-    priority: 'low' | 'medium' | 'high' | 'critical' | null;
     createdBy: {
       id: string;
       name: string;
@@ -63,9 +61,7 @@ export function KanbanCard({ issue, onClick, onDragStart }: KanbanCardProps) {
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-        <div className="flex items-center gap-2">
-          {issue.priority && <PriorityBadge priority={issue.priority} size="sm" />}
-        </div>
+        <div />
         <div className="flex items-center gap-2">
           {/* Creator avatar */}
           <div

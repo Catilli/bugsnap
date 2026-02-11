@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { StatusBadge } from '@/components/StatusBadge';
-import { PriorityBadge } from '@/components/PriorityBadge';
 import { TypeBadge } from '@/components/TypeBadge';
 import { Bug, MessageSquare, Calendar, User, ExternalLink, MapPin } from 'lucide-react';
 import { safeHref } from '@/lib/safeUrl';
@@ -30,8 +29,6 @@ interface SharedIssue {
   screenshotUrl: string | null;
   screenshotBackupUrl: string | null;
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical' | null;
-  severity?: 'low' | 'medium' | 'high' | 'critical' | null;
   type?: 'BUG' | 'FEATURE' | 'TASK';
   createdAt: string;
   createdBy: SharedUser;
@@ -57,7 +54,6 @@ interface SharedProjectIssue {
   description: string | null;
   url: string | null;
   status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical' | null;
   type?: 'BUG' | 'FEATURE' | 'TASK';
   createdAt: string;
   createdBy: SharedUser;
@@ -209,7 +205,6 @@ function IssueCard({ issue }: { issue: SharedIssue }) {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           {issue.type && <TypeBadge type={issue.type} size="sm" />}
           <StatusBadge status={issue.status} size="sm" />
-          {issue.priority && <PriorityBadge priority={issue.priority} size="sm" />}
         </div>
         <h1 className="text-xl font-semibold text-gray-900">{issue.title}</h1>
       </div>
@@ -354,7 +349,6 @@ function ProjectView({ project }: { project: SharedProject }) {
                 {issue.type && <TypeBadge type={issue.type} size="sm" />}
                 <StatusBadge status={issue.status} size="sm" />
                 <span className="text-sm text-gray-900 flex-1 truncate">{issue.title}</span>
-                {issue.priority && <PriorityBadge priority={issue.priority} size="sm" />}
                 {issue.assignedTo && (
                   <span className="text-xs text-gray-500 flex-shrink-0">{issue.assignedTo.name}</span>
                 )}
