@@ -165,6 +165,12 @@ class BugSnapUI {
   }
 
   showAnnotationModal() {
+    // Hide pin marker — it's already captured in the screenshot image,
+    // no need to show the DOM element on top of the modal
+    if (this.pinMarker) {
+      this.pinMarker.style.display = 'none';
+    }
+
     // Disable page scrolling
     document.body.style.overflow = 'hidden';
 
