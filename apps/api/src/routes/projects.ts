@@ -13,6 +13,7 @@ const createProjectSchema = z.object({
 const updateProjectSchema = z.object({
   name: z.string().min(1).transform(sanitizeString).optional(),
   websiteUrl: z.string().url('Must be a valid URL').transform(sanitizeUrl).optional(),
+  generalAccess: z.enum(['INVITED', 'ANYONE']).optional(),
 });
 
 export async function projectRoutes(fastify: FastifyInstance) {
@@ -107,6 +108,11 @@ export async function projectRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          shareTokens: {
+            where: { issueId: null, feedbackId: null },
+            select: { token: true },
+            take: 1,
+          },
         },
       });
 
@@ -190,10 +196,40 @@ export async function projectRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // Handle share token for generalAccess toggle
+      let shareToken: string | null = null;
+      if (updateData.generalAccess === 'ANYONE') {
+        // Reuse existing project-level token or create one
+        const existing = await prisma.shareToken.findFirst({
+          where: { projectId, issueId: null, feedbackId: null },
+        });
+        if (existing) {
+          shareToken = existing.token;
+        } else {
+          try {
+            const created = await prisma.shareToken.create({
+              data: { projectId },
+            });
+            shareToken = created.token;
+          } catch {
+            // Handle race condition: another request created the token first
+            const raced = await prisma.shareToken.findFirst({
+              where: { projectId, issueId: null, feedbackId: null },
+            });
+            shareToken = raced?.token ?? null;
+          }
+        }
+      } else if (updateData.generalAccess === 'INVITED') {
+        // Delete any project-level share tokens
+        await prisma.shareToken.deleteMany({
+          where: { projectId, issueId: null, feedbackId: null },
+        });
+      }
+
       // Invalidate project list cache for all members
       await cacheInvalidate('user:*:projects');
 
-      return reply.send(updatedProject);
+      return reply.send({ ...updatedProject, shareToken });
     } catch (error: any) {
       fastify.log.error(error);
       if (error.name === 'ZodError') {

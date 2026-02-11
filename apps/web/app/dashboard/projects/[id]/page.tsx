@@ -189,8 +189,37 @@ export default function ProjectDetailPage() {
   const [inviteRole, setInviteRole] = useState<'DEVELOPER' | 'VIEWER' | 'MANAGER'>('DEVELOPER');
   const [isInviting, setIsInviting] = useState(false);
   const [generalAccess, setGeneralAccess] = useState<'invited' | 'anyone'>('invited');
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isTogglingAccess, setIsTogglingAccess] = useState(false);
   const [accessDropdownOpen, setAccessDropdownOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+
+  // Email autocomplete state
+  const [emailSuggestions, setEmailSuggestions] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const searchUsers = useCallback((query: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (query.length < 2) {
+      setEmailSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users?search=${encodeURIComponent(query)}`
+        );
+        if (res.ok) {
+          const users: { id: string; name: string; email: string }[] = await res.json();
+          const memberIds = new Set(projectMembers.map(m => m.id));
+          const filtered = users.filter(u => !memberIds.has(u.id)).slice(0, 5);
+          setEmailSuggestions(filtered);
+          setShowSuggestions(filtered.length > 0);
+        }
+      } catch { /* ignore */ }
+    }, 300);
+  }, [projectMembers]);
 
   // Close share dropdown on outside click or Escape
   useEffect(() => {
@@ -243,6 +272,7 @@ export default function ProjectDetailPage() {
       if (successCount > 0) {
         notifySuccess(`${successCount} user${successCount > 1 ? 's' : ''} invited`);
         setInviteEmail('');
+        setEmailSuggestions([]);
       }
     } catch {
       notifyError('Failed to invite user');
@@ -415,6 +445,12 @@ export default function ProjectDetailPage() {
           setProject(data);
           setEditedName(data.name);
           setProjectName(data.name);
+
+          // Initialize general access state from server
+          setGeneralAccess(data.generalAccess === 'ANYONE' ? 'anyone' : 'invited');
+          if (data.shareTokens?.[0]?.token) {
+            setShareToken(data.shareTokens[0].token);
+          }
 
           // Populate members from project data (includes createdBy + members)
           const members: { id: string; name: string; email: string; role: string }[] = [];
@@ -612,15 +648,50 @@ export default function ProjectDetailPage() {
                         {/* Row 1: Email invite */}
                         <div className="p-3 border-b border-gray-100">
                           <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleInviteUser()}
-                              placeholder="Email, separated by commas"
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                              autoFocus
-                            />
+                            <div className="relative flex-1">
+                              <input
+                                type="text"
+                                value={inviteEmail}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setInviteEmail(value);
+                                  const currentQuery = value.split(',').pop()?.trim() || '';
+                                  searchUsers(currentQuery);
+                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleInviteUser()}
+                                onFocus={() => { if (emailSuggestions.length > 0) setShowSuggestions(true); }}
+                                onBlur={() => { setTimeout(() => setShowSuggestions(false), 150); }}
+                                placeholder="Email, separated by commas"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                autoFocus
+                              />
+                              {showSuggestions && emailSuggestions.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 py-1 max-h-48 overflow-y-auto">
+                                  {emailSuggestions.map(user => (
+                                    <button
+                                      key={user.id}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        const parts = inviteEmail.split(',');
+                                        parts[parts.length - 1] = user.email;
+                                        setInviteEmail(parts.join(', ') + ', ');
+                                        setEmailSuggestions([]);
+                                        setShowSuggestions(false);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-left"
+                                    >
+                                      <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                                        {user.name.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                             <button
                               onClick={handleInviteUser}
                               disabled={isInviting || !inviteEmail.trim()}
@@ -672,13 +743,46 @@ export default function ProjectDetailPage() {
                               {accessDropdownOpen && (
                                 <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-30 py-1">
                                   <button
-                                    onClick={() => { setGeneralAccess('invited'); setAccessDropdownOpen(false); }}
+                                    onClick={async () => {
+                                      setAccessDropdownOpen(false);
+                                      if (generalAccess === 'invited') return;
+                                      setIsTogglingAccess(true);
+                                      try {
+                                        const res = await authFetch(
+                                          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`,
+                                          { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ generalAccess: 'INVITED' }) }
+                                        );
+                                        if (res.ok) {
+                                          setGeneralAccess('invited');
+                                          setShareToken(null);
+                                        } else { notifyError('Failed to update access'); }
+                                      } catch { notifyError('Failed to update access'); }
+                                      finally { setIsTogglingAccess(false); }
+                                    }}
+                                    disabled={isTogglingAccess}
                                     className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${generalAccess === 'invited' ? 'text-indigo-600 font-medium' : 'text-gray-700'}`}
                                   >
                                     Only people invited
                                   </button>
                                   <button
-                                    onClick={() => { setGeneralAccess('anyone'); setAccessDropdownOpen(false); }}
+                                    onClick={async () => {
+                                      setAccessDropdownOpen(false);
+                                      if (generalAccess === 'anyone') return;
+                                      setIsTogglingAccess(true);
+                                      try {
+                                        const res = await authFetch(
+                                          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}`,
+                                          { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ generalAccess: 'ANYONE' }) }
+                                        );
+                                        if (res.ok) {
+                                          const data = await res.json();
+                                          setGeneralAccess('anyone');
+                                          if (data.shareToken) setShareToken(data.shareToken);
+                                        } else { notifyError('Failed to update access'); }
+                                      } catch { notifyError('Failed to update access'); }
+                                      finally { setIsTogglingAccess(false); }
+                                    }}
+                                    disabled={isTogglingAccess}
                                     className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${generalAccess === 'anyone' ? 'text-indigo-600 font-medium' : 'text-gray-700'}`}
                                   >
                                     Anyone with link
@@ -687,13 +791,18 @@ export default function ProjectDetailPage() {
                               )}
                             </div>
                           </div>
+                          {generalAccess === 'anyone' && (
+                            <p className="mt-1.5 text-xs text-gray-500 pl-10">Anyone on the internet with the link can view</p>
+                          )}
                         </div>
 
                         {/* Footer: Copy link */}
                         <div className="p-3">
                           <button
                             onClick={() => {
-                              const url = `${window.location.origin}/dashboard/projects/${projectId}`;
+                              const url = generalAccess === 'anyone' && shareToken
+                                ? `${window.location.origin}/shared/${shareToken}`
+                                : `${window.location.origin}/dashboard/projects/${projectId}`;
                               navigator.clipboard.writeText(url);
                               notifySuccess('Link copied to clipboard');
                             }}

@@ -51,9 +51,32 @@ interface SharedFeedback {
   comments: SharedComment[];
 }
 
+interface SharedProjectIssue {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  status: 'open' | 'in_progress' | 'qa' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'critical' | null;
+  type?: 'BUG' | 'FEATURE' | 'TASK';
+  createdAt: string;
+  createdBy: SharedUser;
+  assignedTo: SharedUser | null;
+  _count: { comments: number };
+}
+
+interface SharedProject {
+  id: string;
+  name: string;
+  websiteUrl: string;
+  generalAccess: string;
+  issues: SharedProjectIssue[];
+}
+
 type SharedData =
   | { type: 'issue'; data: SharedIssue }
-  | { type: 'feedback'; data: SharedFeedback };
+  | { type: 'feedback'; data: SharedFeedback }
+  | { type: 'project'; data: SharedProject };
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -137,12 +160,16 @@ export default function SharedContentPage() {
 
   if (!data) return null;
 
+  const isProject = data.type === 'project';
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
+      <main className={`flex-1 ${isProject ? 'max-w-5xl' : 'max-w-3xl'} mx-auto w-full px-4 py-8`}>
         {data.type === 'issue' ? (
           <IssueCard issue={data.data} />
+        ) : data.type === 'project' ? (
+          <ProjectView project={data.data} />
         ) : (
           <FeedbackCard feedback={data.data} />
         )}
@@ -285,6 +312,80 @@ function FeedbackCard({ feedback }: { feedback: SharedFeedback }) {
           <CommentsSection comments={feedback.comments} />
         )}
       </div>
+    </div>
+  );
+}
+
+function ProjectView({ project }: { project: SharedProject }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-6">
+      {/* Project header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-5">
+        <h1 className="text-xl font-semibold text-gray-900">{project.name}</h1>
+        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+          <ExternalLink className="w-4 h-4" />
+          <a
+            href={safeHref(project.websiteUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline truncate"
+          >
+            {project.websiteUrl}
+          </a>
+        </div>
+        <p className="mt-2 text-sm text-gray-500">{project.issues.length} issue{project.issues.length !== 1 ? 's' : ''}</p>
+      </div>
+
+      {/* Issue list */}
+      {project.issues.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No issues in this project yet.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden divide-y divide-gray-100">
+          {project.issues.map((issue) => (
+            <div key={issue.id}>
+              <button
+                onClick={() => setExpandedId(expandedId === issue.id ? null : issue.id)}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+              >
+                {issue.type && <TypeBadge type={issue.type} size="sm" />}
+                <StatusBadge status={issue.status} size="sm" />
+                <span className="text-sm text-gray-900 flex-1 truncate">{issue.title}</span>
+                {issue.priority && <PriorityBadge priority={issue.priority} size="sm" />}
+                {issue.assignedTo && (
+                  <span className="text-xs text-gray-500 flex-shrink-0">{issue.assignedTo.name}</span>
+                )}
+                <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(issue.createdAt)}</span>
+                {issue._count.comments > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <MessageSquare className="w-3 h-3" />{issue._count.comments}
+                  </span>
+                )}
+              </button>
+              {expandedId === issue.id && (
+                <div className="px-6 pb-4 pt-1 border-t border-gray-50 bg-gray-50/50">
+                  {issue.description ? (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{issue.description}</p>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No description</p>
+                  )}
+                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+                    <span>Reported by {issue.createdBy.name}</span>
+                    {issue.url && (
+                      <a href={safeHref(issue.url)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline truncate max-w-xs">
+                        {issue.url}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

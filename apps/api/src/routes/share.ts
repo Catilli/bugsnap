@@ -141,6 +141,18 @@ export async function shareRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          project: {
+            include: {
+              issues: {
+                include: {
+                  createdBy: { select: { id: true, name: true, email: true } },
+                  assignedTo: { select: { id: true, name: true, email: true } },
+                  _count: { select: { comments: true } },
+                },
+                orderBy: { createdAt: 'desc' },
+              },
+            },
+          },
         },
       });
 
@@ -159,6 +171,13 @@ export async function shareRoutes(fastify: FastifyInstance) {
 
       if (shareToken.feedback) {
         return reply.send({ type: 'feedback', data: shareToken.feedback });
+      }
+
+      if (shareToken.project) {
+        if (shareToken.project.generalAccess !== 'ANYONE') {
+          return reply.status(404).send({ error: 'Share link not found' });
+        }
+        return reply.send({ type: 'project', data: shareToken.project });
       }
 
       return reply.status(404).send({ error: 'Shared content not found' });
