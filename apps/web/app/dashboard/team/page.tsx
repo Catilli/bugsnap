@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Users, Mail, Shield, Calendar, ChevronDown, UserPlus, X } from 'lucide-react';
+import { Users, Mail, Shield, Calendar, ChevronDown, UserPlus, X, KeyRound, Copy, Check } from 'lucide-react';
 import { PageHeader } from '../../../components/PageHeader';
 import { FilterBar } from '@/components/FilterBar';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
 import { authFetch } from '@/lib/api';
 import { useRole, UserRole } from '@/lib/useRole';
+import { notifySuccess } from '@/lib/toast';
 
 interface TeamMember {
   id: string;
@@ -72,6 +73,14 @@ export default function TeamPage() {
   const [newMemberRole, setNewMemberRole] = useState<UserRole>('DEVELOPER');
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [createdTempPassword, setCreatedTempPassword] = useState<string | null>(null);
+  const [copiedCreated, setCopiedCreated] = useState(false);
+
+  // Reset password modal
+  const [resetTempPassword, setResetTempPassword] = useState<string | null>(null);
+  const [resetMemberName, setResetMemberName] = useState('');
+  const [copiedReset, setCopiedReset] = useState(false);
+  const [isResetting, setIsResetting] = useState<string | null>(null);
 
   const hasActiveFilters = roleFilter !== null || searchQuery !== '';
 
@@ -198,12 +207,54 @@ export default function TeamPage() {
 
       const created = await response.json();
       setMembers((prev) => [...prev, created]);
-      setShowAddModal(false);
+
+      if (created.tempPassword) {
+        // Show the generated password so admin can share it
+        setCreatedTempPassword(created.tempPassword);
+        setCopiedCreated(false);
+      } else {
+        // Admin provided their own password — just close and toast
+        setShowAddModal(false);
+        notifySuccess(`${created.name} has been added to the team.`);
+      }
     } catch {
       setAddError('Failed to add member. Please try again.');
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleResetPassword = async (member: TeamMember) => {
+    if (!getAuthToken()) return;
+    setIsResetting(member.id);
+
+    try {
+      const response = await authFetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/${member.id}/reset-password`,
+        { method: 'PATCH' }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        notifySuccess(data.error || 'Failed to reset password.');
+        return;
+      }
+
+      const { tempPassword } = await response.json();
+      setResetTempPassword(tempPassword);
+      setResetMemberName(member.name);
+      setCopiedReset(false);
+    } catch {
+      // silently fail
+    } finally {
+      setIsResetting(null);
+    }
+  };
+
+  const copyToClipboard = async (text: string, setCopied: (v: boolean) => void) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (isLoading) {
@@ -255,6 +306,7 @@ export default function TeamPage() {
                 setNewMemberPassword('');
                 setNewMemberRole('DEVELOPER');
                 setAddError(null);
+                setCreatedTempPassword(null);
                 setShowAddModal(true);
               }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
@@ -301,22 +353,23 @@ export default function TeamPage() {
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           {/* Table Header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            <div className="col-span-4">Member</div>
-            <div className="col-span-2">Role</div>
-            <div className="col-span-2">Projects</div>
-            <div className="col-span-2">Assigned Issues</div>
-            <div className="col-span-2">Joined</div>
+          <div className={`hidden md:grid gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider ${isAdmin ? 'grid-cols-[3fr_2fr_1.5fr_1.5fr_2fr_auto]' : 'grid-cols-12'}`}>
+            <div className={isAdmin ? '' : 'col-span-4'}>Member</div>
+            <div className={isAdmin ? '' : 'col-span-2'}>Role</div>
+            <div className={isAdmin ? '' : 'col-span-2'}>Projects</div>
+            <div className={isAdmin ? '' : 'col-span-2'}>Assigned Issues</div>
+            <div className={isAdmin ? '' : 'col-span-2'}>Joined</div>
+            {isAdmin && <div className="w-8"></div>}
           </div>
 
           {/* Member Rows */}
           {filteredMembers.map((member) => (
             <div
               key={member.id}
-              className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors items-center"
+              className={`grid grid-cols-1 gap-2 md:gap-4 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors items-center ${isAdmin ? 'md:grid-cols-[3fr_2fr_1.5fr_1.5fr_2fr_auto]' : 'md:grid-cols-12'}`}
             >
               {/* Member info */}
-              <div className="col-span-4 flex items-center gap-3 min-w-0">
+              <div className={`${isAdmin ? '' : 'col-span-4'} flex items-center gap-3 min-w-0`}>
                 <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
                   {member.name.charAt(0).toUpperCase()}
                 </div>
@@ -330,7 +383,7 @@ export default function TeamPage() {
               </div>
 
               {/* Role */}
-              <div className="col-span-2 flex items-center">
+              <div className={`${isAdmin ? '' : 'col-span-2'} flex items-center`}>
                 {isAdmin && editingUserId === member.id ? (
                   <select
                     defaultValue={member.role}
@@ -359,22 +412,36 @@ export default function TeamPage() {
               </div>
 
               {/* Projects count */}
-              <div className="col-span-2">
+              <div className={isAdmin ? '' : 'col-span-2'}>
                 <span className="text-sm text-gray-600">{member._count.ownedProjects}</span>
                 <span className="text-xs text-gray-400 ml-1 md:hidden">projects</span>
               </div>
 
               {/* Assigned issues count */}
-              <div className="col-span-2">
+              <div className={isAdmin ? '' : 'col-span-2'}>
                 <span className="text-sm text-gray-600">{member._count.assignedIssues}</span>
                 <span className="text-xs text-gray-400 ml-1 md:hidden">issues</span>
               </div>
 
               {/* Joined date */}
-              <div className="col-span-2 flex items-center gap-1 text-sm text-gray-500">
+              <div className={`${isAdmin ? '' : 'col-span-2'} flex items-center gap-1 text-sm text-gray-500`}>
                 <Calendar className="w-3.5 h-3.5 flex-shrink-0 hidden md:block" />
                 {formatDate(member.createdAt)}
               </div>
+
+              {/* Reset password */}
+              {isAdmin && (
+                <div className="flex items-center justify-end w-8">
+                  <button
+                    onClick={() => handleResetPassword(member)}
+                    disabled={isResetting === member.id}
+                    title="Reset password"
+                    className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                  >
+                    <KeyRound className={`w-4 h-4 ${isResetting === member.id ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -383,101 +450,179 @@ export default function TeamPage() {
       {/* Add Member Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowAddModal(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => !createdTempPassword && setShowAddModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            {createdTempPassword ? (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Member Added</h2>
+                  <button
+                    onClick={() => { setShowAddModal(false); setCreatedTempPassword(null); }}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">
+                  <strong>{newMemberName}</strong> has been added. Share this temporary password with them:
+                </p>
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  <code className="flex-1 text-sm font-mono text-gray-800 break-all select-all">{createdTempPassword}</code>
+                  <button
+                    onClick={() => copyToClipboard(createdTempPassword, setCopiedCreated)}
+                    className="p-1.5 text-gray-500 hover:text-indigo-600 rounded-md hover:bg-gray-100 transition-colors flex-shrink-0"
+                    title="Copy password"
+                  >
+                    {copiedCreated ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">This password will not be shown again.</p>
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => { setShowAddModal(false); setCreatedTempPassword(null); }}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Add Team Member</h2>
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="add-name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Name
+                    </label>
+                    <input
+                      id="add-name"
+                      type="text"
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                      placeholder="Full name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="add-email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      id="add-email"
+                      type="email"
+                      value={newMemberEmail}
+                      onChange={(e) => setNewMemberEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="add-password" className="block text-sm font-medium text-gray-700 mb-1">
+                      Password
+                    </label>
+                    <input
+                      id="add-password"
+                      type="password"
+                      value={newMemberPassword}
+                      onChange={(e) => setNewMemberPassword(e.target.value)}
+                      placeholder="Min. 8 characters (optional)"
+                      minLength={8}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Leave blank to auto-generate a temporary password.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="add-role" className="block text-sm font-medium text-gray-700 mb-1">
+                      Role
+                    </label>
+                    <select
+                      id="add-role"
+                      value={newMemberRole}
+                      onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="ADMIN">Admin</option>
+                      <option value="MANAGER">Manager</option>
+                      <option value="DEVELOPER">Developer</option>
+                      <option value="VIEWER">Viewer</option>
+                    </select>
+                  </div>
+
+                  {addError && (
+                    <p className="text-sm text-red-600">{addError}</p>
+                  )}
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      onClick={() => setShowAddModal(false)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddMember}
+                      disabled={isAdding}
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAdding ? 'Adding...' : 'Add Member'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetTempPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Add Team Member</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Password Reset</h2>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => setResetTempPassword(null)}
                 className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="add-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <input
-                  id="add-name"
-                  type="text"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  placeholder="Full name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="add-email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  id="add-email"
-                  type="email"
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="add-password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  id="add-password"
-                  type="password"
-                  value={newMemberPassword}
-                  onChange={(e) => setNewMemberPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  minLength={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Leave blank to require &quot;Forgot Password&quot; on first login.
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="add-role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                </label>
-                <select
-                  id="add-role"
-                  value={newMemberRole}
-                  onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="ADMIN">Admin</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="DEVELOPER">Developer</option>
-                  <option value="VIEWER">Viewer</option>
-                </select>
-              </div>
-
-              {addError && (
-                <p className="text-sm text-red-600">{addError}</p>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddMember}
-                  disabled={isAdding}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isAdding ? 'Adding...' : 'Add Member'}
-                </button>
-              </div>
+            <p className="text-sm text-gray-600 mb-3">
+              New temporary password for <strong>{resetMemberName}</strong>:
+            </p>
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              <code className="flex-1 text-sm font-mono text-gray-800 break-all select-all">{resetTempPassword}</code>
+              <button
+                onClick={() => copyToClipboard(resetTempPassword, setCopiedReset)}
+                className="p-1.5 text-gray-500 hover:text-indigo-600 rounded-md hover:bg-gray-100 transition-colors flex-shrink-0"
+                title="Copy password"
+              >
+                {copiedReset ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">This password will not be shown again.</p>
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={() => setResetTempPassword(null)}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>

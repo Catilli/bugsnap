@@ -73,6 +73,7 @@ export async function userRoutes(fastify: FastifyInstance) {
       return reply.status(409).send({ error: 'A user with this email already exists' });
     }
 
+    const adminProvidedPassword = !!password;
     const rawPassword = password || crypto.randomBytes(16).toString('hex');
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
@@ -94,7 +95,11 @@ export async function userRoutes(fastify: FastifyInstance) {
       },
     });
 
-    return reply.status(201).send(created);
+    return reply.status(201).send({
+      ...created,
+      // Only return the generated temp password so the admin can share it
+      ...(!adminProvidedPassword && { tempPassword: rawPassword }),
+    });
   });
 
   // GET /api/users — list all users (MANAGER+ only)
@@ -160,6 +165,52 @@ export async function userRoutes(fastify: FastifyInstance) {
     });
 
     return reply.send(users);
+  });
+
+  // PATCH /api/users/:userId/reset-password — reset user password (ADMIN only)
+  fastify.patch('/users/:userId/reset-password', {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+    },
+  }, async (request, reply) => {
+    const currentUserId = (request.user as any)?.id;
+    if (!currentUserId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { role: true },
+    });
+
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      return reply.status(403).send({ error: 'Only admins can reset passwords' });
+    }
+
+    const { userId } = request.params as { userId: string };
+
+    if (userId === currentUserId) {
+      return reply.status(400).send({ error: 'Cannot reset your own password here. Use account settings instead.' });
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!targetUser) {
+      return reply.status(404).send({ error: 'User not found' });
+    }
+
+    const rawPassword = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return reply.send({ tempPassword: rawPassword });
   });
 
   // PATCH /api/users/:userId/role — update user role (ADMIN only)
