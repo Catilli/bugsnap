@@ -91,8 +91,8 @@ class BugSnapUI {
     this.selectedElement.style.outline = '3px solid #3b82f6';
     this.selectedElement.style.outlineOffset = '2px';
 
-    // Add pin marker at selected element
-    this.addPinMarker(this.selectedElement);
+    // Add pin marker at click coordinates
+    this.addPinMarker(e.clientX, e.clientY);
 
     // Remove overlay and listeners
     const overlay = document.getElementById('bugsnap-tagging-overlay');
@@ -104,14 +104,19 @@ class BugSnapUI {
     setTimeout(() => this.captureScreenshot(), 300);
   }
 
-  addPinMarker(element) {
-    const rect = element.getBoundingClientRect();
+  addPinMarker(clickX, clickY) {
+    // Remove any existing pin (ensure only one pin at a time)
+    if (this.pinMarker) {
+      this.pinMarker.remove();
+      this.pinMarker = null;
+    }
+
     const pin = document.createElement('div');
     pin.className = 'bugsnap-pin';
     pin.style.cssText = `
       position: fixed;
-      top: ${rect.top - 12}px;
-      left: ${rect.right + 4}px;
+      top: ${clickY - 24}px;
+      left: ${clickX - 4}px;
       width: 24px;
       height: 24px;
       background: #ef4444;
