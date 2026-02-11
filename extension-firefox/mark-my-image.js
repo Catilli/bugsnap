@@ -10,6 +10,11 @@ class MarkMyImage {
       fillColor: options.fillColor || 'rgba(239, 68, 68, 0.1)',
       fontSize: options.fontSize || 16,
       fontFamily: options.fontFamily || 'Arial',
+      textBackground: options.textBackground || 'rgba(0, 0, 0, 0.6)',
+      textColor: options.textColor || '#ffffff',
+      textPaddingX: options.textPaddingX ?? 6,
+      textPaddingY: options.textPaddingY ?? 4,
+      textBorderRadius: options.textBorderRadius ?? 4,
       ...options
     };
     
@@ -410,9 +415,41 @@ class MarkMyImage {
   }
   
   drawText(text, x, y, style = {}) {
-    const color = style.color || this.options.strokeColor;
-    this.ctx.font = style.font || `${this.options.fontSize}px ${this.options.fontFamily}`;
-    this.ctx.fillStyle = color;
+    const font = style.font || `${this.options.fontSize}px ${this.options.fontFamily}`;
+    this.ctx.font = font;
+
+    const padX = this.options.textPaddingX;
+    const padY = this.options.textPaddingY;
+    const radius = this.options.textBorderRadius;
+
+    // Measure text for background sizing
+    const metrics = this.ctx.measureText(text);
+    const textWidth = metrics.width;
+    const textHeight = this.options.fontSize;
+
+    // Background rectangle positioned around the text baseline
+    const bgX = x - padX;
+    const bgY = y - textHeight - padY;
+    const bgW = textWidth + padX * 2;
+    const bgH = textHeight + padY * 2;
+
+    // Draw rounded background pill
+    this.ctx.fillStyle = this.options.textBackground;
+    this.ctx.beginPath();
+    this.ctx.moveTo(bgX + radius, bgY);
+    this.ctx.lineTo(bgX + bgW - radius, bgY);
+    this.ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + radius);
+    this.ctx.lineTo(bgX + bgW, bgY + bgH - radius);
+    this.ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - radius, bgY + bgH);
+    this.ctx.lineTo(bgX + radius, bgY + bgH);
+    this.ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - radius);
+    this.ctx.lineTo(bgX, bgY + radius);
+    this.ctx.quadraticCurveTo(bgX, bgY, bgX + radius, bgY);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Draw text in contrasting color
+    this.ctx.fillStyle = this.options.textColor;
     this.ctx.fillText(text, x, y);
   }
   
@@ -484,11 +521,15 @@ class MarkMyImage {
         const maxY = Math.max(...ys);
         return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
       case 'text':
+        this.ctx.font = `${this.options.fontSize}px ${this.options.fontFamily}`;
+        const textW = this.ctx.measureText(ann.content).width;
+        const padX2 = this.options.textPaddingX;
+        const padY2 = this.options.textPaddingY;
         return {
-          x: ann.coordinates.x,
-          y: ann.coordinates.y - 16,
-          width: ann.content.length * 8,
-          height: 20
+          x: ann.coordinates.x - padX2,
+          y: ann.coordinates.y - this.options.fontSize - padY2,
+          width: textW + padX2 * 2,
+          height: this.options.fontSize + padY2 * 2
         };
     }
   }
