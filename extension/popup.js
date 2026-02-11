@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       
       document.getElementById('loginBtn').addEventListener('click', () => {
-        chrome.tabs.create({ url: 'http://localhost:3000/login' });
+        chrome.tabs.create({ url: `${BUGSNAP_WEB_URL}/login` });
       });
       return;
     }
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         lucide.createIcons();
         
         document.getElementById('viewBtn').addEventListener('click', () => {
-          chrome.tabs.create({ url: `http://localhost:3000/dashboard/projects/${matchingProject.id}` });
+          chrome.tabs.create({ url: `${BUGSNAP_WEB_URL}/dashboard/projects/${matchingProject.id}` });
         });
         
         document.getElementById('reloadBtn').addEventListener('click', () => {
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
         
         document.getElementById('dashboardBtn').addEventListener('click', () => {
-          chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+          chrome.tabs.create({ url: `${BUGSNAP_WEB_URL}/dashboard` });
         });
       }
     } catch (error) {

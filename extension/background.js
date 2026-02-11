@@ -1,3 +1,5 @@
+importScripts('config.js');
+
 chrome.runtime.onInstalled.addListener(() => {
   // BugSnap extension installed
 });
@@ -42,7 +44,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function fetchProjects(token) {
   try {
-    const response = await fetch('http://localhost:3001/api/projects', {
+    const response = await fetch(`${BUGSNAP_API_URL}/api/projects`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'X-Requested-With': 'BugSnap'
@@ -62,7 +64,7 @@ async function fetchProjects(token) {
 
 async function fetchNextTaskNumber(token, projectId) {
   try {
-    const response = await fetch(`http://localhost:3001/api/projects/${projectId}/next-issue-number`, {
+    const response = await fetch(`${BUGSNAP_API_URL}/api/projects/${projectId}/next-issue-number`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -83,7 +85,7 @@ async function fetchNextTaskNumber(token, projectId) {
 
 async function fetchProjectMembers(token, projectId) {
   try {
-    const response = await fetch(`http://localhost:3001/api/projects/${projectId}/members`, {
+    const response = await fetch(`${BUGSNAP_API_URL}/api/projects/${projectId}/members`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -110,7 +112,7 @@ async function fetchProjectMembers(token, projectId) {
 
 async function createTask(token, payload) {
   try {
-    const response = await fetch('http://localhost:3001/api/issues', {
+    const response = await fetch(`${BUGSNAP_API_URL}/api/issues`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -146,7 +148,7 @@ async function uploadRecording(token, issueId, base64Data) {
     const formData = new FormData();
     formData.append('file', blob, `recording-${Date.now()}.webm`);
 
-    const response = await fetch(`http://localhost:3001/api/issues/${issueId}/attachments`, {
+    const response = await fetch(`${BUGSNAP_API_URL}/api/issues/${issueId}/attachments`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

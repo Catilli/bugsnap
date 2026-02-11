@@ -41,6 +41,7 @@ import {
 
 export default function InstallExtensionPage() {
   const [isExtensionInstalled] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<'chrome' | 'firefox' | 'safari'>('chrome');
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -78,25 +79,53 @@ export default function InstallExtensionPage() {
 
       {/* Download Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Download Extension</h2>
-            <p className="text-gray-600 mt-1">Get the latest version of BugSnap extension</p>
-          </div>
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Download Extension</h2>
+          <p className="text-gray-600 mt-1">Choose the version for your browser</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <a
-            href="/bugsnap-extension.zip"
+            href="/bugsnap-chrome.zip"
             download
-            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+            className="flex flex-col items-center gap-3 p-5 border-2 border-gray-200 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-colors group"
           >
-            <Download className="w-5 h-5" />
-            Download Extension
+            <svg className="w-10 h-10" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#4285F4"/><circle cx="24" cy="24" r="9" fill="#fff"/><circle cx="24" cy="24" r="5" fill="#4285F4"/><path d="M24 15h18.5C39 7.5 32 2 24 2 16.5 2 10 6.5 7 13l8.5 14.5L24 15z" fill="#EA4335"/><path d="M7 13A22 22 0 0 0 24 46l8.5-14.5L15.5 27 7 13z" fill="#34A853"/><path d="M24 46c8 0 14.5-4 18.5-11L33 21H24l0 0 8.5 14.5L24 46z" fill="#FBBC05"/></svg>
+            <span className="font-semibold text-gray-900 group-hover:text-indigo-700">Chrome</span>
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium group-hover:bg-indigo-700 transition-colors">
+              <Download className="w-4 h-4" />
+              Download
+            </span>
+          </a>
+          <a
+            href="/bugsnap-firefox.zip"
+            download
+            className="flex flex-col items-center gap-3 p-5 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors group"
+          >
+            <svg className="w-10 h-10" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#FF9500"/><path d="M24 4C13 4 4 13 4 24s9 20 20 20 20-9 20-20S35 4 24 4zm0 6c2 0 3.8.7 5.2 1.8C27.5 11.3 26 12 26 14c0 3 2.5 4 2.5 7 0 2-1.5 4-4.5 4s-5-2-5-5c0-4 3-5 3-8 0-1-.5-2.5-2-3.5A14 14 0 0 0 10 24c0 7.7 6.3 14 14 14s14-6.3 14-14c0-6.5-4.5-12-10-13.5A7 7 0 0 0 24 10z" fill="#FF3E00"/><circle cx="24" cy="24" r="8" fill="#fff" opacity="0.3"/></svg>
+            <span className="font-semibold text-gray-900 group-hover:text-orange-700">Firefox</span>
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium group-hover:bg-orange-600 transition-colors">
+              <Download className="w-4 h-4" />
+              Download
+            </span>
+          </a>
+          <a
+            href="/bugsnap-safari.zip"
+            download
+            className="flex flex-col items-center gap-3 p-5 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+          >
+            <svg className="w-10 h-10" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#006CFF"/><circle cx="24" cy="24" r="18" fill="#fff"/><circle cx="24" cy="24" r="16" fill="#006CFF" opacity="0.1"/><polygon points="24,8 27,22 24,24 21,22" fill="#FF3B30"/><polygon points="24,40 21,26 24,24 27,26" fill="#fff"/><circle cx="24" cy="24" r="2" fill="#333"/></svg>
+            <span className="font-semibold text-gray-900 group-hover:text-blue-700">Safari</span>
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium group-hover:bg-blue-700 transition-colors">
+              <Download className="w-4 h-4" />
+              Download
+            </span>
           </a>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <CheckCircle2 className="w-5 h-5 text-green-600" />
           <span className="text-gray-700 font-medium">Auto-login enabled - No need to login again!</span>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Version 1.0.0 • Updated just now</p>
+        <p className="text-sm text-gray-500 mt-2">Version 1.0.0 • All browsers supported</p>
       </div>
 
       {/* Quick Start Card */}
@@ -108,18 +137,18 @@ export default function InstallExtensionPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
             <div className="text-3xl font-bold text-indigo-600 mb-2">1</div>
-            <h3 className="font-semibold text-gray-900 mb-2">Open Extensions</h3>
-            <p className="text-sm text-gray-600">Navigate to <code className="bg-gray-100 px-2 py-1 rounded text-xs">chrome://extensions/</code></p>
+            <h3 className="font-semibold text-gray-900 mb-2">Download & Extract</h3>
+            <p className="text-sm text-gray-600">Download the extension for your browser and unzip it</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
             <div className="text-3xl font-bold text-indigo-600 mb-2">2</div>
-            <h3 className="font-semibold text-gray-900 mb-2">Enable Dev Mode</h3>
-            <p className="text-sm text-gray-600">Toggle "Developer mode" in top-right corner</p>
+            <h3 className="font-semibold text-gray-900 mb-2">Load Extension</h3>
+            <p className="text-sm text-gray-600">Follow the browser-specific steps below to install</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
             <div className="text-3xl font-bold text-indigo-600 mb-2">3</div>
-            <h3 className="font-semibold text-gray-900 mb-2">Load Extension</h3>
-            <p className="text-sm text-gray-600">Click "Load unpacked" → Select <code className="bg-gray-100 px-2 py-1 rounded text-xs">extension</code> folder</p>
+            <h3 className="font-semibold text-gray-900 mb-2">Start Annotating</h3>
+            <p className="text-sm text-gray-600">Visit any webpage and click the BugSnap icon</p>
           </div>
         </div>
       </div>
@@ -128,76 +157,174 @@ export default function InstallExtensionPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-6">Detailed Installation Steps</h2>
 
-        {/* Step 1 */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
-            <h3 className="text-lg font-semibold text-gray-900">Open Chrome Extensions Page</h3>
-          </div>
-          <div className="ml-11 space-y-2">
-            <p className="text-gray-700">Open Google Chrome and navigate to the extensions page:</p>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-sm font-mono text-gray-900 mb-3">chrome://extensions/</p>
-              <p className="text-sm text-gray-600">OR</p>
-              <p className="text-sm text-gray-700 mt-2">Click the three dots menu → More Tools → Extensions</p>
+        {/* Browser Tabs */}
+        <div className="flex gap-1 mb-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('chrome')}
+            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'chrome' ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+          >
+            Chrome / Edge
+          </button>
+          <button
+            onClick={() => setActiveTab('firefox')}
+            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'firefox' ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-500' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+          >
+            Firefox
+          </button>
+          <button
+            onClick={() => setActiveTab('safari')}
+            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'safari' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+          >
+            Safari
+          </button>
+        </div>
+
+        {/* Chrome Instructions */}
+        {activeTab === 'chrome' && (
+          <div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
+                <h3 className="text-lg font-semibold text-gray-900">Open Extensions Page</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Navigate to the extensions page:</p>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-sm font-mono text-gray-900 mb-3">chrome://extensions/</p>
+                  <p className="text-sm text-gray-600">OR: Menu → More Tools → Extensions</p>
+                </div>
+              </div>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                <h3 className="text-lg font-semibold text-gray-900">Enable Developer Mode</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Toggle &quot;Developer mode&quot; in the top-right corner to ON.</p>
+              </div>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                <h3 className="text-lg font-semibold text-gray-900">Load the Extension</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <li>Click &quot;Load unpacked&quot;</li>
+                  <li>Select the extracted <code className="bg-gray-100 px-2 py-1 rounded text-sm">extension</code> folder</li>
+                  <li>Click &quot;Select Folder&quot;</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">4</span>
+                <h3 className="text-lg font-semibold text-gray-900">Pin to Toolbar</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Click the puzzle piece icon in the toolbar → find BugSnap → click the pin icon.</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Step 2 */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
-            <h3 className="text-lg font-semibold text-gray-900">Enable Developer Mode</h3>
-          </div>
-          <div className="ml-11 space-y-2">
-            <p className="text-gray-700">Enable Developer mode to load unpacked extensions:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Look for the "Developer mode" toggle in the top-right corner</li>
-              <li>Click the toggle to turn it ON (it will turn blue)</li>
-              <li>New buttons will appear (Load unpacked, Pack extension, Update)</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Step 3 */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
-            <h3 className="text-lg font-semibold text-gray-900">Load the Extension</h3>
-          </div>
-          <div className="ml-11 space-y-2">
-            <p className="text-gray-700">Load the BugSnap extension folder:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Click the "Load unpacked" button</li>
-              <li>Navigate to your BugSnap project directory</li>
-              <li>Select the <code className="bg-gray-100 px-2 py-1 rounded text-sm">extension</code> folder</li>
-              <li>Click "Select Folder"</li>
-            </ul>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-              <p className="text-sm text-green-800 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                The BugSnap extension will now appear in your extensions list
-              </p>
+        {/* Firefox Instructions */}
+        {activeTab === 'firefox' && (
+          <div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
+                <h3 className="text-lg font-semibold text-gray-900">Open Add-ons Debugging</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Navigate to the debugging page:</p>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-sm font-mono text-gray-900">about:debugging#/runtime/this-firefox</p>
+                </div>
+              </div>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                <h3 className="text-lg font-semibold text-gray-900">Load Temporary Add-on</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <li>Click &quot;Load Temporary Add-on...&quot;</li>
+                  <li>Navigate to the extracted <code className="bg-gray-100 px-2 py-1 rounded text-sm">extension-firefox</code> folder</li>
+                  <li>Select the <code className="bg-gray-100 px-2 py-1 rounded text-sm">manifest.json</code> file</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                <h3 className="text-lg font-semibold text-gray-900">Verify Installation</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">The BugSnap icon will appear in your toolbar. Temporary add-ons are removed when Firefox restarts.</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-2">
+                  <p className="text-sm text-amber-800 flex items-center gap-2">
+                    <Info className="w-4 h-4 flex-shrink-0" />
+                    For permanent install, the extension must be signed via <a href="https://addons.mozilla.org" className="underline" target="_blank" rel="noopener noreferrer">addons.mozilla.org</a>.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Step 4 */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">4</span>
-            <h3 className="text-lg font-semibold text-gray-900">Pin to Toolbar (Optional)</h3>
+        {/* Safari Instructions */}
+        {activeTab === 'safari' && (
+          <div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
+                <h3 className="text-lg font-semibold text-gray-900">Convert to Xcode Project (macOS)</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Open Terminal and run:</p>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-sm font-mono text-gray-900">xcrun safari-web-extension-converter extension-safari/ --app-name BugSnap</p>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">Requires Xcode 13+ and macOS 12+</p>
+              </div>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                <h3 className="text-lg font-semibold text-gray-900">Build in Xcode</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <li>Open the generated Xcode project</li>
+                  <li>Select your development team under Signing & Capabilities</li>
+                  <li>Click Run (Cmd + R) to build and launch</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                <h3 className="text-lg font-semibold text-gray-900">Enable in Safari</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <li>Open Safari → Settings → Extensions</li>
+                  <li>Check the box next to BugSnap to enable it</li>
+                  <li>Grant permissions when prompted</li>
+                </ul>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+                  <p className="text-sm text-blue-800 flex items-center gap-2">
+                    <Info className="w-4 h-4 flex-shrink-0" />
+                    Enable &quot;Allow Unsigned Extensions&quot; in Safari → Develop menu if needed.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="ml-11 space-y-2">
-            <p className="text-gray-700">Pin the extension for easy access:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              <li>Click the puzzle piece icon in Chrome's toolbar</li>
-              <li>Find "BugSnap - Visual Bug Tracking"</li>
-              <li>Click the pin icon to keep it visible</li>
-            </ul>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* First Use Guide */}
@@ -342,26 +469,28 @@ export default function InstallExtensionPage() {
               Extension icon not showing?
             </h4>
             <p className="text-sm text-gray-600">
-              Click the puzzle piece icon in Chrome toolbar, find "BugSnap", and click the pin icon to keep it visible.
+              <strong>Chrome/Edge:</strong> Click the puzzle piece icon in the toolbar, find &quot;BugSnap&quot;, and click the pin icon.
+              <br /><strong>Firefox:</strong> Right-click the toolbar → Customize Toolbar → drag BugSnap to the toolbar.
+              <br /><strong>Safari:</strong> Go to Safari → Settings → Extensions and ensure BugSnap is enabled.
             </p>
           </div>
           <div>
             <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
-              Can't login?
+              Can&apos;t login?
             </h4>
             <p className="text-sm text-gray-600">
-              Make sure your API server is running at <code className="bg-gray-100 px-2 py-1 rounded text-xs">http://localhost:3001</code>. 
-              Check network connectivity and credentials.
+              Make sure the BugSnap API is reachable. In development, the API runs at <code className="bg-gray-100 px-2 py-1 rounded text-xs">http://localhost:3001</code>.
+              Check network connectivity and ensure you&apos;re logged in to the web app.
             </p>
           </div>
           <div>
             <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
               <MousePointer2 className="w-4 h-4" />
-              Can't annotate elements?
+              Can&apos;t annotate elements?
             </h4>
             <p className="text-sm text-gray-600">
-              Ensure you're logged in, have selected a project, and clicked "Start Annotating". Try refreshing the webpage.
+              Ensure you&apos;re logged in, have selected a project, and clicked &quot;Start Annotating&quot;. Try refreshing the webpage.
             </p>
           </div>
           <div>
@@ -370,7 +499,9 @@ export default function InstallExtensionPage() {
               Extension not working after update?
             </h4>
             <p className="text-sm text-gray-600">
-              Go to <code className="bg-gray-100 px-2 py-1 rounded text-xs">chrome://extensions/</code> and click the refresh icon on the BugSnap extension.
+              <strong>Chrome/Edge:</strong> Go to <code className="bg-gray-100 px-2 py-1 rounded text-xs">chrome://extensions/</code> and click the refresh icon.
+              <br /><strong>Firefox:</strong> Go to <code className="bg-gray-100 px-2 py-1 rounded text-xs">about:debugging</code> and click &quot;Reload&quot;.
+              <br /><strong>Safari:</strong> Disable and re-enable the extension in Safari → Settings → Extensions.
             </p>
           </div>
         </div>
@@ -391,8 +522,8 @@ export default function InstallExtensionPage() {
             <ul className="space-y-1 text-sm text-gray-700">
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Google Chrome 88+</li>
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Microsoft Edge 88+</li>
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Brave Browser</li>
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Other Chromium-based browsers</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Mozilla Firefox 109+</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Safari 15.4+ (macOS)</li>
             </ul>
           </div>
           <div>
@@ -404,7 +535,7 @@ export default function InstallExtensionPage() {
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Active BugSnap account</li>
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Internet connection</li>
               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> BugSnap API running (development)</li>
-              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Chrome Developer mode enabled</li>
+              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" /> Developer mode enabled in browser</li>
             </ul>
           </div>
         </div>
@@ -470,15 +601,20 @@ export default function InstallExtensionPage() {
           <Code className="w-5 h-5" />
           For Developers
         </h3>
-        <p className="text-sm text-gray-700 mb-3">
-          Extension location: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">/extension</code>
-        </p>
-        <p className="text-sm text-gray-700 mb-3">
-          API endpoint: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">http://localhost:3001/api</code>
-        </p>
-        <p className="text-sm text-gray-700">
-          Manifest version: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">3</code>
-        </p>
+        <div className="text-sm text-gray-700 space-y-2">
+          <p>
+            Chrome/Edge source: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">/extension</code>
+          </p>
+          <p>
+            Safari source: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">/extension-safari</code>
+          </p>
+          <p>
+            Config: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">/extension/config.js</code> — toggle between local dev and production URLs
+          </p>
+          <p>
+            Manifest version: <code className="bg-white px-2 py-1 rounded border border-gray-300 text-xs">3</code> (all browsers)
+          </p>
+        </div>
       </div>
     </div>
   );
