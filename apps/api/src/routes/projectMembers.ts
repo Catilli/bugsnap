@@ -15,7 +15,11 @@ const updateRoleSchema = z.object({
 
 export async function projectMemberRoutes(fastify: FastifyInstance) {
   // Get all members of a project
-  fastify.get('/projects/:projectId/members', async (request, reply) => {
+  fastify.get('/projects/:projectId/members', {
+    preHandler: async (request, reply) => {
+      await fastify.authenticate(request, reply);
+    },
+  }, async (request, reply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const userId = (request.user as any)?.id;
@@ -39,7 +43,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   });
 
   // Add a member to a project
-  fastify.post('/projects/:projectId/members', async (request, reply) => {
+  fastify.post('/projects/:projectId/members', {
+    preHandler: async (request, reply) => {
+      await fastify.authenticate(request, reply);
+    },
+  }, async (request, reply) => {
     try {
       const { projectId } = request.params as { projectId: string };
       const userId = (request.user as any)?.id;
@@ -73,7 +81,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   });
 
   // Update member role
-  fastify.patch('/projects/:projectId/members/:userId', async (request, reply) => {
+  fastify.patch('/projects/:projectId/members/:userId', {
+    preHandler: async (request, reply) => {
+      await fastify.authenticate(request, reply);
+    },
+  }, async (request, reply) => {
     try {
       const { projectId, userId: targetUserId } = request.params as {
         projectId: string;
@@ -107,7 +119,11 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
   });
 
   // Remove a member from a project
-  fastify.delete('/projects/:projectId/members/:userId', async (request, reply) => {
+  fastify.delete('/projects/:projectId/members/:userId', {
+    preHandler: async (request, reply) => {
+      await fastify.authenticate(request, reply);
+    },
+  }, async (request, reply) => {
     try {
       const { projectId, userId: targetUserId } = request.params as {
         projectId: string;
