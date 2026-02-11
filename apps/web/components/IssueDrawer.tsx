@@ -16,6 +16,7 @@ import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
 import { RoleGate } from './RoleGate';
 import { ScreenshotImage } from './ScreenshotImage';
+import { useDialog } from '../providers/DialogProvider';
 
 interface IssueDrawerProps {
   issueId: string | null;
@@ -77,10 +78,10 @@ interface Attachment {
 export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange, extraActions }: IssueDrawerProps) {
   const { role, hasRole, isViewer } = useRole();
   const currentUser = useAuthStore((s) => s.user);
+  const { openLightbox } = useDialog();
   const [issue, setIssue] = useState<Issue | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isScreenshotEnlarged, setIsScreenshotEnlarged] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -444,7 +445,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                 </div>
                 <div
                   className="relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer group h-96"
-                  onClick={() => setIsScreenshotEnlarged(true)}
+                  onClick={() => openLightbox({ src: issue.screenshotUrl!, backupSrc: issue.screenshotBackupUrl, alt: 'Screenshot' })}
                 >
                   <ScreenshotImage
                     src={issue.screenshotUrl}
@@ -738,30 +739,6 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             </div>
         </div>}
       </Drawer>
-
-      {/* Screenshot Enlarged Modal */}
-      {isScreenshotEnlarged && issue?.screenshotUrl && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4"
-          onClick={() => setIsScreenshotEnlarged(false)}
-        >
-          <div className="relative max-w-7xl max-h-full">
-            <button
-              onClick={() => setIsScreenshotEnlarged(false)}
-              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            <ScreenshotImage
-              src={issue.screenshotUrl}
-              backupSrc={issue.screenshotBackupUrl}
-              alt="Screenshot (enlarged)"
-              className="max-w-full max-h-[90vh] object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 }

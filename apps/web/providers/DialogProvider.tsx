@@ -11,15 +11,30 @@ interface ConfirmOptions {
   cancelLabel?: string;
 }
 
-interface DialogEntry {
+interface LightboxOptions {
+  src: string;
+  backupSrc?: string | null;
+  alt?: string;
+}
+
+interface ConfirmEntry {
   id: number;
   type: 'confirm';
   options: ConfirmOptions;
   resolve: (value: boolean) => void;
 }
 
+interface LightboxEntry {
+  id: number;
+  type: 'lightbox';
+  options: LightboxOptions;
+}
+
+type DialogEntry = ConfirmEntry | LightboxEntry;
+
 interface DialogContextValue {
   openConfirm: (options: ConfirmOptions) => Promise<boolean>;
+  openLightbox: (options: LightboxOptions) => void;
 }
 
 const DialogContext = createContext<DialogContextValue | null>(null);
@@ -40,7 +55,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   const dismiss = useCallback((id: number, value: boolean) => {
     setDialogs((prev) => {
       const entry = prev.find((d) => d.id === id);
-      if (entry) entry.resolve(value);
+      if (entry && entry.type === 'confirm') entry.resolve(value);
       return prev.filter((d) => d.id !== id);
     });
   }, []);
@@ -50,6 +65,11 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       const id = ++nextId;
       setDialogs((prev) => [...prev, { id, type: 'confirm', options, resolve }]);
     });
+  }, []);
+
+  const openLightbox = useCallback((options: LightboxOptions) => {
+    const id = ++nextId;
+    setDialogs((prev) => [...prev, { id, type: 'lightbox', options }]);
   }, []);
 
   // Escape key handler — capture phase so it fires before Drawer's bubble-phase handler
@@ -66,11 +86,37 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   }, [dismiss]);
 
   return (
-    <DialogContext.Provider value={{ openConfirm }}>
+    <DialogContext.Provider value={{ openConfirm, openLightbox }}>
       {children}
 
       {dialogs.map((dialog, index) => {
         const zIndex = 60 + index * 10;
+
+        if (dialog.type === 'lightbox') {
+          return (
+            <div
+              key={dialog.id}
+              className="fixed inset-0 bg-black/90 flex items-center justify-center"
+              style={{ zIndex }}
+              onClick={() => dismiss(dialog.id, false)}
+            >
+              <button
+                onClick={() => dismiss(dialog.id, false)}
+                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <LightboxImage
+                src={dialog.options.src}
+                backupSrc={dialog.options.backupSrc}
+                alt={dialog.options.alt || 'Screenshot'}
+              />
+            </div>
+          );
+        }
+
         const { options } = dialog;
         const isDanger = options.variant === 'danger';
 
@@ -127,5 +173,22 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
         );
       })}
     </DialogContext.Provider>
+  );
+}
+
+function LightboxImage({ src, backupSrc, alt }: { src: string; backupSrc?: string | null; alt: string }) {
+  const [useFallback, setUseFallback] = useState(false);
+  const activeSrc = useFallback && backupSrc ? backupSrc : src;
+
+  return (
+    <img
+      src={activeSrc}
+      alt={alt}
+      className="w-full h-full object-contain"
+      onClick={(e) => e.stopPropagation()}
+      onError={() => {
+        if (!useFallback && backupSrc) setUseFallback(true);
+      }}
+    />
   );
 }
