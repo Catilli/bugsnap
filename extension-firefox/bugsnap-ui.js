@@ -1,6 +1,5 @@
 // BugSnap UI - Element tagging and screenshot capture
 // This file creates the overlay UI elements using vanilla JavaScript
-// Firefox version: uses browser.* Promise-based APIs instead of chrome.* callbacks
 
 class BugSnapUI {
   constructor(project) {
@@ -11,8 +10,6 @@ class BugSnapUI {
     this.annotations = [];
     this.selectedAnnotationIndex = null;
     this.currentTool = 'rectangle';
-    this.projectMembers = [];
-    this.selectedAssignees = [];
     this.userEmail = null;
     this.recording = null;
     this.mediaRecorder = null;
@@ -22,12 +19,11 @@ class BugSnapUI {
     this.init();
   }
 
-  async init() {
+  init() {
     // Load reporter email from storage
-    try {
-      const result = await browser.storage.local.get(['userEmail']);
+    chrome.storage.local.get(['userEmail'], (result) => {
       this.userEmail = result.userEmail || null;
-    } catch (e) { /* ignore */ }
+    });
     // Auto-start tagging mode on page load
     this.startTagging();
   }
@@ -36,7 +32,7 @@ class BugSnapUI {
     this.isTagging = true;
     this.hoveredElement = null;
     document.body.style.cursor = 'crosshair';
-
+    
     // Add overlay
     const overlay = document.createElement('div');
     overlay.id = 'bugsnap-tagging-overlay';
@@ -79,14 +75,14 @@ class BugSnapUI {
 
   handleElementTag(e) {
     if (!this.isTagging) return;
-
+    
     e.preventDefault();
     e.stopPropagation();
 
     this.selectedElement = e.target;
     this.isTagging = false;
     document.body.style.cursor = 'default';
-
+    
     // Keep the highlight on selected element
     this.selectedElement.style.outline = '3px solid #3b82f6';
     this.selectedElement.style.outlineOffset = '2px';
@@ -146,16 +142,21 @@ class BugSnapUI {
     try {
       // Small delay to ensure element highlight is rendered
       await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Use browser.runtime.sendMessage (Promise-based) to capture screenshot
-      const response = await browser.runtime.sendMessage({ action: 'captureScreenshot' });
-
-      if (response && response.screenshot) {
-        this.screenshot = response.screenshot;
-        this.showAnnotationModal();
-      } else {
-        alert('Failed to capture screenshot - no image received');
-      }
+      
+      // Use chrome.runtime.sendMessage to capture screenshot
+      chrome.runtime.sendMessage({ action: 'captureScreenshot' }, (response) => {
+        if (chrome.runtime.lastError) {
+          alert('Failed to capture screenshot: ' + chrome.runtime.lastError.message);
+          return;
+        }
+        
+        if (response && response.screenshot) {
+          this.screenshot = response.screenshot;
+          this.showAnnotationModal();
+        } else {
+          alert('Failed to capture screenshot - no image received');
+        }
+      });
     } catch (error) {
       alert('Failed to capture screenshot: ' + error.message);
     }
@@ -520,7 +521,7 @@ class BugSnapUI {
         btn.style.border = '1px solid #3b82f6';
         const svg = btn.querySelector('svg');
         if (svg) svg.setAttribute('stroke', 'white');
-
+        
         this.currentTool = btn.dataset.tool;
         if (this.markMyImage) {
           this.markMyImage.setTool(btn.dataset.tool);
@@ -593,63 +594,60 @@ class BugSnapUI {
     this.currentTool = 'rectangle';
   }
 
+
+
   async startRecording() {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: 'screen' },
+        video: { mediaSource: 'tab', frameRate: 30 },
         audio: false,
       });
 
+      this.recordedChunks = [];
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
         ? 'video/webm;codecs=vp9'
         : 'video/webm';
-
-      this.recordedChunks = [];
       this.mediaRecorder = new MediaRecorder(stream, { mimeType });
 
       this.mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          this.recordedChunks.push(e.data);
-        }
+        if (e.data.size > 0) this.recordedChunks.push(e.data);
       };
 
       this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.recordedChunks, { type: mimeType });
-        this.recording = blob;
+        this.recording = new Blob(this.recordedChunks, { type: 'video/webm' });
+        stream.getTracks().forEach((t) => t.stop());
         this.updateRecordButton(false);
+        clearInterval(this.recordingTimerInterval);
       };
 
-      // Stop recording if user stops screen sharing via browser UI
-      stream.getVideoTracks()[0].addEventListener('ended', () => {
+      // If user stops sharing via browser UI, handle gracefully
+      stream.getVideoTracks()[0].onended = () => {
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
           this.mediaRecorder.stop();
         }
-      });
+      };
 
       this.mediaRecorder.start(1000); // Collect data every second
       this.recordingStartTime = Date.now();
       this.updateRecordButton(true);
 
-      // Update timer every second
+      // Update timer display
       this.recordingTimerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
-        const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
-        const secs = (elapsed % 60).toString().padStart(2, '0');
-        const timerSpan = document.getElementById('bugsnap-record-timer');
-        if (timerSpan) timerSpan.textContent = `${mins}:${secs}`;
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        const timerEl = document.getElementById('bugsnap-record-timer');
+        if (timerEl) timerEl.textContent = `${mins}:${secs}`;
       }, 1000);
     } catch (err) {
-      console.warn('Screen recording cancelled or failed:', err);
+      // User cancelled the picker or permission denied
+      console.log('Recording cancelled or failed:', err.message);
     }
   }
 
   stopRecording() {
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.mediaRecorder.stop();
-    }
-    if (this.recordingTimerInterval) {
-      clearInterval(this.recordingTimerInterval);
-      this.recordingTimerInterval = null;
     }
   }
 
@@ -661,73 +659,75 @@ class BugSnapUI {
     while (btn.firstChild) btn.removeChild(btn.firstChild);
 
     if (isRecording) {
+      btn.style.background = '#fef2f2';
+      btn.style.borderColor = '#ef4444';
+      btn.style.color = '#ef4444';
+
       // Stop icon (square)
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('width', '16');
       svg.setAttribute('height', '16');
       svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', '#ef4444');
-      svg.setAttribute('stroke', 'none');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', '#ef4444');
+      svg.setAttribute('stroke-width', '2');
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rect.setAttribute('x', '6');
       rect.setAttribute('y', '6');
       rect.setAttribute('width', '12');
       rect.setAttribute('height', '12');
-      rect.setAttribute('rx', '2');
+      rect.setAttribute('rx', '1');
       svg.appendChild(rect);
       btn.appendChild(svg);
 
-      const timerSpan = document.createElement('span');
-      timerSpan.id = 'bugsnap-record-timer';
-      timerSpan.style.color = '#ef4444';
-      timerSpan.style.fontVariantNumeric = 'tabular-nums';
-      timerSpan.textContent = '00:00';
-      btn.appendChild(timerSpan);
+      // Timer
+      const timer = document.createElement('span');
+      timer.id = 'bugsnap-record-timer';
+      timer.style.fontVariantNumeric = 'tabular-nums';
+      timer.textContent = '00:00';
+      btn.appendChild(timer);
 
-      btn.style.borderColor = '#fca5a5';
-      btn.style.background = '#fef2f2';
-    } else if (this.recording) {
-      // Recorded state - checkmark
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', '16');
-      svg.setAttribute('height', '16');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('stroke', '#10b981');
-      svg.setAttribute('stroke-width', '2');
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M20 6L9 17l-5-5');
-      svg.appendChild(path);
-      btn.appendChild(svg);
-
-      const textSpan = document.createElement('span');
-      textSpan.textContent = 'Recorded';
-      textSpan.style.color = '#10b981';
-      btn.appendChild(textSpan);
-
-      btn.style.borderColor = '#a7f3d0';
-      btn.style.background = '#ecfdf5';
+      // "Stop" label
+      const label = document.createElement('span');
+      label.textContent = 'Stop';
+      btn.appendChild(label);
     } else {
-      // Default state - record circle
+      const hasRecording = !!this.recording;
+      btn.style.background = hasRecording ? '#f0fdf4' : 'white';
+      btn.style.borderColor = hasRecording ? '#22c55e' : '#e5e7eb';
+      btn.style.color = hasRecording ? '#16a34a' : '#6b7280';
+
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('width', '16');
       svg.setAttribute('height', '16');
       svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', '#ef4444');
-      svg.setAttribute('stroke', 'none');
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', '12');
-      circle.setAttribute('cy', '12');
-      circle.setAttribute('r', '7');
-      svg.appendChild(circle);
+
+      if (hasRecording) {
+        // Checkmark icon
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', '#16a34a');
+        svg.setAttribute('stroke-width', '2');
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'M22 11.08V12a10 10 0 1 1-5.93-9.14');
+        svg.appendChild(path1);
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        path2.setAttribute('points', '22 4 12 14.01 9 11.01');
+        svg.appendChild(path2);
+      } else {
+        // Red circle (record) icon
+        svg.setAttribute('fill', '#ef4444');
+        svg.setAttribute('stroke', 'none');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '7');
+        svg.appendChild(circle);
+      }
+
       btn.appendChild(svg);
-
-      const textSpan = document.createElement('span');
-      textSpan.textContent = 'Record';
-      btn.appendChild(textSpan);
-
-      btn.style.borderColor = '#e5e7eb';
-      btn.style.background = 'white';
+      const label = document.createElement('span');
+      label.textContent = hasRecording ? 'Recorded' : 'Record';
+      btn.appendChild(label);
     }
   }
 
@@ -735,6 +735,7 @@ class BugSnapUI {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
+        // Remove the data URL prefix to get raw base64
         const base64 = reader.result.split(',')[1];
         resolve(base64);
       };
@@ -747,26 +748,31 @@ class BugSnapUI {
     // First, fetch the next task number
     let nextTaskNumber = 1;
     try {
-      const result = await browser.storage.local.get(['token']);
-      const token = result.token;
+      chrome.storage.local.get(['token'], async (result) => {
+        const token = result.token;
+        
+        // Send message to background script to fetch next task number (avoids CORS issues)
+        chrome.runtime.sendMessage({ action: 'fetchNextTaskNumber', token, projectId: this.project.id }, (response) => {
+          if (chrome.runtime.lastError) {
+            this.showTaskFormWithNumber(nextTaskNumber);
+            return;
+          }
 
-      // Send message to background script to fetch next task number (avoids CORS issues)
-      const response = await browser.runtime.sendMessage({
-        action: 'fetchNextTaskNumber',
-        token,
-        projectId: this.project.id
+          if (response.error) {
+            this.showTaskFormWithNumber(nextTaskNumber);
+            return;
+          }
+
+          nextTaskNumber = response.nextTaskNumber;
+          this.showTaskFormWithNumber(nextTaskNumber);
+        });
       });
-
-      if (response && !response.error) {
-        nextTaskNumber = response.nextTaskNumber;
-      }
     } catch (error) {
       // Show form with default number if fetch fails
+      this.showTaskFormWithNumber(nextTaskNumber);
     }
-
-    this.showTaskFormWithNumber(nextTaskNumber);
   }
-
+  
   showTaskFormWithNumber(taskNumber) {
     const modal = document.createElement('div');
     modal.id = 'bugsnap-task-modal';
@@ -842,69 +848,6 @@ class BugSnapUI {
           "></textarea>
         </div>
 
-        <!-- Priority and Assignee row -->
-        <div id="bugsnap-task-options" style="display: flex; gap: 12px; margin-bottom: 16px;">
-          <select id="bugsnap-task-priority" style="
-            flex: 1;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
-            cursor: pointer;
-            box-sizing: border-box;
-            color: #9ca3af;
-          ">
-            <option value="" disabled selected hidden style="color: #9ca3af;">Priority</option>
-            <option value="" style="color: #374151;">Not Set</option>
-            <option value="low" style="color: #374151;">Low</option>
-            <option value="medium" style="color: #374151;">Medium</option>
-            <option value="high" style="color: #374151;">High</option>
-            <option value="critical" style="color: #374151;">Critical</option>
-          </select>
-
-          <div style="flex: 1; position: relative;">
-            <input
-              id="bugsnap-task-assignee"
-              type="text"
-              placeholder="Assignee(s)"
-              autocomplete="off"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-                background: white;
-                box-sizing: border-box;
-              ">
-            <div id="bugsnap-assignee-dropdown" style="
-              display: none;
-              position: absolute;
-              top: 100%;
-              left: 0;
-              right: 0;
-              background: white;
-              border: 1px solid #d1d5db;
-              border-top: none;
-              border-radius: 0 0 6px 6px;
-              max-height: 200px;
-              overflow-y: auto;
-              z-index: 1000;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            "></div>
-          </div>
-        </div>
-
-        <!-- Selected Assignees -->
-        <div id="bugsnap-selected-assignees" style="
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 16px;
-          min-height: 20px;
-        "></div>
-
         <!-- Create Button -->
         <button id="bugsnap-submit-task" style="
           width: 100%;
@@ -932,9 +875,6 @@ class BugSnapUI {
           #bugsnap-task-content {
             padding: 15px !important;
           }
-          #bugsnap-task-options {
-            flex-direction: column !important;
-          }
         }
         @media (min-width: 768px) {
           #bugsnap-task-modal > div {
@@ -947,249 +887,98 @@ class BugSnapUI {
     modal.appendChild(form);
     document.body.appendChild(modal);
 
-    // Fetch project members
-    this.fetchProjectMembers();
-
-    // Setup assignee autocomplete
-    const assigneeInput = document.getElementById('bugsnap-task-assignee');
-    const assigneeDropdown = document.getElementById('bugsnap-assignee-dropdown');
-
-    assigneeInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      if (query.length === 0) {
-        assigneeDropdown.style.display = 'none';
-        return;
-      }
-
-      const filtered = this.projectMembers.filter(member =>
-        member.name.toLowerCase().includes(query) ||
-        member.email.toLowerCase().includes(query)
-      );
-
-      if (filtered.length > 0) {
-        assigneeDropdown.innerHTML = filtered.map(member => `
-          <div data-user-id="${member.id}" style="
-            padding: 10px 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background 0.2s;
-          " onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">
-            <div style="
-              width: 24px;
-              height: 24px;
-              border-radius: 50%;
-              background: #f97316;
-              color: white;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 11px;
-              font-weight: 500;
-            ">${member.name.substring(0, 2).toUpperCase()}</div>
-            <span style="font-size: 14px; color: #374151;">${member.name}</span>
-          </div>
-        `).join('');
-        assigneeDropdown.style.display = 'block';
-
-        // Add click handlers
-        assigneeDropdown.querySelectorAll('div[data-user-id]').forEach(item => {
-          item.onclick = () => {
-            const userId = item.dataset.userId;
-            const member = this.projectMembers.find(m => m.id === userId);
-            if (member && !this.selectedAssignees.find(a => a.id === userId)) {
-              this.selectedAssignees.push(member);
-              this.renderSelectedAssignees();
-            }
-            assigneeInput.value = '';
-            assigneeDropdown.style.display = 'none';
-          };
-        });
-      } else {
-        assigneeDropdown.style.display = 'none';
-      }
-    });
-
-    assigneeInput.addEventListener('focus', () => {
-      if (assigneeInput.value && assigneeDropdown.children.length > 0) {
-        assigneeDropdown.style.display = 'block';
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!assigneeInput.contains(e.target) && !assigneeDropdown.contains(e.target)) {
-        assigneeDropdown.style.display = 'none';
-      }
-    });
-
     // Setup buttons
     document.getElementById('bugsnap-close-task').onclick = () => {
       modal.remove();
       this.reset();
     };
 
-    // Change priority select color when option is selected
-    const prioritySelect = document.getElementById('bugsnap-task-priority');
-    prioritySelect.addEventListener('change', (e) => {
-      if (e.target.value === '') {
-        e.target.style.color = '#9ca3af';
-      } else {
-        e.target.style.color = '#374151';
-      }
-    });
-
     document.getElementById('bugsnap-submit-task').onclick = () => {
       const title = document.getElementById('bugsnap-task-title').value;
       const description = document.getElementById('bugsnap-task-description').value;
-      const priority = document.getElementById('bugsnap-task-priority').value;
-
-      this.submitTask(title, description, priority);
+      this.submitTask(title, description);
     };
   }
 
-  async fetchProjectMembers() {
-    try {
-      const result = await browser.storage.local.get(['token']);
-      const token = result.token;
-      const response = await browser.runtime.sendMessage({
-        action: 'fetchProjectMembers',
-        token,
-        projectId: this.project.id
-      });
-      if (response && !response.error) {
-        this.projectMembers = response.members || [];
-      }
-    } catch (error) {
-      // Ignore
-    }
-  }
-
-  renderSelectedAssignees() {
-    const container = document.getElementById('bugsnap-selected-assignees');
-    if (!container) return;
-
-    container.innerHTML = this.selectedAssignees.map(assignee => `
-      <div style="
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        font-size: 13px;
-      ">
-        <div style="
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #f97316;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          font-weight: 500;
-        ">${assignee.name.substring(0, 2).toUpperCase()}</div>
-        <span style="color: #374151;">${assignee.name}</span>
-        <button data-user-id="${assignee.id}" style="
-          background: none;
-          border: none;
-          color: #9ca3af;
-          cursor: pointer;
-          padding: 0;
-          margin-left: 4px;
-          font-size: 16px;
-          line-height: 1;
-        " title="Remove">×</button>
-      </div>
-    `).join('');
-
-    // Add remove handlers
-    container.querySelectorAll('button[data-user-id]').forEach(btn => {
-      btn.onclick = () => {
-        const userId = btn.dataset.userId;
-        this.selectedAssignees = this.selectedAssignees.filter(a => a.id !== userId);
-        this.renderSelectedAssignees();
-      };
-    });
-  }
-
-  async submitTask(title, description, priority) {
+  async submitTask(title, description) {
     const submitBtn = document.getElementById('bugsnap-submit-task');
     submitBtn.textContent = 'Creating...';
     submitBtn.disabled = true;
 
     try {
-      // Get token from browser storage
-      const result = await browser.storage.local.get(['token']);
-      const token = result.token;
-      const rect = this.selectedElement.getBoundingClientRect();
+      // Get token from Chrome storage
+      chrome.storage.local.get(['token'], async (result) => {
+        const token = result.token;
+        const rect = this.selectedElement.getBoundingClientRect();
 
-      // Get annotations from MarkMyImage library
-      const annotations = this.markMyImage ? this.markMyImage.getAnnotations() : [];
+        // Get annotations from MarkMyImage library
+        const annotations = this.markMyImage ? this.markMyImage.getAnnotations() : [];
 
-      const payload = {
-        projectId: this.project.id,
-        title: title || 'Untitled', // User's title, API will prepend task number
-        description: description,
-        url: window.location.href,
-        screenshotUrl: this.screenshot,
-        priority: priority || undefined,
-        assignedToId: this.selectedAssignees.length > 0 ? this.selectedAssignees[0].id : undefined,
-        environmentData: {
-          browser: navigator.userAgent,
-          os: navigator.platform,
-          timestamp: new Date().toISOString(),
-          screenResolution: `${screen.width}x${screen.height}`,
-          viewportSize: `${window.innerWidth}x${window.innerHeight}`,
-          deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : (window.innerWidth <= 1024 ? 'tablet' : 'desktop'),
-          reporterEmail: this.userEmail || undefined,
-          selectedElement: {
-            tagName: this.selectedElement.tagName,
-            innerText: this.selectedElement.innerText?.substring(0, 100),
-            boundingClientRect: {
-              x: rect.left,
-              y: rect.top,
-              width: rect.width,
-              height: rect.height
+        const payload = {
+          projectId: this.project.id,
+          title: title || 'Untitled', // User's title, API will prepend task number
+          description: description,
+          url: window.location.href,
+          screenshotUrl: this.screenshot,
+          environmentData: {
+            browser: navigator.userAgent,
+            os: navigator.platform,
+            timestamp: new Date().toISOString(),
+            screenResolution: `${screen.width}x${screen.height}`,
+            viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : (window.innerWidth <= 1024 ? 'tablet' : 'desktop'),
+            reporterEmail: this.userEmail || undefined,
+            selectedElement: {
+              tagName: this.selectedElement.tagName,
+              innerText: this.selectedElement.innerText?.substring(0, 100),
+              boundingClientRect: {
+                x: rect.left,
+                y: rect.top,
+                width: rect.width,
+                height: rect.height
+              }
             }
+          },
+          annotations: annotations || []
+        };
+
+        // Send message to background script to create task (avoids CORS issues)
+        chrome.runtime.sendMessage({ action: 'createTask', token, payload }, (response) => {
+          if (chrome.runtime.lastError) {
+            alert('Failed to create task: ' + chrome.runtime.lastError.message);
+            submitBtn.textContent = 'Create Task';
+            submitBtn.disabled = false;
+            return;
           }
-        },
-        annotations: annotations || []
-      };
 
-      // Send message to background script to create task (avoids CORS issues)
-      const response = await browser.runtime.sendMessage({ action: 'createTask', token, payload });
-
-      if (response && response.error) {
-        alert('Failed to create task: ' + response.error);
-        submitBtn.textContent = 'Create Task';
-        submitBtn.disabled = false;
-        return;
-      }
-
-      // Upload screen recording as attachment if one was captured
-      if (this.recording && response.task && response.task.id) {
-        submitBtn.textContent = 'Uploading recording...';
-        try {
-          const base64Data = await this.blobToBase64(this.recording);
-          const uploadResponse = await browser.runtime.sendMessage({
-            action: 'uploadRecording',
-            token,
-            issueId: response.task.id,
-            recordingBase64: base64Data,
-          });
-          if (uploadResponse && uploadResponse.error) {
-            console.warn('Recording upload failed:', uploadResponse.error);
+          if (response.error) {
+            alert('Failed to create task: ' + response.error);
+            submitBtn.textContent = 'Create Task';
+            submitBtn.disabled = false;
+            return;
           }
-        } catch (uploadErr) {
-          console.warn('Recording upload failed:', uploadErr);
-        }
-      }
 
-      this.showSuccess();
+          // Upload screen recording as attachment if one was captured
+          if (this.recording && response.task && response.task.id) {
+            submitBtn.textContent = 'Uploading recording...';
+            this.blobToBase64(this.recording).then((base64Data) => {
+              chrome.runtime.sendMessage({
+                action: 'uploadRecording',
+                token,
+                issueId: response.task.id,
+                recordingBase64: base64Data,
+              }, (uploadResponse) => {
+                if (uploadResponse && uploadResponse.error) {
+                  console.warn('Recording upload failed:', uploadResponse.error);
+                }
+                this.showSuccess();
+              });
+            });
+          } else {
+            this.showSuccess();
+          }
+        });
+      });
     } catch (error) {
       alert('Failed to create task: ' + error.message);
       submitBtn.textContent = 'Create Task';
@@ -1201,7 +990,7 @@ class BugSnapUI {
     // Close task form modal
     const taskModal = document.getElementById('bugsnap-task-modal');
     if (taskModal) taskModal.remove();
-
+    
     // Close annotation modal
     const annotationModal = document.getElementById('bugsnap-annotation-modal');
     if (annotationModal) {
@@ -1244,7 +1033,6 @@ class BugSnapUI {
     this.annotations = [];
     this.selectedAnnotationIndex = null;
     this.isTagging = false;
-    this.selectedAssignees = [];
 
     // Clean up recording state
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
