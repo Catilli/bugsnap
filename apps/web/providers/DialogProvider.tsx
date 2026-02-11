@@ -1,6 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+
+const AnnotatedLightbox = lazy(() => import('../components/AnnotatedLightbox'));
 
 interface ConfirmOptions {
   title: string;
@@ -15,6 +17,26 @@ interface LightboxOptions {
   src: string;
   backupSrc?: string | null;
   alt?: string;
+  annotations?: Array<{
+    id?: string;
+    type: string;
+    coordinates: any;
+    content?: string;
+    color?: string;
+  }>;
+  pinData?: {
+    clickX: number;
+    clickY: number;
+    devicePixelRatio: number;
+    viewportWidth: number;
+    viewportHeight: number;
+    url: string;
+    innerText?: string;
+    cssSelector?: string;
+    tagName?: string;
+    boundingClientRect?: { x: number; y: number; width: number; height: number };
+  } | null;
+  annotationCanvasSize?: { width: number; height: number } | null;
 }
 
 interface ConfirmEntry {
@@ -96,23 +118,37 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={dialog.id}
-              className="fixed inset-0 bg-black/90 flex items-center justify-center"
+              className="fixed inset-0 bg-black/90 overflow-auto"
               style={{ zIndex }}
               onClick={() => dismiss(dialog.id, false)}
             >
               <button
-                onClick={() => dismiss(dialog.id, false)}
-                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+                onClick={(e) => { e.stopPropagation(); dismiss(dialog.id, false); }}
+                className="fixed top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                style={{ zIndex: zIndex + 1 }}
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <LightboxImage
-                src={dialog.options.src}
-                backupSrc={dialog.options.backupSrc}
-                alt={dialog.options.alt || 'Screenshot'}
-              />
+              <div className="min-h-full min-w-full flex items-center justify-center p-8">
+                <Suspense fallback={
+                  <LightboxImage
+                    src={dialog.options.src}
+                    backupSrc={dialog.options.backupSrc}
+                    alt={dialog.options.alt || 'Screenshot'}
+                  />
+                }>
+                  <AnnotatedLightbox
+                    src={dialog.options.src}
+                    backupSrc={dialog.options.backupSrc}
+                    alt={dialog.options.alt || 'Screenshot'}
+                    annotations={dialog.options.annotations}
+                    pinData={dialog.options.pinData}
+                    annotationCanvasSize={dialog.options.annotationCanvasSize}
+                  />
+                </Suspense>
+              </div>
             </div>
           );
         }
@@ -184,7 +220,7 @@ function LightboxImage({ src, backupSrc, alt }: { src: string; backupSrc?: strin
     <img
       src={activeSrc}
       alt={alt}
-      className="w-full h-full object-contain"
+      className="max-w-none"
       onClick={(e) => e.stopPropagation()}
       onError={() => {
         if (!useFallback && backupSrc) setUseFallback(true);

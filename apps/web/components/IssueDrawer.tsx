@@ -57,6 +57,7 @@ interface Issue {
     deviceType?: string;
     reporterEmail?: string;
     selectedElement?: any;
+    annotationCanvasSize?: { width: number; height: number } | null;
   };
   annotations?: any[];
   _count: {
@@ -443,7 +444,39 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                 </div>
                 <div
                   className="relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer group h-96"
-                  onClick={() => openLightbox({ src: issue.screenshotUrl!, backupSrc: issue.screenshotBackupUrl, alt: 'Screenshot' })}
+                  onClick={() => {
+                    const env = issue.environmentData;
+                    const sel = env?.selectedElement;
+
+                    // Build pinData from environmentData
+                    let pinData = null;
+                    if (sel && issue.url) {
+                      const vpMatch = env?.viewportSize?.match(/^(\d+)x(\d+)$/);
+                      const vpW = vpMatch ? parseInt(vpMatch[1], 10) : 0;
+                      const vpH = vpMatch ? parseInt(vpMatch[2], 10) : 0;
+                      pinData = {
+                        clickX: sel.clickX ?? null,
+                        clickY: sel.clickY ?? null,
+                        devicePixelRatio: sel.devicePixelRatio ?? 1,
+                        viewportWidth: vpW,
+                        viewportHeight: vpH,
+                        url: issue.url,
+                        innerText: sel.innerText,
+                        cssSelector: sel.cssSelector,
+                        tagName: sel.tagName,
+                        boundingClientRect: sel.boundingClientRect,
+                      };
+                    }
+
+                    openLightbox({
+                      src: issue.screenshotUrl!,
+                      backupSrc: issue.screenshotBackupUrl,
+                      alt: 'Screenshot',
+                      annotations: issue.annotations,
+                      pinData,
+                      annotationCanvasSize: env?.annotationCanvasSize ?? null,
+                    });
+                  }}
                 >
                   <ScreenshotImage
                     src={issue.screenshotUrl}

@@ -73,13 +73,51 @@ class BugSnapUI {
     this.hoveredElement.style.outlineOffset = '2px';
   }
 
+  getCssSelector(el) {
+    if (!el || el === document.body || el === document.documentElement) return 'body';
+    if (el.id) return '#' + CSS.escape(el.id);
+
+    const parts = [];
+    let current = el;
+    while (current && current !== document.body && current !== document.documentElement) {
+      if (current.id) {
+        parts.unshift('#' + CSS.escape(current.id));
+        break;
+      }
+      let tag = current.tagName.toLowerCase();
+      // Add classes, filtering out bugsnap-injected ones
+      const classes = Array.from(current.classList || [])
+        .filter(c => !c.startsWith('bugsnap'))
+        .map(c => '.' + CSS.escape(c))
+        .join('');
+      // nth-of-type for uniqueness among siblings
+      const parent = current.parentElement;
+      if (parent) {
+        const siblings = Array.from(parent.children).filter(s => s.tagName === current.tagName);
+        if (siblings.length > 1) {
+          const index = siblings.indexOf(current) + 1;
+          tag += classes + ':nth-of-type(' + index + ')';
+        } else {
+          tag += classes;
+        }
+      } else {
+        tag += classes;
+      }
+      parts.unshift(tag);
+      current = current.parentElement;
+    }
+    return parts.join(' > ');
+  }
+
   handleElementTag(e) {
     if (!this.isTagging) return;
-    
+
     e.preventDefault();
     e.stopPropagation();
 
     this.selectedElement = e.target;
+    this.clickX = e.clientX;
+    this.clickY = e.clientY;
     this.isTagging = false;
     document.body.style.cursor = 'default';
     
@@ -914,6 +952,12 @@ class BugSnapUI {
         // Get annotations from MarkMyImage library
         const annotations = this.markMyImage ? this.markMyImage.getAnnotations() : [];
 
+        // Capture annotation canvas size for coordinate scaling in the frontend
+        const screenshotImg = document.getElementById('bugsnap-screenshot');
+        const annotationCanvasSize = screenshotImg
+          ? { width: screenshotImg.clientWidth, height: screenshotImg.clientHeight }
+          : null;
+
         const payload = {
           projectId: this.project.id,
           title: title || 'Untitled', // User's title, API will prepend task number
@@ -928,9 +972,14 @@ class BugSnapUI {
             viewportSize: `${window.innerWidth}x${window.innerHeight}`,
             deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : (window.innerWidth <= 1024 ? 'tablet' : 'desktop'),
             reporterEmail: this.userEmail || undefined,
+            annotationCanvasSize: annotationCanvasSize,
             selectedElement: {
               tagName: this.selectedElement.tagName,
               innerText: this.selectedElement.innerText?.substring(0, 100),
+              cssSelector: this.getCssSelector(this.selectedElement),
+              clickX: this.clickX,
+              clickY: this.clickY,
+              devicePixelRatio: window.devicePixelRatio || 1,
               boundingClientRect: {
                 x: rect.left,
                 y: rect.top,

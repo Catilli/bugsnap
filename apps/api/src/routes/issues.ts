@@ -435,6 +435,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
               email: true,
             },
           },
+          annotations: true,
           comments: {
             include: {
               user: {
