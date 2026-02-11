@@ -30,7 +30,6 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  handleOAuthCallback: (token: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -77,22 +76,6 @@ export const useAuthStore = create<AuthState>()(
 
           if (isBrowser) localStorage.setItem('token', token);
           set({ user, token, isAuthenticated: true, isLoading: false });
-
-          ExtensionSync.syncTokenToExtension(token);
-          ExtensionSync.setUserEmail(user.email);
-        } catch (error) {
-          set({ isLoading: false });
-          throw error;
-        }
-      },
-
-      handleOAuthCallback: async (token: string) => {
-        if (isBrowser) localStorage.setItem('token', token);
-        set({ token, isAuthenticated: true, isLoading: true });
-        try {
-          const response = await api.get('/api/auth/me');
-          const user = response.data;
-          set({ user, isAuthenticated: true, isLoading: false });
 
           ExtensionSync.syncTokenToExtension(token);
           ExtensionSync.setUserEmail(user.email);

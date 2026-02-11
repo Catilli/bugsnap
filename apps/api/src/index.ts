@@ -14,7 +14,6 @@ initSentry();
 import { errorHandler } from './plugins/errorHandler';
 import { authPlugin } from './plugins/auth';
 import { authRoutes } from './routes/auth';
-import { oauthRoutes } from './routes/oauth';
 import { projectMemberRoutes } from './routes/projectMembers';
 import { projectRoutes } from './routes/projects';
 import { issueRoutes } from './routes/issues';
@@ -143,7 +142,6 @@ fastify.get('/api', async () => {
 
 // Register route modules
 fastify.register(authRoutes, { prefix: '/api/auth' });
-fastify.register(oauthRoutes, { prefix: '/api/auth' });
 fastify.register(projectMemberRoutes, { prefix: '/api' }); // Register this first for /projects endpoint
 fastify.register(projectRoutes, { prefix: '/api' });
 fastify.register(issueRoutes, { prefix: '/api' });

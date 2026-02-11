@@ -46,7 +46,7 @@ export class AuthService {
     }
 
     if (!user.password) {
-      throw new UnauthorizedError('This account uses social login. Please sign in with Google or GitHub.');
+      throw new UnauthorizedError('This account was created without a password. Please use the forgot password flow to set one.');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -178,39 +178,6 @@ export class AuthService {
     ]);
   }
 
-  async findOrCreateOAuthUser(provider: string, oauthId: string, email: string, name: string) {
-    let user = await prisma.user.findFirst({
-      where: { oauthProvider: provider, oauthId },
-      select: { id: true, email: true, name: true, role: true },
-    });
-
-    if (user) return user;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      user = await prisma.user.update({
-        where: { id: existingUser.id },
-        data: { oauthProvider: provider, oauthId },
-        select: { id: true, email: true, name: true, role: true },
-      });
-      return user;
-    }
-
-    user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        oauthProvider: provider,
-        oauthId,
-      },
-      select: { id: true, email: true, name: true, role: true },
-    });
-
-    return user;
-  }
 }
 
 export const authService = new AuthService();

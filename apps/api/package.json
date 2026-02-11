@@ -19,7 +19,6 @@
     "@fastify/cors": "^10.1.0",
     "@fastify/jwt": "^9.0.0",
     "@fastify/multipart": "^9.4.0",
-    "@fastify/oauth2": "^8.0.0",
     "@fastify/rate-limit": "^10.3.0",
     "@prisma/client": "^5.8.1",
     "@sentry/node": "^10.38.0",
