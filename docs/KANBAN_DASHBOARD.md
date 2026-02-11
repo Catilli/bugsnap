@@ -101,7 +101,7 @@ The view maintains historical context from previous QA cycles while enabling hig
 | Field | Value |
 |-------|-------|
 | **Feedback Item** | Feature #53 – *Real-time updates for annotations and issue status in Kanban* |
-| **Status** | Planned |
+| **Status** | **Implemented** |
 
 **Description**
 
@@ -109,9 +109,9 @@ Changes to annotations or issue status are reflected in the Kanban board in real
 
 **Key Implementation Notes**
 
-- BugSnap already has an SSE (Server-Sent Events) infrastructure for real-time updates.
-- Extend existing SSE channels (or add a new `/api/sse/kanban` endpoint) to push issue status changes and annotation updates.
-- Fallback: polling every N seconds if SSE is not available in the client environment.
+- SSE infrastructure pushes issue, feedback, and QA cycle events via `apps/api/src/lib/eventBus.ts` and `apps/api/src/routes/events.ts`.
+- All team members see the latest state without manual page refreshes.
+- Fallback: manual refresh always available as baseline.
 
 ---
 
@@ -120,7 +120,7 @@ Changes to annotations or issue status are reflected in the Kanban board in real
 | Field | Value |
 |-------|-------|
 | **Feedback Item** | Feature #54 – *QA cycle management and advanced filters (priority, assignee, page, tag)* |
-| **Status** | Planned |
+| **Status** | **Implemented** |
 
 **Description**
 
@@ -135,9 +135,10 @@ QA cycles are first-class entities that can be created, named, and closed.
 
 **Key Implementation Notes**
 
-- New Prisma model (e.g. `QaCycle`) with fields: `id`, `name`, `projectId`, `status` (active/closed), `createdAt`, `closedAt`.
-- Join table or foreign key on `Issue` linking issues to a cycle.
-- Filter UI extends the existing `FilterBar` component; tag-based filtering may require a new `Tag` model or a JSON array field on `Issue`.
+- `QACycle` model with fields: `id`, `name`, `projectId`, `status` (active/closed), `createdAt`, `closedAt` — `apps/api/prisma/schema.prisma`.
+- `QACycleIssue` join table linking issues to cycles — `apps/api/prisma/schema.prisma`.
+- Full CRUD at `apps/api/src/routes/qaCycles.ts` with add/remove issue endpoints.
+- SSE events for QA cycle changes via `apps/api/src/lib/eventBus.ts`.
 
 ---
 
@@ -210,7 +211,9 @@ Track incremental progress here. Update this table as features are built.
 | Date | What Was Implemented | Related Feedback Items | Key Code Locations |
 |------|---------------------|----------------------|-------------------|
 | 2026-02-10 | Created feedback items and audit document | Feature #50, #51, #52, #53, #54 | `apps/api/prisma/seed.ts`, `docs/Kanban Bug Dashboard & Reporting.md` |
+| 2026-02-12 | QACycle model + full CRUD routes | Feature #54 | `apps/api/prisma/schema.prisma`, `apps/api/src/routes/qaCycles.ts` |
+| 2026-02-12 | SSE events for QA cycles and real-time updates | Feature #53 | `apps/api/src/lib/eventBus.ts`, `apps/api/src/routes/events.ts` |
 
 ---
 
-*Last updated: 2026-02-10*
+*Last updated: 2026-02-12*

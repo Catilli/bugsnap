@@ -1,7 +1,7 @@
 # BugSnap - Technical Architecture Audit
 
-**Version:** 0.8.0
-**Audit Date:** 2026-02-11
+**Version:** 0.9.0
+**Audit Date:** 2026-02-12
 **Repository:** Turborepo monorepo with npm workspaces
 
 ---
@@ -11,23 +11,25 @@
 ```
 bugsnap/
 ├── apps/
-│   ├── web/          # Next.js 16.x frontend (Vercel)
-│   └── api/          # Fastify 5.x backend (Render/Docker)
+│   ├── web/              # Next.js 16.x frontend (Vercel)
+│   └── api/              # Fastify 5.x backend (Render/Docker)
 ├── packages/
-│   └── shared/       # Shared TypeScript package (@bugsnap/shared)
-├── extension/        # Chrome extension (Manifest V3)
-├── Dockerfile        # Multi-stage Docker build for API
-├── render.yaml       # Render deployment config
-├── turbo.json        # Turborepo pipeline config
-└── package.json      # Root workspace config (npm workspaces)
+│   └── shared/           # Shared TypeScript package (@bugsnap/shared)
+├── extension/            # Chrome extension (Manifest V3)
+├── extension-firefox/    # Firefox extension (Manifest V2)
+├── extension-safari/     # Safari extension (Manifest V3)
+├── Dockerfile            # Multi-stage Docker build for API
+├── render.yaml           # Render deployment config
+├── turbo.json            # Turborepo pipeline config
+└── package.json          # Root workspace config (npm workspaces)
 ```
 
 **Data Flow:**
 ```
-Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.js Dashboard
-   (any website)                    │                         │
-                              PostgreSQL DB            Vercel Hosting
-                             (Prisma ORM)
+Browser Extensions  ──capture──>  Fastify API  <──manage──  Next.js Dashboard
+(Chrome/Firefox/Safari)               │                         │
+                                 PostgreSQL DB            Vercel Hosting
+                                (Prisma ORM)
 ```
 
 ---
@@ -45,7 +47,8 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Annotation Layer | Implemented | Custom HTML5 Canvas 2D implementation (rectangle, arrow, pen, text, cursor tools) — `extension/mark-my-image.js` |
 | Overlay / Bug Capture UI | Implemented | Injected via extension content scripts — `extension/bugsnap-ui.js`, `extension/content.js` |
 | Firefox Extension | Implemented | MV2 manifest with `browser.*` Promise-based API — `extension-firefox/manifest.json` |
-| Safari Extension | Not Implemented | No Xcode project or Safari extension wrapper |
+| Safari Extension | Implemented | MV3 manifest with screenshot capture — `extension-safari/manifest.json` |
+| Screen Recording | Implemented | `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions |
 
 ### Backend
 
@@ -53,15 +56,15 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 |-----------|--------|---------|
 | API Framework | Implemented | Fastify 5.7.4 with TypeScript — `apps/api/src/index.ts` |
 | JWT Authentication | Implemented | `@fastify/jwt` 9.1, 7-day tokens, bcrypt password hashing, startup validation of `JWT_SECRET`. Auth plugin wrapped with `fastify-plugin` (fp) to break encapsulation — `apps/api/src/plugins/auth.ts`, `apps/api/src/routes/auth.ts`, `apps/api/src/index.ts` |
-| Auth Service | Implemented | Full auth service: register, login, password change, password reset (crypto token + SHA-256 hash, 1h TTL), OAuth user linking — `apps/api/src/services/authService.ts` |
-| Email Service | Implemented | Resend SDK with lazy initialization, branded HTML password reset emails — `apps/api/src/services/emailService.ts` |
-| API Routes | Implemented | 9 route modules: auth, oauth, projects, projectMembers, issues, comments, feedback, uploads, users — `apps/api/src/routes/` |
+| Auth Service | Implemented | Full auth service: register, login, password change, password reset (crypto token + SHA-256 hash, 1h TTL) — `apps/api/src/services/authService.ts` |
+| Email Service | ~~Implemented~~ | **REMOVED** in v0.9.0 — admin creates users with password directly. Resend SDK removed. |
+| API Routes | Implemented | 13 route modules: auth, projects, projectMembers, issues, comments, feedback, uploads, users, admin, events, notifications, share, qaCycles — `apps/api/src/routes/` |
 | CORS Configuration | Implemented | Explicit `ALLOWED_ORIGINS` env-based allowlist + chrome-extension + localhost (dev only) — `apps/api/src/index.ts:35-59` |
 | Error Handling | Implemented | Custom Fastify error handler plugin — `apps/api/src/plugins/errorHandler.ts` |
 | Input Validation | Implemented | Zod 3.22 for request validation — `apps/api/package.json` |
 | File Upload Support | Implemented | `@fastify/multipart` (10MB limit) + Cloudinary upload route — `apps/api/src/routes/uploads.ts`, `apps/api/src/lib/cloudinary.ts` |
 | Health Check | Implemented | `/health` endpoint with database connectivity check — `apps/api/src/index.ts:81-89` |
-| OAuth (Google/GitHub) | Implemented | `@fastify/oauth2` — Google Discovery + GitHub config, `findOrCreateOAuthUser`, conditionally registered based on env vars — `apps/api/src/routes/oauth.ts` |
+| OAuth (Google/GitHub) | ~~Implemented~~ | **REMOVED** in v0.9.0 — simplified to email/password only. `@fastify/oauth2` and `apps/api/src/routes/oauth.ts` removed. |
 | Real-time (SSE) | Implemented | Server-Sent Events with EventEmitter pub/sub — `apps/api/src/routes/events.ts`, `apps/api/src/lib/eventBus.ts` |
 | Background Jobs (Queues) | Implemented | BullMQ with email, screenshot, cleanup queues — `apps/api/src/lib/queue.ts` |
 | Rate Limiting | Implemented | `@fastify/rate-limit` — global 100 req/min, auth routes 10 req/min — `apps/api/src/index.ts:61-65`, `apps/api/src/routes/auth.ts:7-14` |
@@ -72,10 +75,11 @@ Chrome Extension  ──capture──>  Fastify API  <──manage──  Next.j
 | Component | Status | Details |
 |-----------|--------|---------|
 | PostgreSQL | Implemented | Prisma 5.8.1 ORM — `apps/api/prisma/schema.prisma` |
-| Schema Models | Implemented | 10 models: User, Project, ProjectMember, Issue, Annotation, Comment, Feedback, FeedbackComment, PasswordResetToken + enums (UserRole, IssueType, FeedbackType, FeedbackStatus) |
+| Schema Models | Implemented | 16 models: User, Project, ProjectMember, Issue, Annotation, Comment, Feedback, ShareToken, Attachment, Notification, ActivityLog, QACycle, QACycleIssue, PasswordResetToken + enums (UserRole, IssueType, FeedbackType, FeedbackStatus) |
 | Migrations | Implemented | 15 migrations applied — `apps/api/prisma/migrations/` |
 | Database Indexes | Implemented | Indexes on foreign keys and frequently queried fields (status, priority, type) |
 | File Storage (Cloudinary) | Implemented | Cloudinary SDK integration with `POST /api/uploads` route — `apps/api/src/lib/cloudinary.ts`, `apps/api/src/routes/uploads.ts` |
+| File Storage (Cloudflare R2) | Implemented | Secondary screenshot backup storage via S3-compatible API — `apps/api/src/lib/r2.ts` |
 | Redis Caching | Implemented | ioredis with get-or-compute pattern + SCAN-based invalidation — `apps/api/src/lib/redis.ts` |
 | Database Backups | Implemented | pg_dump with gzip compression, 30-day retention — `scripts/backup-db.sh`, `scripts/restore-db.sh` |
 
@@ -117,11 +121,11 @@ The core product loop is functional:
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| ~~OAuth login (Google/GitHub)~~ | ~~High~~ | **DONE** — `@fastify/oauth2` with Google/GitHub, `findOrCreateOAuthUser` |
+| ~~OAuth login (Google/GitHub)~~ | ~~High~~ | **DONE** then **REMOVED** in v0.9.0 — simplified to email/password only |
 | ~~File upload (Cloudinary/S3)~~ | ~~High~~ | **DONE** — Cloudinary upload route at `POST /api/uploads` |
 | ~~CI/CD pipeline~~ | ~~High~~ | **DONE** — GitHub Actions: lint, type-check, test, build |
 | ~~Firefox extension~~ | ~~Medium~~ | **DONE** — MV2 manifest with `browser.*` API in `extension-firefox/` |
-| Safari extension | Medium | Requires macOS/Xcode — skipped |
+| ~~Safari extension~~ | ~~Medium~~ | **DONE** — MV3 manifest in `extension-safari/` |
 | ~~Real-time updates (SSE)~~ | ~~Medium~~ | **DONE** — SSE endpoint + EventEmitter pub/sub |
 | ~~Rate limiting~~ | ~~Medium~~ | **DONE** — `@fastify/rate-limit` (100/min global, 10/min auth) |
 | ~~Error tracking (Sentry)~~ | ~~Medium~~ | **DONE** — `@sentry/node` (API) + `@sentry/nextjs` (web) |
@@ -139,21 +143,21 @@ The core product loop is functional:
 1. ~~**No rate limiting**~~ — **RESOLVED:** `@fastify/rate-limit` with 100 req/min global, 10 req/min on auth routes
 2. ~~**Hardcoded JWT fallback**~~ — **RESOLVED:** Startup fails if `JWT_SECRET` is unset
 3. ~~**CORS allows all origins**~~ — **RESOLVED:** Explicit `ALLOWED_ORIGINS` env-based allowlist
-4. **No CSRF protection** — JWT-only auth without CSRF tokens
-5. **No input sanitization beyond Zod** — Zod validates structure but not XSS content
+4. ~~**No CSRF protection**~~ — **Not Applicable:** App uses `localStorage` + `Authorization: Bearer` headers (not cookies). CSRF attacks exploit auto-attached cookies, so this architecture is inherently CSRF-resistant.
+5. ~~**No input sanitization beyond Zod**~~ — **RESOLVED:** `sanitize-html` on API write path (v0.7.0)
 
 ### Reliability
 
 1. ~~**No CI/CD**~~ — **RESOLVED:** GitHub Actions CI pipeline (lint, type-check, test, build) on push/PR
 2. ~~**No monitoring**~~ — **RESOLVED:** Sentry error tracking for both API and frontend
-3. **No health check alerting** — `/health` endpoint exists but nothing monitors it
+3. ~~**No health check alerting**~~ — **RESOLVED:** Health monitoring implemented (`healthMonitor.start()` in `apps/api/src/index.ts`)
 4. **Free-tier hosting** — Render free tier has cold start delays and limited resources
 
 ### Data
 
 1. ~~**No file storage integration**~~ — **RESOLVED:** Cloudinary SDK integration with upload route (`POST /api/uploads`)
 2. ~~**No database backup strategy**~~ — **RESOLVED:** pg_dump scripts with gzip compression and 30-day retention (`scripts/backup-db.sh`, `scripts/restore-db.sh`)
-3. **Screenshots stored as URLs only** — If external sources go down, screenshot data is lost
+3. ~~**Screenshots stored as URLs only**~~ — **RESOLVED:** Cloudflare R2 backup storage for screenshots (`apps/api/src/lib/r2.ts`)
 
 ---
 
@@ -174,7 +178,7 @@ The core product loop is functional:
 | # | Action | Rationale |
 |---|--------|-----------|
 | 6 | ~~**Add error tracking**~~ | **DONE** — `@sentry/node` + `@sentry/nextjs` |
-| 7 | ~~**Add OAuth login**~~ | **DONE** — Google/GitHub via `@fastify/oauth2` |
+| 7 | ~~**Add OAuth login**~~ | **DONE** then **REMOVED** in v0.9.0 — simplified to email/password only |
 | 8 | ~~**Add SSE support**~~ | **DONE** — SSE endpoint + EventEmitter pub/sub |
 | 9 | ~~**Port extension to Firefox**~~ | **DONE** — MV2 with `browser.*` API |
 | 10 | ~~**Add automated tests**~~ | **DONE** — Vitest with 25 API unit tests |
@@ -190,7 +194,7 @@ The core product loop is functional:
 | 15 | ~~**Add environment separation**~~ | **DONE** — Staging env configs + CI deploy workflow |
 | 16 | **Upgrade to paid hosting tier** | Eliminates cold starts, improves reliability |
 | 17 | **Custom domain setup** | More professional URLs for production |
-| 18 | **Safari extension** | Smallest browser market share among targets |
+| 18 | ~~**Safari extension**~~ | **DONE** — MV3 manifest in `extension-safari/` |
 
 ---
 
@@ -203,10 +207,9 @@ The core product loop is functional:
 | `apps/web/vercel.json` | Vercel build configuration |
 | `apps/api/package.json` | Backend dependencies and scripts |
 | `apps/api/src/index.ts` | Fastify server entry point |
-| `apps/api/src/routes/` | API route modules (auth, oauth, projects, issues, comments, feedback, members, uploads, users) |
+| `apps/api/src/routes/` | API route modules (auth, projects, issues, comments, feedback, members, uploads, users, admin, events, notifications, share, qaCycles) |
 | `apps/api/src/plugins/` | Fastify plugins (auth with fastify-plugin, errorHandler) |
-| `apps/api/src/services/authService.ts` | Auth service (register, login, password reset, OAuth) |
-| `apps/api/src/services/emailService.ts` | Resend email service (password reset emails) |
+| `apps/api/src/services/authService.ts` | Auth service (register, login, password reset) |
 | `apps/web/store/authStore.ts` | Zustand auth state with persist middleware |
 | `apps/web/lib/clerkTokenBridge.ts` | Auth token bridge (`getAuthToken()` from localStorage) |
 | `apps/web/lib/useRole.ts` | Global role hook (`hasRole`, `isAdmin`, `isViewer`) |
@@ -224,8 +227,12 @@ The core product loop is functional:
 | `extension/background.js` | Extension service worker |
 | `extension-firefox/manifest.json` | Firefox extension MV2 config |
 | `extension-firefox/bugsnap-ui.js` | Firefox extension overlay UI (browser.* API) |
+| `extension-safari/manifest.json` | Safari extension MV3 config |
+| `extension-safari/bugsnap-ui.js` | Safari extension overlay UI |
 | `apps/api/src/lib/sentry.ts` | Sentry SDK initialization |
-| `apps/api/src/routes/oauth.ts` | OAuth2 login routes (Google/GitHub) |
+| `apps/api/src/routes/qaCycles.ts` | QA Cycle CRUD routes |
+| `apps/api/src/routes/share.ts` | Shareable link routes |
+| `apps/api/src/routes/notifications.ts` | Notification routes |
 | `apps/api/src/lib/eventBus.ts` | SSE event emitter pub/sub |
 | `apps/api/src/routes/events.ts` | SSE endpoint for live updates |
 | `apps/api/vitest.config.ts` | Vitest test configuration |
@@ -250,23 +257,23 @@ The core product loop is functional:
 
 ### Checklist
 
-- [ ] **XSS Input Sanitization** — Zod validates request *structure* but does not sanitize HTML/script content in user-supplied strings (issue titles, comments, feedback descriptions). React's JSX auto-escaping protects the dashboard (no unsafe innerHTML usage found), but raw strings are stored in the DB — any non-React consumer (email templates, extension, third-party API clients) would be vulnerable. Adding `sanitize-html` on the API write path provides defense-in-depth. *Related:* [Identified Gaps > Security #5](#security), `apps/api/src/routes/issues.ts`, `apps/api/src/routes/feedback.ts`, `apps/api/src/routes/comments.ts`, `apps/web/components/CommentSection.tsx`. *Constraint:* Must not break legitimate content; keep allow-list minimal.
+- [x] **XSS Input Sanitization** — **RESOLVED** in v0.7.0. `sanitize-html` added on API write path for issue titles, comments, feedback descriptions. See `SECURITY_INPUT_SANITIZATION.md`.
 
-- [ ] **Health Check Alerting** — The `/health` endpoint exists (`apps/api/src/index.ts:81-89`) but nothing monitors it. An external uptime monitor (e.g., UptimeRobot, Render native health checks, or a GitHub Actions cron) should ping `/health` and alert on failure. *Related:* [Identified Gaps > Reliability #3](#reliability), `apps/api/src/index.ts`. *Constraint:* Free-tier compatible; should cover both API and DB connectivity.
+- [x] **Health Check Alerting** — **RESOLVED.** `healthMonitor.start()` implemented in `apps/api/src/index.ts`.
 
-- [ ] **Screenshot Durability** — Screenshots are stored as external URLs (`screenshotUrl String?` in Prisma schema). If the source (e.g., a data URL or third-party host) goes down, the image is lost. Screenshots should be uploaded to Cloudinary (already integrated) and the returned URL persisted. *Related:* [Identified Gaps > Data #3](#data), `apps/api/prisma/schema.prisma:107`, `apps/api/src/routes/issues.ts:180`, `apps/api/src/lib/cloudinary.ts`. *Constraint:* Cloudinary free tier has 25 GB storage / 25 GB bandwidth monthly.
+- [x] **Screenshot Durability** — **RESOLVED.** Cloudflare R2 backup storage for screenshots (`apps/api/src/lib/r2.ts`). S3-compatible API with configurable bucket.
 
 - [ ] **Custom Domain Configuration** — Both frontend and backend use platform default subdomains (`bugsnap-web-dun.vercel.app`, `bugsnap-xgfd.onrender.com`). Custom domains improve branding, trust, and cookie scoping. *Related:* [Infrastructure & DevOps table](#infrastructure--devops), `apps/web/vercel.json`, `render.yaml`. *Constraint:* Requires DNS access and TLS cert provisioning (auto on both platforms).
 
 - [ ] **Paid Hosting Tier** — Render free tier has cold-start delays (~30s) and limited resources (512 MB RAM, shared CPU). Upgrade eliminates cold starts and enables persistent Redis/BullMQ connections. *Related:* [Identified Gaps > Reliability #4](#reliability), [Recommended Next Steps #16](#low-priority). *Constraint:* Render Starter is $7/mo; evaluate actual traffic before committing.
 
-- [ ] **Safari Extension** — No Xcode project or Safari Web Extension wrapper exists. Requires macOS + Xcode. Chrome extension code can be adapted via Safari's Web Extension converter tool. *Related:* [Frontend table](#frontend), [Phase 2 table](#phase-2--not-yet-built), [Recommended Next Steps #18](#low-priority-1). *Constraint:* macOS-only build; smallest browser market share among targets.
+- [x] **Safari Extension** — **RESOLVED.** MV3 manifest in `extension-safari/` with screenshot capture support.
 
 - [ ] **Expand Test Coverage** — Only 1 test file exists (`apps/api/src/__tests__/projects.test.ts`) with 12 test cases covering project CRUD. Auth routes, OAuth, comments, feedback, issues, uploads, and middleware have zero test coverage. *Related:* [Infrastructure & DevOps table](#infrastructure--devops), `apps/api/vitest.config.ts`. *Note:* Doc inconsistency — lines referencing "25 tests" should read "12 tests" (actual count).
 
 ### Needs Clarification
 
-- [ ] **CSRF Protection** — The doc lists "No CSRF protection" as a security gap ([Identified Gaps > Security #4](#security)), but the app uses `localStorage` + `Authorization: Bearer` headers — not cookies. CSRF attacks exploit auto-attached cookies, so this architecture is **inherently CSRF-resistant**. *Action:* Verify the Chrome/Firefox extensions also use `Authorization` headers (not cookies), then either close this gap as "Not Applicable" or document the rationale in the Security section.
+- [x] **CSRF Protection** — **Not Applicable.** The app uses `localStorage` + `Authorization: Bearer` headers (not cookies). CSRF attacks exploit auto-attached cookies, so this architecture is inherently CSRF-resistant. All extensions also use `Authorization` headers.
 
 ### Suggested Next Steps
 
@@ -274,15 +281,15 @@ The core product loop is functional:
 
 | # | TODO | Why |
 |---|------|-----|
-| 1 | **XSS Input Sanitization** | OWASP Top 10 risk. Although React auto-escapes on the dashboard, raw strings in the DB are a stored-XSS vector for any non-React consumer (emails, extension, future API clients). Low effort with `sanitize-html` on the API write path. |
-| 2 | **Screenshot Durability** | Data loss risk. Cloudinary integration already exists — this is mostly wiring screenshot capture through the existing upload route. Medium effort. |
-| 3 | **Expand Test Coverage** | Auth, issues, feedback, and comments are untested. Regressions ship silently. Start with auth routes (highest blast radius). Medium effort. |
+| 1 | ~~**XSS Input Sanitization**~~ | **RESOLVED** in v0.7.0 — `sanitize-html` on API write path. |
+| 2 | ~~**Screenshot Durability**~~ | **RESOLVED** — Cloudflare R2 backup storage. |
+| 3 | **Expand Test Coverage** | Auth, issues, feedback, and comments are undertested. Regressions ship silently. Start with auth routes (highest blast radius). Medium effort. |
 
 #### Medium Priority (reliability & operations)
 
 | # | TODO | Why |
 |---|------|-----|
-| 4 | **Health Check Alerting** | The endpoint exists but nobody's watching. A free UptimeRobot monitor takes 5 minutes to set up. Trivial effort. |
+| 4 | ~~**Health Check Alerting**~~ | **RESOLVED** — `healthMonitor.start()` implemented. |
 | 5 | **Custom Domain** | Improves user trust and enables proper cookie scoping if auth ever moves to httpOnly cookies. Low effort (DNS + platform config). |
 
 #### Low Priority (nice-to-have)
@@ -290,10 +297,10 @@ The core product loop is functional:
 | # | TODO | Why |
 |---|------|-----|
 | 6 | **Paid Hosting Tier** | Cold starts hurt DX/UX but aren't critical until real user traffic. Evaluate after traffic baseline. |
-| 7 | **Safari Extension** | Smallest desktop browser share. Requires macOS toolchain. Defer unless user demand appears. |
+| 7 | ~~**Safari Extension**~~ | **RESOLVED** — MV3 manifest in `extension-safari/`. |
 
 #### Cross-Cutting Concerns
 
-- **Security** spans item #1 (XSS) and the CSRF clarification. Consider a security-focused pass: sanitization + CSP headers + review of all rendering contexts.
-- **Observability** spans items #3 (tests) and #4 (alerting). Expanding tests and adding uptime monitoring together gives a much stronger safety net.
-- **Data resilience** spans item #2 (screenshots) and the existing backup scripts. Ensuring screenshots go through Cloudinary completes the data durability story.
+- **Security** — XSS sanitization resolved (v0.7.0). CSRF not applicable (Bearer token auth). Consider CSP headers + review of all rendering contexts.
+- **Observability** spans item #3 (tests). Expanding tests gives a stronger safety net.
+- **Data resilience** — Screenshot durability resolved with Cloudflare R2 backup. Database backups via pg_dump scripts.

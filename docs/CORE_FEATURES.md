@@ -1,8 +1,8 @@
 # BugSnap — Core Features Audit
 
-> **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-11
+> **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-12
 > **Scope:** Read-only codebase analysis — no code changes
-> **Commit:** `692eaae` (original) | `5df8ed3` (latest update)
+> **Commit:** `692eaae` (original) | `aa8c079` (latest update)
 >
 > *Items resolved since the original audit are marked with ~~strikethrough~~ and **RESOLVED**.*
 
@@ -12,12 +12,12 @@
 
 | Status | Count | Meaning |
 |--------|-------|---------|
-| ✅ Implemented | 43 | Feature is fully functional |
+| ✅ Implemented | 45 | Feature is fully functional |
 | 🟡 Partial | 0 | Feature exists but has gaps |
-| ❌ Not Implemented | 3 | Feature is missing entirely |
+| ❌ Not Implemented | 1 | Feature is missing entirely |
 | **Total** | **46** | |
 
-**Completion rate:** 93% fully implemented, 0% partial, 7% missing.
+**Completion rate:** ~98% fully implemented, 0% partial, 2% missing.
 
 ---
 
@@ -28,7 +28,7 @@
 | Click-to-report on live websites | ✅ Implemented | `extension/bugsnap-ui.js:23-51` — `startTagging()` adds overlay, crosshair cursor, click handler. Element selected via `handleElementTag()` |
 | Pin-based issue placement | ✅ Implemented | `extension/bugsnap-ui.js` — `addPinMarker()` renders persistent red pin at element position after selection. **RESOLVED** — pin markers added |
 | Automatic screenshot capture | ✅ Implemented | `extension/background.js:127` — `chrome.tabs.captureVisibleTab(null, {format:'png'})`. Firefox equivalent at `extension-firefox/background.js:24` |
-| Screen recording | ❌ Not implemented | No `MediaRecorder`, `getDisplayMedia`, or any recording API in codebase |
+| Screen recording | ✅ Implemented | `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions. **RESOLVED** in v0.9.0 |
 
 ---
 
@@ -70,12 +70,12 @@
 |---------|--------|----------|
 | Issue title | ✅ Implemented | `apps/api/prisma/schema.prisma` — `Issue.title String` |
 | Detailed description | ✅ Implemented | `apps/api/prisma/schema.prisma` — `Issue.description String @db.Text` |
-| Priority level | ✅ Implemented | `apps/api/prisma/schema.prisma` — Enum: low, medium, high, critical |
-| Severity (separate field) | ✅ Implemented | `apps/api/prisma/schema.prisma` — `Issue.severity String?` (low/medium/high/critical). API + frontend `IssueDrawer.tsx` severity dropdown. **RESOLVED** |
+| Priority level | ✅ Implemented | `apps/api/prisma/schema.prisma` — Enum: low, medium, high, critical. **Note:** Priority was **removed from issues** in v0.9.0 (still exists on feedback). |
+| Severity (separate field) | ✅ Implemented | `apps/api/prisma/schema.prisma` — `Issue.severity String?`. **Note:** Severity was **removed from issues** in v0.9.0. |
 | Status tracking | ✅ Implemented | Values: `open, in_progress, qa, resolved, closed`. QA column added to Kanban board. **RESOLVED** — QA status added |
 | Assigned owner | ✅ Implemented | `assignedToId` optional FK to User |
 | Screenshot attachments | ✅ Implemented | `screenshotUrl String?`. Upload route at `routes/uploads.ts` (PNG/JPEG/WebP) |
-| Video/recording attachments | ❌ Not implemented | Upload route rejects non-image types; no video support |
+| Video/recording attachments | ✅ Implemented | Screen recordings uploaded as attachments via extension. **RESOLVED** in v0.9.0 |
 | Generic file attachments | ✅ Implemented | `Attachment` model with `fileName`, `fileUrl`, `fileType`, `fileSize`. Upload routes at `routes/uploads.ts`. Drag-and-drop UI in `IssueDrawer.tsx` and `FeedbackDrawer.tsx`. **RESOLVED** |
 | Embedded technical metadata | ✅ Implemented | `environmentData Json?`. Stores browser, OS, timestamp, element metadata |
 | Annotations stored | ✅ Implemented | `Annotation` model with type, coordinates (Json), content, color |
@@ -134,7 +134,7 @@
 7. ~~**Assignee filtering**~~ — **RESOLVED:** `assignedToId` query param in GET issues API.
 8. ~~**VIEWER role enforcement**~~ — **RESOLVED:** VIEWER is now fully read-only. Backend returns 403 on writes; frontend hides create/edit/delete UI via `useRole` and `<RoleGate>`.
 9. ~~**Shareable links**~~ — **RESOLVED:** `ShareToken` model + share routes for issues and feedback. Share button in both drawers.
-10. **Screen recording** — No video capture capability in the extension.
+10. ~~**Screen recording**~~ — **RESOLVED:** `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions (v0.9.0).
 
 ---
 
@@ -168,7 +168,7 @@
 | ~~12~~ | ~~Shareable public links~~ | ~~No share tokens or public routes~~ | | **RESOLVED** — ShareToken model + routes |
 | ~~13~~ | ~~@mentions in comments~~ | ~~No parsing or notification~~ | | **RESOLVED** — `@username` parsing + notification |
 | ~~14~~ | ~~Notification system~~ | ~~BullMQ stub exists, no implementation~~ | | **RESOLVED** — Full notification system |
-| 15 | Screen recording | No MediaRecorder integration | Major extension feature | Large |
+| ~~15~~ | ~~Screen recording~~ | ~~No MediaRecorder integration~~ | | **RESOLVED** |
 | 16 | External stakeholder access | Requires account currently | Auth redesign | Large |
 | ~~17~~ | ~~Group issues by page/URL~~ | ~~URL field exists, no grouping UI~~ | | **RESOLVED** — "Group by URL" toggle in FilterBar |
 | ~~18~~ | ~~Generic file attachments~~ | ~~Only single screenshot URL per issue~~ | | **RESOLVED** — Attachment model + drag-and-drop UI |

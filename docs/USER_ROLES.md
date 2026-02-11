@@ -29,6 +29,7 @@ Full system access. ADMIN bypasses every guard on both backend and frontend.
 | Done | Assign and reassign issues across teams | ADMIN bypass in issue PATCH | [`issues.ts`](../apps/api/src/routes/issues.ts) |
 | Done | View all projects (including non-member) | `getUserProjects` returns ALL for ADMIN | [`projectMemberService.ts`](../apps/api/src/services/projectMemberService.ts) |
 | Done | Delete any issue or comment | ADMIN bypass in delete handlers | [`issues.ts`](../apps/api/src/routes/issues.ts), [`comments.ts`](../apps/api/src/routes/comments.ts) |
+| Done | Manage user passwords (reset for team members) | Admin password management — commit `17a5d86` | [`users.ts`](../apps/api/src/routes/users.ts) |
 | Todo | Configure system-level settings | No admin settings panel or routes exist | -- |
 | Todo | Define workflows, statuses, and priorities | Statuses/priorities are hardcoded enums | -- |
 | Todo | Export reports and project data | No export endpoints exist | -- |
@@ -112,6 +113,17 @@ Quick-reference for every protected route.
 | DELETE | `/feedback/:id` | DEVELOPER (author) | Global | Author + role check |
 | POST | `/feedback/:id/comments` | DEVELOPER | Global | `requireRole` middleware |
 | GET | `/projects/:id/events` | -- (member check) | Project | SSE; ADMIN bypass |
+| GET | `/projects/:id/qa-cycles` | DEVELOPER | Project | List QA cycles |
+| POST | `/projects/:id/qa-cycles` | MANAGER | Project | Create QA cycle |
+| PATCH | `/qa-cycles/:id` | MANAGER | Project | Update QA cycle |
+| DELETE | `/qa-cycles/:id` | MANAGER | Project | Delete QA cycle |
+| POST | `/qa-cycles/:id/issues` | MANAGER | Project | Add issue to cycle |
+| DELETE | `/qa-cycles/:id/issues/:issueId` | MANAGER | Project | Remove issue from cycle |
+| POST | `/projects/:id/share` | MANAGER | Project | Create/update share settings |
+| GET | `/share/:token` | -- (public) | -- | View shared project (no auth) |
+| GET | `/notifications` | -- (authenticated) | Global | List user notifications |
+| PATCH | `/notifications/:id/read` | -- (authenticated) | Global | Mark notification read |
+| PATCH | `/notifications/read-all` | -- (authenticated) | Global | Mark all notifications read |
 
 ---
 
@@ -179,4 +191,4 @@ Quick-reference for every protected route.
 
 ---
 
-*Last updated: 2026-02-11*
+*Last updated: 2026-02-12*

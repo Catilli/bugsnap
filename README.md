@@ -26,11 +26,13 @@ This is a monorepo managed with Turborepo containing:
 ```
 bugsnap/
 ├── apps/
-│   ├── web/          # Next.js 16 web application
-│   └── api/          # Fastify backend API
+│   ├── web/              # Next.js 16 web application
+│   └── api/              # Fastify backend API
 ├── packages/
-│   └── shared/       # Shared types and schemas
-├── extension/        # Browser extension for bug capture
+│   └── shared/           # Shared types and schemas
+├── extension/            # Chrome extension (Manifest V3)
+├── extension-firefox/    # Firefox extension (Manifest V2)
+├── extension-safari/     # Safari extension (Manifest V3)
 └── ...config files
 ```
 
@@ -76,17 +78,18 @@ bugsnap/
 
 ### Browser Extension
 
-The BugSnap browser extension allows users to capture bugs directly from any website:
+The BugSnap browser extension allows users to capture bugs directly from any website. Supported browsers: **Chrome**, **Firefox**, and **Safari**.
 
 1. **Install the extension**
    - Download the extension from the dashboard at `/dashboard/install-extension`
-   - Load the extension in Chrome/Edge (Developer Mode)
-   - Or install from the Chrome Web Store (when published)
+   - **Chrome/Edge**: Load `extension/` in Developer Mode
+   - **Firefox**: Load `extension-firefox/` via `about:debugging`
+   - **Safari**: Load `extension-safari/` via Xcode
 
 2. **Use the extension**
    - Navigate to any website
    - Click the BugSnap extension icon
-   - Capture screenshots and report bugs
+   - Capture screenshots, record screen (Chrome/Firefox), and report bugs
    - Reports are automatically sent to your BugSnap project
 
 ## 📦 Tech Stack
@@ -100,12 +103,15 @@ The BugSnap browser extension allows users to capture bugs directly from any web
 ### Backend (API)
 - **Framework**: Fastify
 - **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT + OAuth (Google, GitHub)
+- **Authentication**: JWT (email/password)
 - **Authorization**: Role-based (ADMIN, MANAGER, DEVELOPER, VIEWER)
+- **File Storage**: Cloudinary + Cloudflare R2 (screenshot backup)
 - **Language**: TypeScript
 
-### Browser Extension
-- **Platform**: Chrome Extension (Manifest V3)
+### Browser Extensions
+- **Chrome**: Manifest V3, screenshot capture + screen recording
+- **Firefox**: Manifest V2, screenshot capture + screen recording
+- **Safari**: Manifest V3, screenshot capture
 - **Language**: JavaScript
 - **Integration**: PostMessage API for web app communication
 
@@ -139,7 +145,7 @@ From the API directory:
 - ✅ Shared types and schemas
 - ✅ TypeScript configuration
 - ✅ ESLint and Prettier setup
-- ✅ User authentication and authorization (JWT + OAuth)
+- ✅ User authentication and authorization (JWT, email/password)
 - ✅ Role-based access control (ADMIN, MANAGER, DEVELOPER, VIEWER)
 - ✅ Project management
 - ✅ Project member management with role assignment
@@ -147,27 +153,31 @@ From the API directory:
 - ✅ Project creation and editing
 - ✅ Issue management with full CRUD operations
 - ✅ Kanban board with drag-and-drop (role-gated)
-- ✅ Issue filtering and sorting (by date, priority, status)
+- ✅ Issue filtering and sorting (by date, status, assignee)
 - ✅ Reusable FilterBar and PageHeader components
-- ✅ Browser extension integration (Chrome & Firefox with screen recording)
+- ✅ Multi-browser extension support (Chrome, Firefox, Safari)
+- ✅ Screen recording in Chrome and Firefox extensions
 - ✅ PostgreSQL database with Prisma ORM
 - ✅ Issue creation with custom titles and auto-numbering
 - ✅ Screenshot capture and annotation tools
+- ✅ Clickable pin in screenshot lightbox with annotation overlays
 - ✅ Environment data collection
 - ✅ Comments and collaboration
-- ✅ Status and priority management
 - ✅ Real-time updates (SSE)
-- ✅ OAuth login (Google, GitHub)
 - ✅ Rate limiting
 - ✅ Error tracking (Sentry)
 - ✅ Shareable issue and feedback links
+- ✅ Public "anyone with link" project sharing
 - ✅ File attachments (upload + drag-and-drop)
 - ✅ Activity timeline and audit logging
 - ✅ Notification system (split by issue/feedback)
 - ✅ Admin dashboard with system stats and user management
 - ✅ Team management UI with admin-only member creation
+- ✅ Admin password management for team members
+- ✅ QA Cycle management (create, add/remove issues, status tracking)
 - ✅ Feedback system (bug reports & feature requests)
 - ✅ Shared Drawer component and DialogProvider
+- ✅ Cloudflare R2 backup for screenshots
 - ✅ XSS sanitization and security hardening
 
 ### Planned
@@ -182,13 +192,15 @@ The database schema includes:
 - Users (with authentication and roles)
 - Projects (bug tracking projects)
 - ProjectMembers (project access control with per-project roles)
-- Issues (bug reports with severity, priority, assignee)
+- Issues (bug reports with status, assignee, type)
 - Annotations (visual annotations on issues)
 - Comments (issue and feedback comments)
 - Feedback and FeedbackComments (bug reports & feature requests)
 - Attachments (file uploads on issues and feedback)
 - Notifications (split by issue/feedback category)
+- ActivityLog (audit trail for issue/feedback changes)
 - ShareTokens (shareable links with expiry)
+- QACycle and QACycleIssue (QA cycle management)
 - PasswordResetTokens
 
 See [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma) for the complete schema definition.
@@ -202,15 +214,14 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 DATABASE_URL=postgresql://user:password@localhost:5432/bugsnap
 JWT_SECRET=your-secret-key
-RESEND_API_KEY=your-resend-api-key
-RESEND_FROM_EMAIL=noreply@yourdomain.com
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+R2_ACCOUNT_ID=your-r2-account-id
+R2_ACCESS_KEY_ID=your-r2-access-key
+R2_SECRET_ACCESS_KEY=your-r2-secret-key
+R2_BUCKET_NAME=bugsnap-screenshots
+R2_PUBLIC_URL=https://your-r2-public-url.com
 ```
 
 ## 📝 Development Workflow
@@ -240,17 +251,38 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.8.0
+**Current Version**: v0.9.0
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates**:
-- Admin-only team member creation (POST /api/users endpoint + Add Member modal)
-- Auth preHandler fix for user routes (GET, POST, PATCH)
-- Input sanitization hardening (URL protocol validation, Zod for all inputs, email HTML injection fix)
+**Recent Updates (v0.9.0)**:
+- Multi-browser extension support (Chrome, Firefox, Safari) with screen recording
+- Public "anyone with link" project sharing
+- QA Cycle management (create, add/remove issues, status tracking)
+- Clickable pin in screenshot lightbox with annotation overlays
+- Cloudflare R2 backup for screenshots
+- Removed OAuth (Google/GitHub) — simplified to email/password auth
+- Admin password management for team members
 
 
 ## 📝 Changelog
+
+### v0.9.0 (February 2026)
+- ✅ Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3) (`extension-safari/`)
+- ✅ Screen recording in Chrome and Firefox extensions (`MediaRecorder` + `getDisplayMedia`)
+- ✅ Public "anyone with link" project sharing with redesigned share dropdown
+- ✅ Clickable pin in screenshot lightbox with annotation overlays
+- ✅ QA Cycle management — create, add/remove issues, status tracking (`QACycle` + `QACycleIssue` models)
+- ✅ Cloudflare R2 backup for screenshots (`apps/api/src/lib/r2.ts`)
+- ✅ Admin password management for team members
+- ✅ Removed OAuth (Google/GitHub) — simplified to email/password only
+- ✅ Removed Resend email service — admin creates users with password directly
+- ✅ Removed priority and severity fields from issues
+- ✅ Manual enable/disable toggle for browser extension
+- ✅ Pin appears at click coordinates (one pin at a time)
+- ✅ Readable background behind text annotations
+- ✅ Show user names instead of UUIDs in activity timeline
+- ✅ Screenshot lightbox moved into DialogProvider
 
 ### v0.8.0 (February 2026)
 - ✅ Admin-only team member creation — `POST /api/users` with Zod validation, bcrypt password hashing, and duplicate email detection
