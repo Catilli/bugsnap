@@ -7,7 +7,7 @@ import { KanbanBoard, ColumnConfig } from '@/components/kanban/KanbanBoard';
 import { FilterBar } from '@/components/FilterBar';
 import IssueDrawer from '@/components/IssueDrawer';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, UserPlus, Trash2, FlaskConical, Share2, Link2 } from 'lucide-react';
+import { Pencil, ExternalLink, RefreshCw, BadgeAlert, Globe, Trash2, FlaskConical, Share2, Link2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
 import { getAuthToken } from '@/lib/clerkTokenBridge';
@@ -79,7 +79,7 @@ export default function ProjectDetailPage() {
   const [isIssuesLoading, setIsIssuesLoading] = useState(true);
 
   // Members state
-  const [projectMembers, setProjectMembers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [projectMembers, setProjectMembers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
 
   // Issue drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -185,10 +185,11 @@ export default function ProjectDetailPage() {
 
   // Settings dropdown & invite modal
   const [shareOpen, setShareOpen] = useState(false);
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'DEVELOPER' | 'VIEWER' | 'MANAGER'>('DEVELOPER');
   const [isInviting, setIsInviting] = useState(false);
+  const [generalAccess, setGeneralAccess] = useState<'invited' | 'anyone'>('invited');
+  const [accessDropdownOpen, setAccessDropdownOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
   // Close share dropdown on outside click or Escape
@@ -197,10 +198,11 @@ export default function ProjectDetailPage() {
     const handleClick = (e: MouseEvent) => {
       if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
         setShareOpen(false);
+        setAccessDropdownOpen(false);
       }
     };
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShareOpen(false);
+      if (e.key === 'Escape') { setShareOpen(false); setAccessDropdownOpen(false); }
     };
     document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
@@ -212,28 +214,35 @@ export default function ProjectDetailPage() {
 
   const handleInviteUser = async () => {
     if (!inviteEmail.trim()) return;
+    const emails = inviteEmail.split(',').map(e => e.trim()).filter(Boolean);
+    if (emails.length === 0) return;
     setIsInviting(true);
     try {
       if (!getAuthToken()) return;
-      const response = await authFetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+      let successCount = 0;
+      for (const email of emails) {
+        const response = await authFetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, role: inviteRole }),
+          }
+        );
+        if (response.ok) {
+          const member = await response.json();
+          if (member.user && !projectMembers.some(m => m.id === member.user.id)) {
+            setProjectMembers(prev => [...prev, { ...member.user, role: member.role || inviteRole }]);
+          }
+          successCount++;
+        } else {
+          const err = await response.json().catch(() => null);
+          notifyError(err?.error || `Failed to invite ${email}`);
         }
-      );
-      if (response.ok) {
-        const member = await response.json();
-        if (member.user && !projectMembers.some(m => m.id === member.user.id)) {
-          setProjectMembers(prev => [...prev, member.user]);
-        }
-        notifySuccess(`${inviteEmail.trim()} has been added to the project`);
+      }
+      if (successCount > 0) {
+        notifySuccess(`${successCount} user${successCount > 1 ? 's' : ''} invited`);
         setInviteEmail('');
-        setInviteOpen(false);
-      } else {
-        const err = await response.json().catch(() => null);
-        notifyError(err?.error || 'Failed to invite user');
       }
     } catch {
       notifyError('Failed to invite user');
@@ -423,12 +432,12 @@ export default function ProjectDetailPage() {
         );
         if (response.ok) {
           const data = await response.json();
-          const members: { id: string; name: string; email: string }[] = [];
-          if (data.owner) members.push(data.owner);
+          const members: { id: string; name: string; email: string; role: string }[] = [];
+          if (data.owner) members.push({ ...data.owner, role: 'OWNER' });
           if (data.members) {
             for (const m of data.members) {
               if (m.user && !members.some((existing) => existing.id === m.user.id)) {
-                members.push(m.user);
+                members.push({ ...m.user, role: m.role || 'MEMBER' });
               }
             }
           }
@@ -613,29 +622,101 @@ export default function ProjectDetailPage() {
                       Share
                     </button>
                     {shareOpen && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-                        <button
-                          onClick={() => {
-                            setShareOpen(false);
-                            setInviteOpen(true);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
-                        >
-                          <UserPlus className="w-4 h-4 text-gray-500" />
-                          Invite User
-                        </button>
-                        <button
-                          onClick={() => {
-                            const url = `${window.location.origin}/dashboard/projects/${projectId}`;
-                            navigator.clipboard.writeText(url);
-                            notifySuccess('Project link copied to clipboard');
-                            setShareOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
-                        >
-                          <Link2 className="w-4 h-4 text-gray-500" />
-                          Copy Project Link
-                        </button>
+                      <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-xl shadow-lg z-20">
+                        {/* Row 1: Email invite */}
+                        <div className="p-3 border-b border-gray-100">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={inviteEmail}
+                              onChange={(e) => setInviteEmail(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleInviteUser()}
+                              placeholder="Email, separated by commas"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                              autoFocus
+                            />
+                            <button
+                              onClick={handleInviteUser}
+                              disabled={isInviting || !inviteEmail.trim()}
+                              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                              {isInviting ? 'Inviting...' : 'Invite'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Row 2: Member list */}
+                        <div className="py-1 border-b border-gray-100 max-h-48 overflow-y-auto">
+                          {projectMembers.map((member) => (
+                            <div key={member.id} className="flex items-center gap-3 px-3 py-2">
+                              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                                <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                              </div>
+                              <span className="text-xs text-gray-500 flex-shrink-0">
+                                {member.role === 'OWNER' ? 'Owner' : member.role.charAt(0) + member.role.slice(1).toLowerCase()}
+                              </span>
+                            </div>
+                          ))}
+                          {projectMembers.length === 0 && (
+                            <p className="px-3 py-2 text-sm text-gray-400">No members yet</p>
+                          )}
+                        </div>
+
+                        {/* Row 3: General access */}
+                        <div className="px-3 py-3 border-b border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <Globe className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-sm font-medium text-gray-700">General access</span>
+                            </div>
+                            <div className="relative">
+                              <button
+                                onClick={() => setAccessDropdownOpen(!accessDropdownOpen)}
+                                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                              >
+                                {generalAccess === 'invited' ? 'Only people invited' : 'Anyone with link'}
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                              {accessDropdownOpen && (
+                                <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-30 py-1">
+                                  <button
+                                    onClick={() => { setGeneralAccess('invited'); setAccessDropdownOpen(false); }}
+                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${generalAccess === 'invited' ? 'text-indigo-600 font-medium' : 'text-gray-700'}`}
+                                  >
+                                    Only people invited
+                                  </button>
+                                  <button
+                                    onClick={() => { setGeneralAccess('anyone'); setAccessDropdownOpen(false); }}
+                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${generalAccess === 'anyone' ? 'text-indigo-600 font-medium' : 'text-gray-700'}`}
+                                  >
+                                    Anyone with link
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer: Copy link */}
+                        <div className="p-3">
+                          <button
+                            onClick={() => {
+                              const url = `${window.location.origin}/dashboard/projects/${projectId}`;
+                              navigator.clipboard.writeText(url);
+                              notifySuccess('Link copied to clipboard');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            <Link2 className="w-4 h-4" />
+                            Copy link
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -846,60 +927,6 @@ export default function ProjectDetailPage() {
           );
         }}
       />
-
-      {/* Invite User Modal */}
-      {inviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setInviteOpen(false)} />
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6 z-10">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-indigo-600" />
-              Invite User
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleInviteUser()}
-                  placeholder="user@example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as typeof inviteRole)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                >
-                  <option value="VIEWER">Viewer</option>
-                  <option value="DEVELOPER">Developer</option>
-                  <option value="MANAGER">Manager</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => { setInviteOpen(false); setInviteEmail(''); }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleInviteUser}
-                disabled={isInviting || !inviteEmail.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isInviting ? 'Inviting...' : 'Invite'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
