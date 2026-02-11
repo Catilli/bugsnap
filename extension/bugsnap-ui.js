@@ -579,6 +579,7 @@ class BugSnapUI {
       document.body.style.overflow = ''; // Re-enable scrolling
       modal.remove();
       this.reset();
+      this.startTagging();
     };
 
     document.getElementById('bugsnap-save-annotation').onclick = () => {
@@ -1240,6 +1241,11 @@ class BugSnapUI {
   }
 
   reset() {
+    // Remove highlight from selected element
+    if (this.selectedElement) {
+      this.selectedElement.style.outline = '';
+      this.selectedElement.style.outlineOffset = '';
+    }
     this.selectedElement = null;
     this.screenshot = null;
     this.annotations = [];
