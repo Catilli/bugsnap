@@ -42,10 +42,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="container">
           <div class="header">
             <span class="project-label">Current Project</span>
-            <button class="reload-btn" id="reloadBtn">
-              <i data-lucide="refresh-cw" width="16" height="16"></i>
-              <span>Reload</span>
-            </button>
+            <div class="header-actions">
+              <button class="enable-btn" id="enableBtn">
+                <i data-lucide="play" width="16" height="16"></i>
+                <span>Enable</span>
+              </button>
+              <button class="reload-btn" id="reloadBtn">
+                <i data-lucide="refresh-cw" width="16" height="16"></i>
+                <span>Reload</span>
+              </button>
+            </div>
           </div>
           <div class="project-name">${matchingProject.name}</div>
           <button class="primary" id="viewBtn">View on BugSnap</button>
@@ -54,6 +60,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
 
       lucide.createIcons();
+
+      // Query current BugSnap state from content script
+      let bugSnapEnabled = false;
+      try {
+        const state = await browser.tabs.sendMessage(tab.id, { action: 'getBugSnapState' });
+        bugSnapEnabled = state.enabled;
+      } catch {
+        bugSnapEnabled = false;
+      }
+
+      const enableBtn = document.getElementById('enableBtn');
+
+      function updateEnableButton(enabled) {
+        bugSnapEnabled = enabled;
+        const icon = enableBtn.querySelector('i');
+        const label = enableBtn.querySelector('span');
+        if (enabled) {
+          enableBtn.classList.add('active');
+          icon.setAttribute('data-lucide', 'square');
+          label.textContent = 'Disable';
+        } else {
+          enableBtn.classList.remove('active');
+          icon.setAttribute('data-lucide', 'play');
+          label.textContent = 'Enable';
+        }
+        lucide.createIcons();
+      }
+
+      updateEnableButton(bugSnapEnabled);
+
+      enableBtn.addEventListener('click', () => {
+        const newState = !bugSnapEnabled;
+        browser.tabs.sendMessage(tab.id, {
+          action: 'toggleBugSnap',
+          enabled: newState,
+          project: matchingProject
+        });
+        updateEnableButton(newState);
+      });
 
       document.getElementById('viewBtn').addEventListener('click', () => {
         browser.tabs.create({ url: `http://localhost:3000/dashboard/projects/${matchingProject.id}` });

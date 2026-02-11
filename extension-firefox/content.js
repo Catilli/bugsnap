@@ -24,47 +24,7 @@ syncToBrowserStorage();
 // Sync every 2 seconds to catch login changes
 setInterval(syncToBrowserStorage, 2000);
 
-// Check if should activate BugSnap UI
-async function checkAndActivateBugSnap() {
-  try {
-    const result = await browser.storage.local.get(['token']);
-    const token = result.token;
-
-    if (!token) return;
-
-    await activateWithToken(token);
-  } catch (error) {
-    // Ignore
-  }
-}
-
-async function activateWithToken(token) {
-  try {
-    const response = await browser.runtime.sendMessage({ action: 'fetchProjects', token });
-
-    if (response.error) return;
-
-    const projects = response.projects;
-    const currentDomain = window.location.hostname;
-
-    const matchingProject = projects.find(project => {
-      if (!project.websiteUrl) return false;
-      try {
-        const projectDomain = new URL(project.websiteUrl).hostname;
-        return projectDomain === currentDomain;
-      } catch (e) {
-        return false;
-      }
-    });
-
-    if (matchingProject) {
-      loadBugSnapUI(matchingProject);
-    }
-  } catch (error) {
-    // Ignore
-  }
-}
-
+// Load BugSnap UI script
 function loadBugSnapUI(project) {
   if (window.BugSnapUIInstance) return;
 
@@ -73,10 +33,30 @@ function loadBugSnapUI(project) {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(checkAndActivateBugSnap, 1000);
-  });
-} else {
-  setTimeout(checkAndActivateBugSnap, 1000);
+// Disable BugSnap UI
+function disableBugSnapUI() {
+  if (window.BugSnapUIInstance) {
+    if (typeof window.BugSnapUIInstance.destroy === 'function') {
+      window.BugSnapUIInstance.destroy();
+    }
+    window.BugSnapUIInstance = null;
+  }
+  const overlay = document.getElementById('bugsnap-overlay');
+  if (overlay) overlay.remove();
+  document.body.style.cursor = '';
 }
+
+// Listen for messages from popup
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'toggleBugSnap') {
+    if (message.enabled) {
+      loadBugSnapUI(message.project);
+    } else {
+      disableBugSnapUI();
+    }
+    sendResponse({ success: true });
+  } else if (message.action === 'getBugSnapState') {
+    sendResponse({ enabled: !!window.BugSnapUIInstance });
+  }
+  return true;
+});
