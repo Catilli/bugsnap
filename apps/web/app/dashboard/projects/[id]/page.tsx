@@ -415,25 +415,10 @@ export default function ProjectDetailPage() {
           setProject(data);
           setEditedName(data.name);
           setProjectName(data.name);
-        }
-      } catch {
-        notifyError('Failed to load project');
-      }
-    };
 
-    fetchProject();
-
-    // Fetch project members
-    const fetchMembers = async () => {
-      try {
-        if (!getAuthToken()) return;
-        const response = await authFetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/members`,
-        );
-        if (response.ok) {
-          const data = await response.json();
+          // Populate members from project data (includes createdBy + members)
           const members: { id: string; name: string; email: string; role: string }[] = [];
-          if (data.owner) members.push({ ...data.owner, role: 'OWNER' });
+          if (data.createdBy) members.push({ ...data.createdBy, role: 'OWNER' });
           if (data.members) {
             for (const m of data.members) {
               if (m.user && !members.some((existing) => existing.id === m.user.id)) {
@@ -444,10 +429,11 @@ export default function ProjectDetailPage() {
           setProjectMembers(members);
         }
       } catch {
-        // Silently fail
+        notifyError('Failed to load project');
       }
     };
-    fetchMembers();
+
+    fetchProject();
 
     // Cleanup: Clear project name when leaving the page
     return () => {
