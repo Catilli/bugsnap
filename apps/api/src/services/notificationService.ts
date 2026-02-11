@@ -1,6 +1,4 @@
 import { prisma } from '../lib/prisma';
-import { enqueue, emailQueue } from '../lib/queue';
-import { sanitizeString } from '../utils/sanitize';
 
 export const notificationService = {
   async create(params: {
@@ -15,20 +13,6 @@ export const notificationService = {
     const notification = await prisma.notification.create({
       data: params,
     });
-
-    // Queue email notification (non-blocking, no-op if Redis unavailable)
-    const user = await prisma.user.findUnique({
-      where: { id: params.userId },
-      select: { email: true, name: true },
-    });
-
-    if (user?.email) {
-      enqueue(emailQueue, 'notification-email', {
-        to: user.email,
-        subject: params.title,
-        html: `<p>Hi ${sanitizeString(user.name || '')},</p><p>${sanitizeString(params.message || params.title)}</p><p>— BugSnap</p>`,
-      });
-    }
 
     return notification;
   },

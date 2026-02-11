@@ -19,11 +19,6 @@ const connection = REDIS_URL
  * Returns null if REDIS_URL is not configured (queues require Redis).
  */
 
-// --- Email notification queue ---
-export const emailQueue = connection
-  ? new Queue('bugsnap:email', { connection })
-  : null;
-
 // --- Screenshot processing queue ---
 export const screenshotQueue = connection
   ? new Queue('bugsnap:screenshot', { connection })
@@ -63,23 +58,6 @@ export function startWorkers(): void {
     return;
   }
 
-  // Email worker
-  new Worker(
-    'bugsnap:email',
-    async (job: Job) => {
-      const { to, subject, html } = job.data;
-      try {
-        // Lazy import to avoid circular dependency issues
-        const { emailService } = await import('../services/emailService');
-        await emailService.sendEmail(to, subject, html);
-      } catch (error) {
-        console.error(`[email] Failed to send to=${to} subject="${subject}":`, error);
-        throw error; // BullMQ will retry
-      }
-    },
-    { connection, concurrency: 5 }
-  );
-
   // Screenshot processing worker
   new Worker(
     'bugsnap:screenshot',
@@ -109,6 +87,6 @@ export function startWorkers(): void {
  * Gracefully close all queues and workers.
  */
 export async function closeQueues(): Promise<void> {
-  const queues = [emailQueue, screenshotQueue, cleanupQueue].filter(Boolean) as Queue[];
+  const queues = [screenshotQueue, cleanupQueue].filter(Boolean) as Queue[];
   await Promise.all(queues.map((q) => q.close()));
 }

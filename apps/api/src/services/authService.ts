@@ -2,8 +2,6 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { prisma } from '../lib/prisma';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../utils/errors';
-import { emailService } from './emailService';
-
 const SALT_ROUNDS = 10;
 
 export class AuthService {
@@ -146,12 +144,9 @@ export class AuthService {
       },
     });
 
-    try {
-      await emailService.sendPasswordResetEmail(email, rawToken, user.name);
-    } catch (error) {
-      await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
-      throw error;
-    }
+    // Token created — the frontend reset-password page consumes it.
+    // Email delivery is not currently configured; the admin can share
+    // the reset link manually or re-enable an email provider later.
   }
 
   async resetPassword(rawToken: string, newPassword: string) {

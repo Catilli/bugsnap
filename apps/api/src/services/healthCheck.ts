@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { getRedis } from '../lib/redis';
-import { emailQueue } from '../lib/queue';
+import { screenshotQueue } from '../lib/queue';
 
 export type ComponentStatus = 'healthy' | 'unhealthy' | 'unconfigured';
 
@@ -54,13 +54,13 @@ export async function checkRedis(): Promise<ComponentHealth> {
 }
 
 export async function checkQueues(): Promise<ComponentHealth> {
-  if (!emailQueue) {
+  if (!screenshotQueue) {
     return { status: 'unconfigured', message: 'REDIS_URL not set' };
   }
 
   const start = Date.now();
   try {
-    await emailQueue.getJobCounts();
+    await screenshotQueue.getJobCounts();
     return { status: 'healthy', latencyMs: Date.now() - start };
   } catch (error) {
     return {

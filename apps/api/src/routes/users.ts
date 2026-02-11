@@ -19,6 +19,7 @@ const updateRoleSchema = z.object({
 const createUserSchema = z.object({
   email: z.string().email(),
   name: zSanitizedString().pipe(z.string().min(1).max(100)),
+  password: z.string().min(8).max(128).optional(),
   role: roleEnum.optional().default('DEVELOPER'),
 });
 
@@ -65,15 +66,15 @@ export async function userRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Only admins can add users' });
     }
 
-    const { email, name, role } = createUserSchema.parse(request.body);
+    const { email, name, password, role } = createUserSchema.parse(request.body);
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return reply.status(409).send({ error: 'A user with this email already exists' });
     }
 
-    const tempPassword = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    const rawPassword = password || crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
     const created = await prisma.user.create({
       data: { email, name, role, password: hashedPassword },

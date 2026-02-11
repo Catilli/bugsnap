@@ -68,6 +68,7 @@ export default function TeamPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberPassword, setNewMemberPassword] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<UserRole>('DEVELOPER');
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -157,6 +158,11 @@ export default function TeamPage() {
       return;
     }
 
+    if (newMemberPassword && newMemberPassword.length < 8) {
+      setAddError('Password must be at least 8 characters.');
+      return;
+    }
+
     setIsAdding(true);
     setAddError(null);
 
@@ -170,6 +176,7 @@ export default function TeamPage() {
             email: newMemberEmail.trim(),
             name: newMemberName.trim(),
             role: newMemberRole,
+            ...(newMemberPassword && { password: newMemberPassword }),
           }),
         }
       );
@@ -245,6 +252,7 @@ export default function TeamPage() {
               onClick={() => {
                 setNewMemberEmail('');
                 setNewMemberName('');
+                setNewMemberPassword('');
                 setNewMemberRole('DEVELOPER');
                 setAddError(null);
                 setShowAddModal(true);
@@ -417,6 +425,24 @@ export default function TeamPage() {
               </div>
 
               <div>
+                <label htmlFor="add-password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  id="add-password"
+                  type="password"
+                  value={newMemberPassword}
+                  onChange={(e) => setNewMemberPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  minLength={8}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Leave blank to require &quot;Forgot Password&quot; on first login.
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="add-role" className="block text-sm font-medium text-gray-700 mb-1">
                   Role
                 </label>
@@ -436,10 +462,6 @@ export default function TeamPage() {
               {addError && (
                 <p className="text-sm text-red-600">{addError}</p>
               )}
-
-              <p className="text-xs text-gray-500">
-                New member will need to use "Forgot Password" to set their password.
-              </p>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button

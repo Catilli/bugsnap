@@ -10,7 +10,6 @@ vi.mock('../lib/redis', () => ({
 }));
 
 vi.mock('../lib/queue', () => ({
-  emailQueue: null,
   screenshotQueue: null,
   cleanupQueue: null,
 }));
@@ -67,7 +66,7 @@ describe('checkRedis', () => {
 });
 
 describe('checkQueues', () => {
-  it('returns unconfigured when emailQueue is null', async () => {
+  it('returns unconfigured when screenshotQueue is null', async () => {
     const result = await checkQueues();
     expect(result.status).toBe('unconfigured');
     expect(result.message).toBe('REDIS_URL not set');
@@ -76,24 +75,24 @@ describe('checkQueues', () => {
   it('returns healthy when getJobCounts succeeds', async () => {
     // Temporarily override the emailQueue export
     const mockQueue = { getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, active: 0 }) };
-    (queueModule as Record<string, unknown>).emailQueue = mockQueue;
+    (queueModule as Record<string, unknown>).screenshotQueue = mockQueue;
 
     const result = await checkQueues();
     expect(result.status).toBe('healthy');
 
     // Restore
-    (queueModule as Record<string, unknown>).emailQueue = null;
+    (queueModule as Record<string, unknown>).screenshotQueue = null;
   });
 
   it('returns unhealthy when getJobCounts fails', async () => {
     const mockQueue = { getJobCounts: vi.fn().mockRejectedValue(new Error('Queue error')) };
-    (queueModule as Record<string, unknown>).emailQueue = mockQueue;
+    (queueModule as Record<string, unknown>).screenshotQueue = mockQueue;
 
     const result = await checkQueues();
     expect(result.status).toBe('unhealthy');
     expect(result.message).toBe('Queue error');
 
-    (queueModule as Record<string, unknown>).emailQueue = null;
+    (queueModule as Record<string, unknown>).screenshotQueue = null;
   });
 });
 

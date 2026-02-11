@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Set env vars BEFORE importing the module (read at module load time)
-process.env.HEALTH_ALERT_EMAIL = 'ops@bugsnap.dev';
 process.env.HEALTH_ALERT_WEBHOOK_URL = 'https://hooks.example.com/alert';
 process.env.HEALTH_ALERT_THRESHOLD = '3';
 process.env.HEALTH_CHECK_INTERVAL_MS = '60000';
@@ -13,13 +12,9 @@ vi.mock('../services/healthCheck', () => ({
 
 import type { HealthReport } from '../services/healthCheck';
 import { getHealthReport } from '../services/healthCheck';
-import * as emailModule from '../services/emailService';
 import { healthMonitor } from '../services/healthMonitor';
 
 const mockGetHealthReport = getHealthReport as ReturnType<typeof vi.fn>;
-
-// Spy on the emailService.sendEmail method on the module namespace object
-const sendEmailSpy = vi.spyOn(emailModule.emailService, 'sendEmail').mockResolvedValue(undefined);
 
 // Mock global fetch
 const mockFetch = vi.fn().mockResolvedValue({ ok: true });
@@ -40,8 +35,6 @@ function makeReport(status: HealthReport['status']): HealthReport {
 beforeEach(() => {
   healthMonitor._resetForTesting();
   mockGetHealthReport.mockClear();
-  sendEmailSpy.mockClear();
-  sendEmailSpy.mockResolvedValue(undefined);
   mockFetch.mockClear();
   mockFetch.mockResolvedValue({ ok: true });
 });
@@ -57,23 +50,7 @@ describe('HealthMonitor', () => {
     await healthMonitor.check();
     await healthMonitor.check();
 
-    expect(sendEmailSpy).not.toHaveBeenCalled();
     expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it('sends alert email after N consecutive failures', async () => {
-    mockGetHealthReport.mockResolvedValue(makeReport('unhealthy'));
-
-    await healthMonitor.check();
-    await healthMonitor.check();
-    await healthMonitor.check();
-
-    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
-    expect(sendEmailSpy).toHaveBeenCalledWith(
-      'ops@bugsnap.dev',
-      expect.stringContaining('Health Alert'),
-      expect.stringContaining('Service Unhealthy'),
-    );
   });
 
   it('sends webhook POST after threshold', async () => {
@@ -99,7 +76,6 @@ describe('HealthMonitor', () => {
       await healthMonitor.check();
     }
 
-    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
@@ -113,13 +89,7 @@ describe('HealthMonitor', () => {
     mockGetHealthReport.mockResolvedValue(makeReport('healthy'));
     await healthMonitor.check();
 
-    // Alert + recovery = 2 emails, 2 webhook calls
-    expect(sendEmailSpy).toHaveBeenCalledTimes(2);
-    expect(sendEmailSpy).toHaveBeenLastCalledWith(
-      'ops@bugsnap.dev',
-      expect.stringContaining('Recovery'),
-      expect.stringContaining('Service Restored'),
-    );
+    // Alert + recovery = 2 webhook calls
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
@@ -136,7 +106,7 @@ describe('HealthMonitor', () => {
     await healthMonitor.check();
     await healthMonitor.check();
 
-    expect(sendEmailSpy).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('does not increment failures on degraded status', async () => {
@@ -146,24 +116,7 @@ describe('HealthMonitor', () => {
       await healthMonitor.check();
     }
 
-    expect(sendEmailSpy).not.toHaveBeenCalled();
-  });
-
-  it('handles email send failure gracefully', async () => {
-    mockGetHealthReport.mockResolvedValue(makeReport('unhealthy'));
-    sendEmailSpy.mockRejectedValue(new Error('Resend API error'));
-
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    await healthMonitor.check();
-    await healthMonitor.check();
-    await healthMonitor.check();
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[health-monitor] Failed to send alert email:',
-      expect.any(Error),
-    );
-    consoleSpy.mockRestore();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('start and stop manage the interval', async () => {
