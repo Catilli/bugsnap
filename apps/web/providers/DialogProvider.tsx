@@ -131,7 +131,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <div className="min-h-full min-w-full flex items-center justify-center p-8">
+              <div className="min-h-full min-w-full flex items-center justify-center">
                 <Suspense fallback={
                   <LightboxImage
                     src={dialog.options.src}
