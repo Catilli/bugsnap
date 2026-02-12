@@ -63,5 +63,10 @@ Thumbs.db
 # Windows null device artifacts
 nul
 
+# Browser extension source directories (only .zip build artifacts are tracked)
+extension/
+extension-firefox/
+extension-safari/
+
 # Misc
 *.pem
