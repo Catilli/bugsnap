@@ -1,6 +1,6 @@
 # BugSnap - Technical Architecture Audit
 
-**Version:** 0.10.0
+**Version:** 0.10.1
 **Audit Date:** 2026-02-12
 **Repository:** Turborepo monorepo with npm workspaces
 
@@ -47,7 +47,7 @@ Browser Extensions  ──capture──>  Fastify API  <──manage──  Next
 | Annotation Layer | Implemented | Custom HTML5 Canvas 2D implementation (rectangle, arrow, pen, text, cursor tools) — `extension/mark-my-image.js` |
 | Overlay / Bug Capture UI | Implemented | Injected via extension content scripts — `extension/bugsnap-ui.js`, `extension/content.js` |
 | Extension Task Drawer | Implemented | View/manage project tasks from any webpage — grouped list, search, status filters, task detail panel with status dropdown, screenshot lightbox, comments section — `extension/bugsnap-ui.js` |
-| Extension Annotation Editing | Implemented | Edit annotations on existing tasks from the extension — reuses annotation modal with "Update" button, fetches screenshot as data URL via background script to avoid CORS, composites annotations into screenshot on save — `extension/bugsnap-ui.js`, `extension/background.js` |
+| Extension Annotation Editing | Implemented | Edit annotations on existing tasks from the extension — reuses annotation modal with "Update" button, fetches screenshot as data URL via background script to avoid CORS, composites annotations into screenshot on save — `extension/bugsnap-ui.js`, `extension/background.js`. **Note:** Web app annotation editor removed in v0.10.1 (annotations are burned into screenshots by the extension, no in-app editing needed). |
 | Firefox Extension | Implemented | MV2 manifest with `browser.*` Promise-based API — `extension-firefox/manifest.json` |
 | Safari Extension | Implemented | MV3 manifest with screenshot capture — `extension-safari/manifest.json` |
 | Screen Recording | Implemented | `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions |

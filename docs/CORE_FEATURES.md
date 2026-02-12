@@ -2,7 +2,7 @@
 
 > **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-13
 > **Scope:** Read-only codebase analysis — no code changes
-> **Commit:** `692eaae` (original) | `8ffe74a` (latest update)
+> **Commit:** `692eaae` (original) | `681e19e` (latest update)
 >
 > *Items resolved since the original audit are marked with ~~strikethrough~~ and **RESOLVED**.*
 
@@ -32,7 +32,7 @@
 | Extension task drawer | ✅ Implemented | `extension/bugsnap-ui.js` — `openTasksDrawer()` shows grouped task list with search, status filters, and task detail panel. Auto-initializes on matched project URLs via `content.js` |
 | Extension task detail panel | ✅ Implemented | `extension/bugsnap-ui.js` — `renderTaskDetail()` shows status dropdown, screenshot with lightbox, comments section, and "Open in BugSnap" link |
 | Extension annotation editing | ✅ Implemented | `extension/bugsnap-ui.js` — `showAnnotationModalForEdit()` reopens annotation modal on existing tasks with "Update" button, loads existing annotations via `setAnnotations()` |
-| Screenshot compositing | ✅ Implemented | `extension/bugsnap-ui.js` — `_compositeScreenshot()` burns annotations into screenshot image (canvas compositing), uploaded to Cloudinary CDN via PATCH `/api/issues/:issueId` |
+| Screenshot compositing | ✅ Implemented | `extension/bugsnap-ui.js` — `_compositeScreenshot()` burns annotations into screenshot image (canvas compositing), uploaded to Cloudinary CDN via PATCH `/api/issues/:issueId`. Web app lightbox displays the composited screenshot directly (no SVG overlay rendering — annotations are pre-burned). |
 
 ---
 

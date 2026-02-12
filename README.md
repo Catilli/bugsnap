@@ -160,7 +160,7 @@ From the API directory:
 - ✅ PostgreSQL database with Prisma ORM
 - ✅ Issue creation with custom titles and auto-numbering
 - ✅ Screenshot capture and annotation tools
-- ✅ Clickable pin in screenshot lightbox with annotation overlays
+- ✅ Clickable pin in screenshot lightbox (navigate to element on page)
 - ✅ Environment data collection
 - ✅ Comments and collaboration
 - ✅ Real-time updates (SSE)
@@ -181,8 +181,8 @@ From the API directory:
 - ✅ XSS sanitization and security hardening
 - ✅ Extension task drawer (view/manage tasks from any webpage)
 - ✅ Extension task detail panel (status, screenshot, comments)
-- ✅ Annotation editing on existing tasks from the extension
-- ✅ Screenshot compositing (annotations burned into screenshot on save)
+- ✅ Annotation editing on existing tasks from the extension (burned into screenshot)
+- ✅ Screenshot compositing (annotations burned into screenshot on save via extension)
 - ✅ Cloudinary CDN for screenshot uploads
 
 ### Planned
@@ -256,20 +256,25 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.10.0
+**Current Version**: v0.10.1
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.10.0)**:
-- Extension task drawer — view, filter, and manage tasks from any webpage
-- Extension task detail panel — status dropdown, screenshot display, comments section
-- Annotation editing — edit annotations on existing tasks directly from the extension
-- Screenshot compositing — annotations burned into screenshot image on save/update
-- Cloudinary CDN integration for screenshot uploads with R2 backup
-- Install extension page updated with permanent folder extraction guidance
+**Recent Updates (v0.10.1)**:
+- Removed web app annotation editor — annotations are burned into screenshots by the extension
+- Restored clickable pin tagging in constrained 90vw/90vh screenshot lightbox
+- Pin position scales correctly to rendered image size in lightbox
+- Lightbox style matches extension Task Drawer (dark backdrop, centered, close button)
 
 
 ## 📝 Changelog
+
+### v0.10.1 (February 2026)
+- ✅ Removed web app annotation editor (AnnotationEditorModal + MarkMyImage) — annotations are burned into screenshots by the extension
+- ✅ Restored clickable pin tagging in screenshot lightbox with scaled position for constrained 90vw/90vh images
+- ✅ Lightbox style matches extension Task Drawer — `rgba(0,0,0,0.9)` backdrop, centered image, `x` close button, 4px border radius
+- ✅ Removed SVG annotation overlay rendering from lightbox (redundant since annotations are composited into screenshot)
+- ✅ DialogProvider lightbox no longer scrollable (constrained image fits viewport)
 
 ### v0.10.0 (February 2026)
 - ✅ Extension task drawer — view and manage project tasks from any webpage with grouped list, search, and status filters
@@ -288,7 +293,7 @@ This project is private and proprietary.
 - ✅ Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3) (`extension-safari/`)
 - ✅ Screen recording in Chrome and Firefox extensions (`MediaRecorder` + `getDisplayMedia`)
 - ✅ Public "anyone with link" project sharing with redesigned share dropdown
-- ✅ Clickable pin in screenshot lightbox with annotation overlays
+- ✅ Clickable pin in screenshot lightbox (navigate to element on page)
 - ✅ QA Cycle management — create, add/remove issues, status tracking (`QACycle` + `QACycleIssue` models)
 - ✅ Cloudflare R2 backup for screenshots (`apps/api/src/lib/r2.ts`)
 - ✅ Admin password management for team members

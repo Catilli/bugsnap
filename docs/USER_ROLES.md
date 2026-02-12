@@ -136,7 +136,7 @@ The browser extension uses the same API endpoints with the user's JWT token. Ext
 | View task drawer & task list | ✅ | ✅ | ✅ | ✅ |
 | View task detail (screenshot, comments) | ✅ | ✅ | ✅ | ✅ |
 | Change task status | ✅ | ✅ | Own/assigned only | ❌ |
-| Edit annotations & screenshot | ✅ | ✅ | Own only | ❌ |
+| Edit annotations & screenshot (extension only) | ✅ | ✅ | Own only | ❌ |
 | Add comments | ✅ | ✅ | ✅ | ❌ |
 | Create new tasks (tagging mode) | ✅ | ✅ | ✅ | ❌ |
 
@@ -206,4 +206,4 @@ The browser extension uses the same API endpoints with the user's JWT token. Ext
 
 ---
 
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-13*
