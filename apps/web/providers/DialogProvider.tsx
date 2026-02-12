@@ -118,20 +118,18 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={dialog.id}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-              style={{ zIndex }}
+              className="fixed inset-0 flex items-center justify-center"
+              style={{ zIndex, background: 'rgba(0,0,0,0.9)' }}
               onClick={() => dismiss(dialog.id, false)}
             >
               <button
                 onClick={(e) => { e.stopPropagation(); dismiss(dialog.id, false); }}
-                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/25 rounded-full transition-colors"
+                className="absolute top-4 right-4 text-white text-3xl leading-none bg-transparent border-none cursor-pointer p-1 hover:opacity-80"
                 style={{ zIndex: zIndex + 1 }}
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                &times;
               </button>
-              <div className="shadow-2xl rounded-lg overflow-hidden">
+              <div className="rounded overflow-hidden">
                 <Suspense fallback={
                   <LightboxImage
                     src={dialog.options.src}
