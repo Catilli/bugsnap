@@ -59,6 +59,12 @@ const updateIssueSchema = z.object({
   type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).optional(),
   assignedToId: z.string().uuid().nullable().optional(),
+  annotations: z.array(z.object({
+    type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
+    coordinates: z.any(),
+    content: z.string().transform(sanitizeString).optional(),
+    color: z.string().optional(),
+  })).optional(),
 });
 
 export async function issueRoutes(fastify: FastifyInstance) {
@@ -550,10 +556,27 @@ export async function issueRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Handle annotation updates: delete old + create new
+      const { annotations: newAnnotations, ...issueUpdateData } = updateData;
+      if (newAnnotations) {
+        await prisma.annotation.deleteMany({ where: { issueId } });
+        if (newAnnotations.length > 0) {
+          await prisma.annotation.createMany({
+            data: newAnnotations.map((a) => ({
+              issueId,
+              type: a.type,
+              coordinates: a.coordinates,
+              content: a.content,
+              color: a.color || '#ef4444',
+            })),
+          });
+        }
+      }
+
       // Update issue
       const updatedIssue = await prisma.issue.update({
         where: { id: issueId },
-        data: updateData,
+        data: issueUpdateData,
         include: {
           createdBy: {
             select: {
@@ -569,6 +592,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
               email: true,
             },
           },
+          annotations: newAnnotations ? true : undefined,
         },
       });
 
