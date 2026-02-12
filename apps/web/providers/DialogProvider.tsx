@@ -118,20 +118,20 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={dialog.id}
-              className="fixed inset-0 bg-black/90"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center"
               style={{ zIndex }}
               onClick={() => dismiss(dialog.id, false)}
             >
               <button
                 onClick={(e) => { e.stopPropagation(); dismiss(dialog.id, false); }}
-                className="fixed top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/25 rounded-full transition-colors"
                 style={{ zIndex: zIndex + 1 }}
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <div className="min-h-full min-w-full flex items-center justify-center">
+              <div className="shadow-2xl rounded-lg overflow-hidden">
                 <Suspense fallback={
                   <LightboxImage
                     src={dialog.options.src}
@@ -220,7 +220,7 @@ function LightboxImage({ src, backupSrc, alt }: { src: string; backupSrc?: strin
     <img
       src={activeSrc}
       alt={alt}
-      className="max-w-none"
+      className="max-w-[90vw] max-h-[90vh] object-contain"
       onClick={(e) => e.stopPropagation()}
       onError={() => {
         if (!useFallback && backupSrc) setUseFallback(true);
