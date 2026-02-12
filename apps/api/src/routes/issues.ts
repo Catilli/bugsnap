@@ -59,6 +59,7 @@ const updateIssueSchema = z.object({
   type: z.enum(['BUG', 'FEATURE', 'TASK']).optional(),
   visibility: z.enum(['members', 'members_and_clients']).optional(),
   assignedToId: z.string().uuid().nullable().optional(),
+  screenshotUrl: z.string().optional(),
   annotations: z.array(z.object({
     type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
     coordinates: z.any(),
@@ -557,7 +558,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Handle annotation updates: delete old + create new
-      const { annotations: newAnnotations, ...issueUpdateData } = updateData;
+      const { annotations: newAnnotations, screenshotUrl: newScreenshotUrl, ...issueUpdateData } = updateData;
       if (newAnnotations) {
         await prisma.annotation.deleteMany({ where: { issueId } });
         if (newAnnotations.length > 0) {
@@ -570,6 +571,21 @@ export async function issueRoutes(fastify: FastifyInstance) {
               color: a.color || '#ef4444',
             })),
           });
+        }
+      }
+
+      // Handle screenshot update (data URL → Cloudinary CDN)
+      if (newScreenshotUrl) {
+        try {
+          const result = await processScreenshotUrl(newScreenshotUrl);
+          if (result.screenshotUrl) {
+            (issueUpdateData as any).screenshotUrl = result.screenshotUrl;
+          }
+          if (result.screenshotBackupUrl) {
+            (issueUpdateData as any).screenshotBackupUrl = result.screenshotBackupUrl;
+          }
+        } catch (error) {
+          console.warn('Screenshot upload failed during update, skipping:', error);
         }
       }
 
