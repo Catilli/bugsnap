@@ -82,6 +82,7 @@ export default function ProjectDetailPage() {
   // Issue drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [drawerRefreshKey, setDrawerRefreshKey] = useState(0);
 
   // URL-persisted filter state
   const searchParams = useSearchParams();
@@ -488,6 +489,13 @@ export default function ProjectDetailPage() {
           setIssues((prev) => [data.data, ...prev]);
         } else if (data.type === 'issue:updated') {
           setIssues((prev) => prev.map((i) => (i.id === data.data.id ? { ...i, ...data.data } : i)));
+          // Refresh the IssueDrawer if the updated issue is currently open
+          setSelectedIssueId((currentId) => {
+            if (currentId === data.data.id) {
+              setDrawerRefreshKey((k) => k + 1);
+            }
+            return currentId;
+          });
         } else if (data.type === 'issue:deleted') {
           setIssues((prev) => prev.filter((i) => i.id !== data.data.id));
         }
@@ -988,6 +996,7 @@ export default function ProjectDetailPage() {
         issueId={selectedIssueId}
         isOpen={isDrawerOpen}
         onClose={closeIssueDrawer}
+        refreshKey={drawerRefreshKey}
         onCommentCountChange={(issueId, count) => {
           setIssues((prev) =>
             prev.map((i) =>

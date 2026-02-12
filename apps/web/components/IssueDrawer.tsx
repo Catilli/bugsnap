@@ -24,6 +24,7 @@ interface IssueDrawerProps {
   onClose: () => void;
   onCommentCountChange?: (issueId: string, count: number) => void;
   extraActions?: React.ReactNode;
+  refreshKey?: number;
 }
 
 interface Issue {
@@ -74,7 +75,7 @@ interface Attachment {
   createdAt: string;
 }
 
-export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange, extraActions }: IssueDrawerProps) {
+export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange, extraActions, refreshKey }: IssueDrawerProps) {
   const { role, hasRole, isViewer } = useRole();
   const currentUser = useAuthStore((s) => s.user);
   const { openLightbox } = useDialog();
@@ -184,7 +185,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     if (isOpen && issueId) {
       fetchIssueDetails();
     }
-  }, [isOpen, issueId]);
+  }, [isOpen, issueId, refreshKey]);
 
   const fetchIssueDetails = async () => {
     if (!issueId) return;
