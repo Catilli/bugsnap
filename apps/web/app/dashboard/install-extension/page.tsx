@@ -137,7 +137,7 @@ export default function InstallExtensionPage() {
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
             <div className="text-3xl font-bold text-indigo-600 mb-2">1</div>
             <h3 className="font-semibold text-gray-900 mb-2">Download & Extract</h3>
-            <p className="text-sm text-gray-600">Download the extension for your browser and unzip it</p>
+            <p className="text-sm text-gray-600">Download the extension for your browser and extract it to a <strong>permanent folder</strong> (not Downloads)</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
             <div className="text-3xl font-bold text-indigo-600 mb-2">2</div>
@@ -206,19 +206,38 @@ export default function InstallExtensionPage() {
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-3">
                 <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                <h3 className="text-lg font-semibold text-gray-900">Extract to a Permanent Folder</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Extract the downloaded ZIP to a <strong>permanent location</strong> on your computer, for example:</p>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-1">
+                  <p className="text-sm font-mono text-gray-900">C:\Users\YourName\BugSnap\extension</p>
+                  <p className="text-sm font-mono text-gray-900">~/BugSnap/extension</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-2">
+                  <p className="text-sm text-amber-800 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span><strong>Do not extract to your Downloads folder or temporary directories.</strong> Chrome links directly to this folder &mdash; if it gets moved, renamed, or deleted, the extension will break and you&apos;ll need to reinstall it.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">4</span>
                 <h3 className="text-lg font-semibold text-gray-900">Load the Extension</h3>
               </div>
               <div className="ml-11 space-y-2">
                 <ul className="list-disc list-inside space-y-1 text-gray-700">
                   <li>Click &quot;Load unpacked&quot;</li>
-                  <li>Select the extracted <code className="bg-gray-100 px-2 py-1 rounded text-sm">extension</code> folder</li>
+                  <li>Navigate to the folder where you extracted the extension</li>
                   <li>Click &quot;Select Folder&quot;</li>
                 </ul>
               </div>
             </div>
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">4</span>
+                <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">5</span>
                 <h3 className="text-lg font-semibold text-gray-900">Pin to Toolbar</h3>
               </div>
               <div className="ml-11 space-y-2">
@@ -246,19 +265,34 @@ export default function InstallExtensionPage() {
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-3">
                 <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                <h3 className="text-lg font-semibold text-gray-900">Extract to a Permanent Folder</h3>
+              </div>
+              <div className="ml-11 space-y-2">
+                <p className="text-gray-700">Extract the downloaded ZIP to a <strong>permanent location</strong> (e.g. <code className="bg-gray-100 px-2 py-1 rounded text-sm">~/BugSnap/extension-firefox</code>).</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span><strong>Avoid your Downloads folder.</strong> If the extracted folder is moved or deleted, the extension will stop working.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
                 <h3 className="text-lg font-semibold text-gray-900">Load Temporary Add-on</h3>
               </div>
               <div className="ml-11 space-y-2">
                 <ul className="list-disc list-inside space-y-1 text-gray-700">
                   <li>Click &quot;Load Temporary Add-on...&quot;</li>
-                  <li>Navigate to the extracted <code className="bg-gray-100 px-2 py-1 rounded text-sm">extension-firefox</code> folder</li>
+                  <li>Navigate to the folder where you extracted the extension</li>
                   <li>Select the <code className="bg-gray-100 px-2 py-1 rounded text-sm">manifest.json</code> file</li>
                 </ul>
               </div>
             </div>
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                <span className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">4</span>
                 <h3 className="text-lg font-semibold text-gray-900">Verify Installation</h3>
               </div>
               <div className="ml-11 space-y-2">
