@@ -47,7 +47,7 @@ const createIssueSchema = z.object({
   annotations: z.array(z.object({
     type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
     coordinates: z.any(),
-    content: z.string().transform(sanitizeString).optional(),
+    content: z.string().transform(sanitizeString).nullish(),
     color: z.string().optional(),
   })).optional(),
 });
@@ -62,7 +62,7 @@ const updateIssueSchema = z.object({
   annotations: z.array(z.object({
     type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
     coordinates: z.any(),
-    content: z.string().transform(sanitizeString).optional(),
+    content: z.string().transform(sanitizeString).nullish(),
     color: z.string().optional(),
   })).optional(),
 });
