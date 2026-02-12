@@ -179,6 +179,11 @@ From the API directory:
 - ✅ Shared Drawer component and DialogProvider
 - ✅ Cloudflare R2 backup for screenshots
 - ✅ XSS sanitization and security hardening
+- ✅ Extension task drawer (view/manage tasks from any webpage)
+- ✅ Extension task detail panel (status, screenshot, comments)
+- ✅ Annotation editing on existing tasks from the extension
+- ✅ Screenshot compositing (annotations burned into screenshot on save)
+- ✅ Cloudinary CDN for screenshot uploads
 
 ### Planned
 - 🔲 Third-party integrations (Jira, Linear, GitHub)
@@ -251,21 +256,33 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.9.0
+**Current Version**: v0.10.0
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.9.0)**:
-- Multi-browser extension support (Chrome, Firefox, Safari) with screen recording
-- Public "anyone with link" project sharing
-- QA Cycle management (create, add/remove issues, status tracking)
-- Clickable pin in screenshot lightbox with annotation overlays
-- Cloudflare R2 backup for screenshots
-- Removed OAuth (Google/GitHub) — simplified to email/password auth
-- Admin password management for team members
+**Recent Updates (v0.10.0)**:
+- Extension task drawer — view, filter, and manage tasks from any webpage
+- Extension task detail panel — status dropdown, screenshot display, comments section
+- Annotation editing — edit annotations on existing tasks directly from the extension
+- Screenshot compositing — annotations burned into screenshot image on save/update
+- Cloudinary CDN integration for screenshot uploads with R2 backup
+- Install extension page updated with permanent folder extraction guidance
 
 
 ## 📝 Changelog
+
+### v0.10.0 (February 2026)
+- ✅ Extension task drawer — view and manage project tasks from any webpage with grouped list, search, and status filters
+- ✅ Extension task detail panel — full detail view with back navigation, status dropdown, screenshot with lightbox, and comments section
+- ✅ Annotation editing from extension — reopen annotation editor on existing tasks with "Update" button, loads existing annotations via `setAnnotations()`
+- ✅ Screenshot compositing — annotations are burned into the screenshot image when saving/updating, uploaded to Cloudinary CDN
+- ✅ PATCH `/api/issues/:issueId` extended to accept `annotations` array and `screenshotUrl` (data URL → Cloudinary)
+- ✅ Background script fetches screenshot as data URL to avoid CORS taint during compositing
+- ✅ Tasks button visible on matched project pages without enabling tagging mode
+- ✅ Install extension page updated with permanent folder extraction warning and example paths
+- ✅ Fixed task status case mismatch preventing tasks from rendering
+- ✅ Fixed Zod validation rejecting `null` for annotation `content` and `color` fields (`.optional()` → `.nullish()`)
+- ✅ Fixed duplicate text annotations from double `saveText()` execution (Enter + blur)
 
 ### v0.9.0 (February 2026)
 - ✅ Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3) (`extension-safari/`)

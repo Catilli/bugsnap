@@ -103,7 +103,7 @@ Quick-reference for every protected route.
 | PATCH | `/projects/:id/members/:userId` | MANAGER | Project | `hasRole` check |
 | DELETE | `/projects/:id/members/:userId` | MANAGER | Project | `hasRole` check |
 | POST | `/issues` | DEVELOPER | Global | VIEWER blocked |
-| PATCH | `/issues/:id` | DEVELOPER (scoped) | Project | MANAGER for priority/assignee |
+| PATCH | `/issues/:id` | DEVELOPER (scoped) | Project | MANAGER for assignee; accepts `annotations` and `screenshotUrl` for annotation editing from extension |
 | DELETE | `/issues/:id` | MANAGER / Owner / ADMIN | Project | Manual check |
 | POST | `/issues/:id/comments` | DEVELOPER | Global | VIEWER blocked |
 | PATCH | `/comments/:id` | Author only | -- | Author check |
@@ -124,6 +124,21 @@ Quick-reference for every protected route.
 | GET | `/notifications` | -- (authenticated) | Global | List user notifications |
 | PATCH | `/notifications/:id/read` | -- (authenticated) | Global | Mark notification read |
 | PATCH | `/notifications/read-all` | -- (authenticated) | Global | Mark all notifications read |
+
+---
+
+## Browser Extension Permissions
+
+The browser extension uses the same API endpoints with the user's JWT token. Extension capabilities by role:
+
+| Capability | ADMIN | MANAGER | DEVELOPER | VIEWER |
+|-----------|-------|---------|-----------|--------|
+| View task drawer & task list | ✅ | ✅ | ✅ | ✅ |
+| View task detail (screenshot, comments) | ✅ | ✅ | ✅ | ✅ |
+| Change task status | ✅ | ✅ | Own/assigned only | ❌ |
+| Edit annotations & screenshot | ✅ | ✅ | Own only | ❌ |
+| Add comments | ✅ | ✅ | ✅ | ❌ |
+| Create new tasks (tagging mode) | ✅ | ✅ | ✅ | ❌ |
 
 ---
 

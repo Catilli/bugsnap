@@ -1,8 +1,8 @@
 # BugSnap — Core Features Audit
 
-> **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-12
+> **Date:** 2026-02-06 (original audit) | **Updated:** 2026-02-13
 > **Scope:** Read-only codebase analysis — no code changes
-> **Commit:** `692eaae` (original) | `aa8c079` (latest update)
+> **Commit:** `692eaae` (original) | `8ffe74a` (latest update)
 >
 > *Items resolved since the original audit are marked with ~~strikethrough~~ and **RESOLVED**.*
 
@@ -12,10 +12,10 @@
 
 | Status | Count | Meaning |
 |--------|-------|---------|
-| ✅ Implemented | 45 | Feature is fully functional |
+| ✅ Implemented | 49 | Feature is fully functional |
 | 🟡 Partial | 0 | Feature exists but has gaps |
 | ❌ Not Implemented | 1 | Feature is missing entirely |
-| **Total** | **46** | |
+| **Total** | **50** | |
 
 **Completion rate:** ~98% fully implemented, 0% partial, 2% missing.
 
@@ -29,6 +29,10 @@
 | Pin-based issue placement | ✅ Implemented | `extension/bugsnap-ui.js` — `addPinMarker()` renders persistent red pin at element position after selection. **RESOLVED** — pin markers added |
 | Automatic screenshot capture | ✅ Implemented | `extension/background.js:127` — `chrome.tabs.captureVisibleTab(null, {format:'png'})`. Firefox equivalent at `extension-firefox/background.js:24` |
 | Screen recording | ✅ Implemented | `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions. **RESOLVED** in v0.9.0 |
+| Extension task drawer | ✅ Implemented | `extension/bugsnap-ui.js` — `openTasksDrawer()` shows grouped task list with search, status filters, and task detail panel. Auto-initializes on matched project URLs via `content.js` |
+| Extension task detail panel | ✅ Implemented | `extension/bugsnap-ui.js` — `renderTaskDetail()` shows status dropdown, screenshot with lightbox, comments section, and "Open in BugSnap" link |
+| Extension annotation editing | ✅ Implemented | `extension/bugsnap-ui.js` — `showAnnotationModalForEdit()` reopens annotation modal on existing tasks with "Update" button, loads existing annotations via `setAnnotations()` |
+| Screenshot compositing | ✅ Implemented | `extension/bugsnap-ui.js` — `_compositeScreenshot()` burns annotations into screenshot image (canvas compositing), uploaded to Cloudinary CDN via PATCH `/api/issues/:issueId` |
 
 ---
 
