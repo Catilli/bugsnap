@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, MapPin, ExternalLink, Share2, Check, Paperclip, Upload, FileText, Image, Film, Trash2, ChevronDown, UserX, Pencil } from 'lucide-react';
+import { X, MapPin, ExternalLink, Share2, Check, Paperclip, Upload, FileText, Image, Film, Trash2, ChevronDown, UserX } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 
 import { TypeBadge } from './TypeBadge';
@@ -16,7 +16,7 @@ import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
 import { RoleGate } from './RoleGate';
 import { ScreenshotImage } from './ScreenshotImage';
-import AnnotationEditorModal from './AnnotationEditorModal';
+import { useDialog } from '../providers/DialogProvider';
 
 interface IssueDrawerProps {
   issueId: string | null;
@@ -92,9 +92,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const [projectMembers, setProjectMembers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [drawerView, setDrawerView] = useState<'comments' | 'activity'>('comments');
-  const [annotationEditorOpen, setAnnotationEditorOpen] = useState(false);
-  const [screenshotCacheBust, setScreenshotCacheBust] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const { openLightbox } = useDialog();
 
   const fetchProjectMembers = async (projectId: string) => {
     setIsLoadingMembers(true);
@@ -181,16 +179,6 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     { value: 'resolved', label: 'Resolved' },
     { value: 'closed', label: 'Closed' },
   ];
-
-  // Close lightbox on Escape
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLightboxOpen(false);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [lightboxOpen]);
 
   // Fetch issue details when drawer opens
   useEffect(() => {
@@ -452,28 +440,42 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             {/* Screenshot */}
             {issue.screenshotUrl && (
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Screenshot</label>
-                  {!isViewer && (
-                    <button
-                      onClick={() => setAnnotationEditorOpen(true)}
-                      className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded transition-colors"
-                      title="Edit annotations"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Screenshot</label>
                 <div
                   className="relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer group h-96"
-                  onClick={() => setLightboxOpen(true)}
+                  onClick={() => {
+                    const env = issue.environmentData;
+                    const sel = env?.selectedElement;
+
+                    let pinData = null;
+                    if (sel && issue.url) {
+                      const vpMatch = env?.viewportSize?.match(/^(\d+)x(\d+)$/);
+                      const vpW = vpMatch ? parseInt(vpMatch[1], 10) : 0;
+                      const vpH = vpMatch ? parseInt(vpMatch[2], 10) : 0;
+                      pinData = {
+                        clickX: sel.clickX ?? null,
+                        clickY: sel.clickY ?? null,
+                        devicePixelRatio: sel.devicePixelRatio ?? 1,
+                        viewportWidth: vpW,
+                        viewportHeight: vpH,
+                        url: issue.url,
+                        innerText: sel.innerText,
+                        cssSelector: sel.cssSelector,
+                        tagName: sel.tagName,
+                        boundingClientRect: sel.boundingClientRect,
+                      };
+                    }
+
+                    openLightbox({
+                      src: issue.screenshotUrl!,
+                      backupSrc: issue.screenshotBackupUrl,
+                      alt: 'Screenshot',
+                      pinData,
+                    });
+                  }}
                 >
                   <ScreenshotImage
-                    src={
-                      screenshotCacheBust && issue.screenshotUrl && !issue.screenshotUrl.startsWith('data:')
-                        ? `${issue.screenshotUrl}${issue.screenshotUrl.includes('?') ? '&' : '?'}_t=${screenshotCacheBust}`
-                        : issue.screenshotUrl
-                    }
+                    src={issue.screenshotUrl}
                     backupSrc={issue.screenshotBackupUrl}
                     alt="Screenshot"
                     className="w-full h-full object-cover"
@@ -724,50 +726,6 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
             </div>
         </div>}
       </Drawer>
-
-      {annotationEditorOpen && issue?.screenshotUrl && (
-        <AnnotationEditorModal
-          isOpen={annotationEditorOpen}
-          screenshotUrl={issue.screenshotUrl}
-          backupScreenshotUrl={issue.screenshotBackupUrl}
-          annotations={issue.annotations || []}
-          issueId={issue.id}
-          onSave={(updatedIssue) => {
-            setIssue(updatedIssue);
-            setScreenshotCacheBust(Date.now());
-            setAnnotationEditorOpen(false);
-          }}
-          onCancel={() => setAnnotationEditorOpen(false)}
-        />
-      )}
-
-      {/* Simple lightbox — matches extension Task Drawer style */}
-      {lightboxOpen && issue?.screenshotUrl && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.9)' }}
-          onClick={() => setLightboxOpen(false)}
-        >
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
-            className="absolute top-4 right-4 text-white text-3xl leading-none bg-transparent border-none cursor-pointer p-1 hover:opacity-80"
-          >
-            &times;
-          </button>
-          <ScreenshotImage
-            src={
-              screenshotCacheBust && issue.screenshotUrl && !issue.screenshotUrl.startsWith('data:')
-                ? `${issue.screenshotUrl}${issue.screenshotUrl.includes('?') ? '&' : '?'}_t=${screenshotCacheBust}`
-                : issue.screenshotUrl
-            }
-            backupSrc={issue.screenshotBackupUrl}
-            alt="Screenshot"
-            className="rounded"
-            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
     </>
   );
 }

@@ -118,7 +118,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={dialog.id}
-              className="fixed inset-0 bg-black/90 overflow-auto"
+              className="fixed inset-0 bg-black/90"
               style={{ zIndex }}
               onClick={() => dismiss(dialog.id, false)}
             >

@@ -43,6 +43,7 @@ export default function AnnotatedLightbox({
 }: AnnotatedLightboxProps) {
   const [useFallback, setUseFallback] = useState(false);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [renderedSize, setRenderedSize] = useState<{ w: number; h: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const activeSrc = useFallback && backupSrc ? backupSrc : src;
 
@@ -50,6 +51,7 @@ export default function AnnotatedLightbox({
     const img = imgRef.current;
     if (img) {
       setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+      setRenderedSize({ w: img.clientWidth, h: img.clientHeight });
     }
   }, []);
 
@@ -63,9 +65,17 @@ export default function AnnotatedLightbox({
     ? buildPinUrl(pinData.url, pinData.innerText)
     : null;
 
-  // Compute pin position in image pixel space
+  // Compute pin position in image pixel space, scaled to rendered size
+  const renderScale = renderedSize && naturalSize
+    ? renderedSize.w / naturalSize.w
+    : 1;
+
   const pinPos = pinData && naturalSize
     ? getPinPosition(pinData, naturalSize)
+    : null;
+
+  const scaledPinPos = pinPos
+    ? { x: pinPos.x * renderScale, y: pinPos.y * renderScale }
     : null;
 
   return (
@@ -74,7 +84,7 @@ export default function AnnotatedLightbox({
         ref={imgRef}
         src={activeSrc}
         alt={alt}
-        className="max-w-none"
+        className="max-w-[90vw] max-h-[90vh] object-contain"
         onLoad={handleLoad}
         onError={() => {
           if (!useFallback && backupSrc) setUseFallback(true);
@@ -108,10 +118,10 @@ export default function AnnotatedLightbox({
       )}
 
       {/* Clickable pin overlay */}
-      {pinPos && (
+      {scaledPinPos && (
         <PinOverlay
-          x={pinPos.x}
-          y={pinPos.y}
+          x={scaledPinPos.x}
+          y={scaledPinPos.y}
           href={pinHref}
           label={pinData!.tagName}
           innerText={pinData!.innerText}
