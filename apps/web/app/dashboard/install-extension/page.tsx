@@ -211,8 +211,8 @@ export default function InstallExtensionPage() {
               <div className="ml-11 space-y-2">
                 <p className="text-gray-700">Extract the downloaded ZIP to a <strong>permanent location</strong> on your computer, for example:</p>
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-1">
-                  <p className="text-sm font-mono text-gray-900">C:\Users\YourName\BugSnap\extension</p>
-                  <p className="text-sm font-mono text-gray-900">~/BugSnap/extension</p>
+                  <p className="text-sm font-mono text-gray-900">C:\Users\YourName\browser-extensions\BugSnap</p>
+                  <p className="text-sm font-mono text-gray-900">~/browser-extensions/BugSnap</p>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-2">
                   <p className="text-sm text-amber-800 flex items-start gap-2">
@@ -268,7 +268,7 @@ export default function InstallExtensionPage() {
                 <h3 className="text-lg font-semibold text-gray-900">Extract to a Permanent Folder</h3>
               </div>
               <div className="ml-11 space-y-2">
-                <p className="text-gray-700">Extract the downloaded ZIP to a <strong>permanent location</strong> (e.g. <code className="bg-gray-100 px-2 py-1 rounded text-sm">~/BugSnap/extension-firefox</code>).</p>
+                <p className="text-gray-700">Extract the downloaded ZIP to a <strong>permanent location</strong> (e.g. <code className="bg-gray-100 px-2 py-1 rounded text-sm">~/browser-extensions/BugSnap</code>).</p>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-sm text-amber-800 flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
