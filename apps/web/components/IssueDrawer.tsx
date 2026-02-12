@@ -16,7 +16,6 @@ import { useRole } from '../lib/useRole';
 import { useAuthStore } from '../store/authStore';
 import { RoleGate } from './RoleGate';
 import { ScreenshotImage } from './ScreenshotImage';
-import { useDialog } from '../providers/DialogProvider';
 import AnnotationEditorModal from './AnnotationEditorModal';
 
 interface IssueDrawerProps {
@@ -79,7 +78,6 @@ interface Attachment {
 export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountChange, extraActions, refreshKey }: IssueDrawerProps) {
   const { role, hasRole, isViewer } = useRole();
   const currentUser = useAuthStore((s) => s.user);
-  const { openLightbox } = useDialog();
   const [issue, setIssue] = useState<Issue | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -96,6 +94,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   const [drawerView, setDrawerView] = useState<'comments' | 'activity'>('comments');
   const [annotationEditorOpen, setAnnotationEditorOpen] = useState(false);
   const [screenshotCacheBust, setScreenshotCacheBust] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const fetchProjectMembers = async (projectId: string) => {
     setIsLoadingMembers(true);
@@ -182,6 +181,16 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
     { value: 'resolved', label: 'Resolved' },
     { value: 'closed', label: 'Closed' },
   ];
+
+  // Close lightbox on Escape
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [lightboxOpen]);
 
   // Fetch issue details when drawer opens
   useEffect(() => {
@@ -457,13 +466,7 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
                 </div>
                 <div
                   className="relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer group h-96"
-                  onClick={() => {
-                    openLightbox({
-                      src: issue.screenshotUrl!,
-                      backupSrc: issue.screenshotBackupUrl,
-                      alt: 'Screenshot',
-                    });
-                  }}
+                  onClick={() => setLightboxOpen(true)}
                 >
                   <ScreenshotImage
                     src={
@@ -736,6 +739,34 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
           }}
           onCancel={() => setAnnotationEditorOpen(false)}
         />
+      )}
+
+      {/* Simple lightbox — matches extension Task Drawer style */}
+      {lightboxOpen && issue?.screenshotUrl && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.9)' }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+            className="absolute top-4 right-4 text-white text-3xl leading-none bg-transparent border-none cursor-pointer p-1 hover:opacity-80"
+          >
+            &times;
+          </button>
+          <ScreenshotImage
+            src={
+              screenshotCacheBust && issue.screenshotUrl && !issue.screenshotUrl.startsWith('data:')
+                ? `${issue.screenshotUrl}${issue.screenshotUrl.includes('?') ? '&' : '?'}_t=${screenshotCacheBust}`
+                : issue.screenshotUrl
+            }
+            backupSrc={issue.screenshotBackupUrl}
+            alt="Screenshot"
+            className="rounded"
+            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </>
   );

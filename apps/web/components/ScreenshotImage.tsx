@@ -7,10 +7,11 @@ interface ScreenshotImageProps {
   backupSrc?: string | null;
   alt: string;
   className?: string;
+  style?: React.CSSProperties;
   onClick?: (e: React.MouseEvent) => void;
 }
 
-export function ScreenshotImage({ src, backupSrc, alt, className, onClick }: ScreenshotImageProps) {
+export function ScreenshotImage({ src, backupSrc, alt, className, style, onClick }: ScreenshotImageProps) {
   const [useFallback, setUseFallback] = useState(false);
   const activeSrc = useFallback && backupSrc ? backupSrc : src;
 
@@ -19,6 +20,7 @@ export function ScreenshotImage({ src, backupSrc, alt, className, onClick }: Scr
       src={activeSrc}
       alt={alt}
       className={className}
+      style={style}
       onClick={onClick}
       onError={() => {
         if (!useFallback && backupSrc) setUseFallback(true);
