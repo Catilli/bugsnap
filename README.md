@@ -269,14 +269,14 @@ This project is private and proprietary.
 
 ## 📝 Changelog
 
-### v0.10.1 (February 2026)
+### v0.10.1 (February 13, 2026)
 - ✅ Removed web app annotation editor (AnnotationEditorModal + MarkMyImage) — annotations are burned into screenshots by the extension
 - ✅ Restored clickable pin tagging in screenshot lightbox with scaled position for constrained 90vw/90vh images
 - ✅ Lightbox style matches extension Task Drawer — `rgba(0,0,0,0.9)` backdrop, centered image, `x` close button, 4px border radius
 - ✅ Removed SVG annotation overlay rendering from lightbox (redundant since annotations are composited into screenshot)
 - ✅ DialogProvider lightbox no longer scrollable (constrained image fits viewport)
 
-### v0.10.0 (February 2026)
+### v0.10.0 (February 13, 2026)
 - ✅ Extension task drawer — view and manage project tasks from any webpage with grouped list, search, and status filters
 - ✅ Extension task detail panel — full detail view with back navigation, status dropdown, screenshot with lightbox, and comments section
 - ✅ Annotation editing from extension — reopen annotation editor on existing tasks with "Update" button, loads existing annotations via `setAnnotations()`
@@ -289,7 +289,7 @@ This project is private and proprietary.
 - ✅ Fixed Zod validation rejecting `null` for annotation `content` and `color` fields (`.optional()` → `.nullish()`)
 - ✅ Fixed duplicate text annotations from double `saveText()` execution (Enter + blur)
 
-### v0.9.0 (February 2026)
+### v0.9.0 (February 12, 2026)
 - ✅ Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3) (`extension-safari/`)
 - ✅ Screen recording in Chrome and Firefox extensions (`MediaRecorder` + `getDisplayMedia`)
 - ✅ Public "anyone with link" project sharing with redesigned share dropdown
@@ -306,13 +306,13 @@ This project is private and proprietary.
 - ✅ Show user names instead of UUIDs in activity timeline
 - ✅ Screenshot lightbox moved into DialogProvider
 
-### v0.8.0 (February 2026)
+### v0.8.0 (February 11, 2026)
 - ✅ Admin-only team member creation — `POST /api/users` with Zod validation, bcrypt password hashing, and duplicate email detection
 - ✅ "Add Member" modal on team page — admin-only button, role selection, error handling
 - ✅ Fixed missing auth `preHandler` on user routes (`GET /users`, `POST /users`, `PATCH /users/:userId/role`)
 - ✅ New users onboard via "Forgot Password" flow (temp password never exposed)
 
-### v0.7.0 (February 2026)
+### v0.7.0 (February 11, 2026)
 - ✅ URL sanitization (`sanitizeUrl` / `zSanitizedUrl`) rejecting `javascript:`, `data:`, `vbscript:` protocols
 - ✅ Replaced `z.any()` on `environmentData` with proper permissive schema
 - ✅ Zod validation for all query parameters (issues, feedback, users, notifications)
@@ -322,7 +322,7 @@ This project is private and proprietary.
 - ✅ Sanitization test suite (backend + frontend)
 - ✅ Added `SECURITY_INPUT_SANITIZATION.md` internal guide
 
-### v0.6.0 (February 2026)
+### v0.6.0 (February 10, 2026)
 - ✅ Split notifications by type — bell icon for issues, bug icon for feedback
 - ✅ Extracted shared Drawer component and global DialogProvider (Promise-based confirm dialogs)
 - ✅ Removed Resolved kanban column, renamed QA to Ready for QA
@@ -333,7 +333,7 @@ This project is private and proprietary.
 - ✅ Health check alerting and shared content pages
 - ✅ XSS sanitization and screenshot CDN upload
 
-### v0.5.0 (February 2026)
+### v0.5.0 (February 10, 2026)
 - ✅ Activity timeline and audit logging
 - ✅ Notification system with email queue (Resend + Redis)
 - ✅ Issue severity field and QA status column
@@ -341,7 +341,7 @@ This project is private and proprietary.
 - ✅ Shareable issue and feedback links (token-based, 7-day expiry)
 - ✅ Browser extension enhancements
 
-### v0.4.0 (February 2026)
+### v0.4.0 (February 07, 2026)
 - ✅ Added roles & permissions system (ADMIN, MANAGER, DEVELOPER, VIEWER)
 - ✅ Global role guards (`requireRole`) and project-scoped guards (`requireProjectRole`)
 - ✅ Frontend `useRole` / `useProjectRole` hooks and `<RoleGate>` component
@@ -351,14 +351,14 @@ This project is private and proprietary.
 - ✅ Extracted reusable PageHeader component with icon support
 - ✅ Replaced project page grid/list with reusable KanbanBoard (drag-and-drop)
 
-### v0.3.1 (February 2026)
+### v0.3.1 (February 06, 2026)
 - ✅ Migrated auth back to self-hosted JWT + OAuth (Google, GitHub)
 - ✅ Zustand auth store with persist middleware
 - ✅ OAuth routes conditional on env vars
 - ✅ Email service with lazy Resend initialization
 - ✅ Password reset flow (crypto token + SHA-256, 1h TTL)
 
-### v0.3.0 (February 2026)
+### v0.3.0 (February 05, 2026)
 - ✅ Codebase cleanup: removed unused files, dead code, and stale stubs
 - ✅ Fixed wrong cross-dependencies (next in API, fastify in web)
 - ✅ Removed commented-out code and unused imports
@@ -371,7 +371,7 @@ This project is private and proprietary.
 - ✅ Enhanced project structure and build configuration
 - ✅ Added troubleshooting for common deployment issues
 
-### v0.1.0 (January 2026)
+### v0.1.0 (January 28, 2026)
 - ✅ Initial release with core bug tracking functionality
 - ✅ User authentication and authorization
 - ✅ Project and task management
