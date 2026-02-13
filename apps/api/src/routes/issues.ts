@@ -177,13 +177,18 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Upload raw (un-annotated) screenshot if provided
+      console.log('[DEBUG] data.rawScreenshotUrl present:', !!data.rawScreenshotUrl, 'type:', typeof data.rawScreenshotUrl, 'starts with data:image:', data.rawScreenshotUrl?.startsWith('data:image/') ?? false, 'length:', data.rawScreenshotUrl?.length ?? 0);
       if (data.rawScreenshotUrl) {
         try {
           const rawResult = await processScreenshotUrl(data.rawScreenshotUrl);
+          console.log('[DEBUG] rawResult from processScreenshotUrl:', JSON.stringify(rawResult).slice(0, 200));
           rawScreenshotUrl = rawResult.screenshotUrl;
         } catch (error) {
+          console.error('[DEBUG] raw screenshot upload FAILED:', error);
           fastify.log.error(error, 'Failed to upload raw screenshot');
         }
+      } else {
+        console.log('[DEBUG] rawScreenshotUrl NOT provided in request body');
       }
 
       // Verify user has access to project
@@ -616,13 +621,16 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Handle raw screenshot update (clean, un-annotated base image)
+      console.log('[DEBUG PATCH] newRawScreenshotUrl present:', !!newRawScreenshotUrl, 'type:', typeof newRawScreenshotUrl, 'starts with data:image:', newRawScreenshotUrl?.startsWith('data:image/') ?? false, 'length:', newRawScreenshotUrl?.length ?? 0);
       if (newRawScreenshotUrl) {
         try {
           const rawResult = await processScreenshotUrl(newRawScreenshotUrl);
+          console.log('[DEBUG PATCH] rawResult:', JSON.stringify(rawResult).slice(0, 200));
           if (rawResult.screenshotUrl) {
             (issueUpdateData as any).rawScreenshotUrl = rawResult.screenshotUrl;
           }
         } catch (error) {
+          console.error('[DEBUG PATCH] raw screenshot upload FAILED:', error);
           console.warn('Raw screenshot upload failed during update, skipping:', error);
         }
       }
