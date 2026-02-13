@@ -268,6 +268,13 @@ This project is private and proprietary.
 
 ## 📝 Changelog
 
+### Extensions v1.2 (February 14, 2026)
+- Fix doubled annotations in edit mode — revert `_editHasRawScreenshot` conditional that removed edit capability for legacy tasks
+- Send `rawScreenshotUrl` (clean base image) on every annotation save so the DB always has the un-annotated screenshot
+- API PATCH handler now accepts and uploads `rawScreenshotUrl` to Cloudinary alongside composited `screenshotUrl`
+- Legacy tasks (missing `rawScreenshotUrl`) get it populated on first annotation edit-save cycle
+- Annotations always load as editable shapes regardless of `rawScreenshotUrl` presence
+
 ### v0.10.5 (February 14, 2026)
 - Notify user when invited to a project — "You were added to project X" notification in the bell
 - Notify assignee when assigned to an issue at creation time (previously only triggered on PATCH)
