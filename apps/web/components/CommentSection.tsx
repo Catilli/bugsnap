@@ -1,15 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Pencil, Trash2, Check, X } from 'lucide-react';
 import { authFetch } from '../lib/api';
 import { useCurrentUser } from '../lib/useCurrentUser';
 import { useRole } from '../lib/useRole';
+import MentionTextarea from './MentionTextarea';
+
+interface MentionedUser {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface Comment {
   id: string;
   content: string;
   createdAt: string;
+  mentionedUserIds?: string[];
+  mentionedUsers?: MentionedUser[];
   user: {
     id: string;
     name: string;
@@ -34,26 +43,50 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
   const { isViewer } = useRole();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [newMentionIds, setNewMentionIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionResults, setMentionResults] = useState<ProjectMember[]>([]);
-  const [editMentionQuery, setEditMentionQuery] = useState<string | null>(null);
-  const [editMentionResults, setEditMentionResults] = useState<ProjectMember[]>([]);
+  const [editMentionIds, setEditMentionIds] = useState<string[]>([]);
   const user = useCurrentUser();
 
-  const renderCommentContent = (content: string): React.ReactNode => {
+  const renderCommentContent = (content: string, mentionedUsers?: MentionedUser[]): React.ReactNode => {
+    const mentionMap = new Map<string, MentionedUser>();
+    if (mentionedUsers) {
+      for (const u of mentionedUsers) {
+        mentionMap.set(u.name.toLowerCase(), u);
+      }
+    }
+
     const parts = content.split(/(@\w+)/g);
-    return parts.map((part, i) =>
-      /^@\w+/.test(part) ? (
-        <span key={i} className="text-indigo-600 font-medium bg-indigo-50 px-1 rounded">
-          {part}
-        </span>
-      ) : (
-        <React.Fragment key={i}>{part}</React.Fragment>
-      ),
-    );
+    return parts.map((part, i) => {
+      if (/^@\w+/.test(part)) {
+        const name = part.slice(1);
+        const mentionedUser = mentionMap.get(name.toLowerCase());
+        if (mentionedUser) {
+          return (
+            <span
+              key={i}
+              className="text-indigo-600 font-medium bg-indigo-50 px-1 rounded cursor-default"
+              title={mentionedUser.email}
+            >
+              {part}
+            </span>
+          );
+        }
+        // Mentioned user not found (removed from project)
+        return (
+          <span
+            key={i}
+            className="text-gray-400 font-medium bg-gray-100 px-1 rounded cursor-default"
+            title="User not found"
+          >
+            {part}
+          </span>
+        );
+      }
+      return <React.Fragment key={i}>{part}</React.Fragment>;
+    });
   };
 
   const entityId = issueId || feedbackId;
@@ -91,7 +124,10 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
       const response = await authFetch(`${apiUrl}/api/${basePath}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment.trim() }),
+        body: JSON.stringify({
+          content: newComment.trim(),
+          mentionedUserIds: newMentionIds,
+        }),
       });
 
       if (response.ok) {
@@ -99,6 +135,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
         const updated = [...comments, comment];
         setComments(updated);
         setNewComment('');
+        setNewMentionIds([]);
         onCommentCountChange?.(updated.length);
       }
     } catch {
@@ -115,7 +152,10 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
       const response = await authFetch(`${apiUrl}/api/comments/${commentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: editContent.trim() }),
+        body: JSON.stringify({
+          content: editContent.trim(),
+          mentionedUserIds: editMentionIds,
+        }),
       });
 
       if (response.ok) {
@@ -123,6 +163,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
         setComments(comments.map((c) => (c.id === commentId ? updated : c)));
         setEditingId(null);
         setEditContent('');
+        setEditMentionIds([]);
       }
     } catch {
       // Silently fail
@@ -146,6 +187,16 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
       // Silently fail
     }
   };
+
+  const handleNewCommentChange = useCallback((val: string, ids: string[]) => {
+    setNewComment(val);
+    setNewMentionIds(ids);
+  }, []);
+
+  const handleEditCommentChange = useCallback((val: string, ids: string[]) => {
+    setEditContent(val);
+    setEditMentionIds(ids);
+  }, []);
 
   return (
     <div className="border-t border-gray-200 pt-6">
@@ -176,6 +227,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                           onClick={() => {
                             setEditingId(comment.id);
                             setEditContent(comment.content);
+                            setEditMentionIds(comment.mentionedUserIds || []);
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                           title="Edit"
@@ -194,53 +246,14 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                   </div>
 
                   {isEditing ? (
-                    <div className="relative">
-                      <textarea
+                    <div>
+                      <MentionTextarea
                         value={editContent}
-                        onChange={(e) => {
-                          setEditContent(e.target.value);
-                          const text = e.target.value;
-                          const cursorPos = e.target.selectionStart;
-                          const textBefore = text.slice(0, cursorPos);
-                          const mentionMatch = textBefore.match(/@(\w*)$/);
-                          if (mentionMatch && projectMembers.length > 0) {
-                            const query = mentionMatch[1].toLowerCase();
-                            setEditMentionQuery(query);
-                            setEditMentionResults(
-                              projectMembers.filter(m =>
-                                m.name.toLowerCase().includes(query)
-                              ).slice(0, 5)
-                            );
-                          } else {
-                            setEditMentionQuery(null);
-                            setEditMentionResults([]);
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y text-sm"
+                        onChange={handleEditCommentChange}
+                        projectMembers={projectMembers}
                         rows={2}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y text-sm"
                       />
-                      {editMentionQuery !== null && editMentionResults.length > 0 && (
-                        <div className="absolute bottom-full mb-1 left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                          {editMentionResults.map(member => (
-                            <button
-                              key={member.id}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                const regex = new RegExp(`@${editMentionQuery}$`);
-                                setEditContent(prev => prev.replace(regex, `@${member.name} `));
-                                setEditMentionQuery(null);
-                                setEditMentionResults([]);
-                              }}
-                            >
-                              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-medium">
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="text-gray-900">{member.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
                       <div className="flex gap-2 mt-1">
                         <button
                           onClick={() => handleEditComment(comment.id)}
@@ -253,8 +266,7 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                           onClick={() => {
                             setEditingId(null);
                             setEditContent('');
-                            setEditMentionQuery(null);
-                            setEditMentionResults([]);
+                            setEditMentionIds([]);
                           }}
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
                         >
@@ -263,7 +275,9 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-700">{renderCommentContent(comment.content)}</p>
+                    <p className="text-sm text-gray-700">
+                      {renderCommentContent(comment.content, comment.mentionedUsers)}
+                    </p>
                   )}
                 </div>
               </div>
@@ -276,60 +290,15 @@ export default function CommentSection({ issueId, feedbackId, onCommentCountChan
 
       {/* Add comment form — hidden for VIEWER */}
       {!isViewer && (
-        <div className="mt-4 relative">
-          <textarea
+        <div className="mt-4">
+          <MentionTextarea
             value={newComment}
-            onChange={(e) => {
-              setNewComment(e.target.value);
-              // Detect @mention
-              const text = e.target.value;
-              const cursorPos = e.target.selectionStart;
-              const textBefore = text.slice(0, cursorPos);
-              const mentionMatch = textBefore.match(/@(\w*)$/);
-              if (mentionMatch && projectMembers.length > 0) {
-                const query = mentionMatch[1].toLowerCase();
-                setMentionQuery(query);
-                setMentionResults(
-                  projectMembers.filter(m =>
-                    m.name.toLowerCase().includes(query)
-                  ).slice(0, 5)
-                );
-              } else {
-                setMentionQuery(null);
-                setMentionResults([]);
-              }
-            }}
+            onChange={handleNewCommentChange}
+            projectMembers={projectMembers}
             placeholder="Add a comment... (use @name to mention)"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
             rows={3}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
           />
-          {/* @Mention autocomplete dropdown */}
-          {mentionQuery !== null && mentionResults.length > 0 && (
-            <div className="absolute bottom-full mb-1 left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-              {mentionResults.map(member => (
-                <button
-                  key={member.id}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    // Replace the @query with @name
-                    const regex = new RegExp(`@${mentionQuery}$`);
-                    setNewComment(prev => {
-                      const before = prev.slice(0, prev.length);
-                      return before.replace(regex, `@${member.name} `);
-                    });
-                    setMentionQuery(null);
-                    setMentionResults([]);
-                  }}
-                >
-                  <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-medium">
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-gray-900">{member.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
           <button
             onClick={handleAddComment}
             disabled={isSubmitting || !newComment.trim()}

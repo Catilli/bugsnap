@@ -42,6 +42,52 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Get mentionable users for a project (for @mention autocomplete)
+  fastify.get('/projects/:projectId/mentionable', {
+    preHandler: async (request, reply) => {
+      await fastify.authenticate(request, reply);
+    },
+  }, async (request, reply) => {
+    try {
+      const { projectId } = request.params as { projectId: string };
+      const userId = (request.user as any)?.id;
+
+      if (!userId) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const hasAccess = await ProjectMemberService.isMemberOfProject(userId, projectId);
+      if (!hasAccess) {
+        return reply.status(403).send({ error: 'You do not have access to this project' });
+      }
+
+      const { owner, members } = await ProjectMemberService.getProjectMembers(projectId);
+
+      // Build flat list: owner + members, deduplicated
+      const seen = new Set<string>();
+      const result: { id: string; name: string; email: string }[] = [];
+
+      if (owner) {
+        seen.add(owner.id);
+        result.push(owner);
+      }
+
+      for (const m of members) {
+        if (!seen.has(m.user.id)) {
+          seen.add(m.user.id);
+          result.push(m.user);
+        }
+      }
+
+      result.sort((a, b) => a.name.localeCompare(b.name));
+
+      return reply.send(result);
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch mentionable users' });
+    }
+  });
+
   // Add a member to a project
   fastify.post('/projects/:projectId/members', {
     preHandler: async (request, reply) => {

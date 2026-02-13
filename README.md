@@ -256,18 +256,33 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.10.2
+**Current Version**: v0.10.3
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.10.2)**:
-- Clean screenshot capture — extension hides pin marker, element outline, task pins, and tasks drawer before capturing
-- UI elements are restored after capture (or on error) before the annotation modal opens
+**Recent Updates (v0.10.3)**:
+- @Mention autocomplete for comments — type `@` to search and select project members with keyboard navigation
+- `mentionedUserIds` stored on comments for reliable mention tracking and notifications
+- Email tooltips on rendered @mentions, gray styling for removed users
 
 
 ## 📝 Changelog
 
 ### v0.10.3 (February 13, 2026)
+- @Mention autocomplete for comments — type `@` in comment textarea to search and select project members
+- Keyboard navigation for mention dropdown — ArrowDown/Up to highlight, Enter to insert, Escape to close
+- Reusable `MentionTextarea` component replaces duplicated inline mention logic in add/edit comment modes
+- Caret-position-based text splicing fixes fragile regex replacement for multiple mentions
+- `mentionedUserIds` stored on Comment model (Prisma `String[]`) for reliable mention tracking
+- Backend validates mention IDs against project membership before storing (silently drops invalid IDs)
+- `GET /api/projects/:projectId/mentionable` endpoint — project-scoped member list for @mention autocomplete
+- Comment responses include `mentionedUsers: { id, name, email }[]` for rendering with email tooltips
+- PATCH comment sends "mentioned" notifications only for newly added user IDs (old vs new diff)
+- Regex fallback preserved for clients that don't send `mentionedUserIds` (backward compatibility)
+- Rendered @mentions show email tooltip on hover; removed/unknown users get gray styling with "User not found"
+- Extension comment textarea supports @mention autocomplete with lazily-fetched project members
+- Extension sends `mentionedUserIds` when posting comments
+- IssueDrawer eagerly loads project members on open (no longer requires clicking "Assign" first)
 - Persistent element pins — blue task pins remain visible after closing the tasks drawer and survive page reloads
 - Auto-load task pins on page init without opening the drawer (lightweight background fetch)
 - XPath fallback for element resolution — pins resolve even when CSS selectors break due to DOM changes

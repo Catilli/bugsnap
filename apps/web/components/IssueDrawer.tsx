@@ -260,6 +260,13 @@ export default function IssueDrawer({ issueId, isOpen, onClose, onCommentCountCh
   };
 
   // Fetch attachments when issue loads
+  // Eagerly load project members when issue loads (for @mention autocomplete)
+  useEffect(() => {
+    if (issue?.projectId && projectMembers.length === 0) {
+      fetchProjectMembers(issue.projectId);
+    }
+  }, [issue?.projectId]);
+
   useEffect(() => {
     if (isOpen && issueId) {
       fetchAttachments();

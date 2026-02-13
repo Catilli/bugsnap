@@ -8,7 +8,57 @@ import { notificationService } from '../services/notificationService';
 
 const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment content is required').transform(sanitizeString),
+  mentionedUserIds: z.array(z.string().uuid()).optional().default([]),
 });
+
+/** Batch-fetch mentioned users and attach to each comment */
+async function attachMentionedUsers(comments: any[]) {
+  const allIds = new Set<string>();
+  for (const c of comments) {
+    for (const id of c.mentionedUserIds || []) {
+      allIds.add(id);
+    }
+  }
+
+  if (allIds.size === 0) return comments;
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: [...allIds] } },
+    select: { id: true, name: true, email: true },
+  });
+  const userMap = new Map(users.map(u => [u.id, u]));
+
+  return comments.map(c => ({
+    ...c,
+    mentionedUsers: (c.mentionedUserIds || [])
+      .map((id: string) => userMap.get(id))
+      .filter(Boolean),
+  }));
+}
+
+/** Validate mentionedUserIds against project members + owner */
+async function validateMentionIds(
+  mentionedUserIds: string[],
+  projectId: string,
+): Promise<string[]> {
+  if (mentionedUserIds.length === 0) return [];
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { createdById: true },
+  });
+
+  const members = await prisma.projectMember.findMany({
+    where: { projectId },
+    select: { userId: true },
+  });
+
+  const validIds = new Set<string>();
+  if (project) validIds.add(project.createdById);
+  for (const m of members) validIds.add(m.userId);
+
+  return mentionedUserIds.filter(id => validIds.has(id));
+}
 
 export async function commentRoutes(fastify: FastifyInstance) {
   // Create a comment on an issue
@@ -57,11 +107,15 @@ export async function commentRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'You do not have access to this issue' });
       }
 
+      // Validate mentionedUserIds against project membership
+      const validatedMentionIds = await validateMentionIds(data.mentionedUserIds, issue.projectId);
+
       const comment = await prisma.comment.create({
         data: {
           issueId,
           userId,
           content: data.content,
+          mentionedUserIds: validatedMentionIds,
         },
         include: {
           user: {
@@ -73,6 +127,9 @@ export async function commentRoutes(fastify: FastifyInstance) {
           },
         },
       });
+
+      // Attach mentionedUsers for the response
+      const [enriched] = await attachMentionedUsers([comment]);
 
       // Emit SSE event so other clients see the new comment
       emitIssueEvent({ type: 'issue:updated', projectId: issue.projectId, data: issue as any });
@@ -103,29 +160,35 @@ export async function commentRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Parse @mentions and notify mentioned users
-      const mentions = data.content.match(/@(\w+)/g);
-      if (mentions) {
-        const mentionNames = mentions.map(m => m.slice(1));
-        const mentionedUsers = await prisma.user.findMany({
-          where: { name: { in: mentionNames, mode: 'insensitive' } },
-          select: { id: true, name: true },
-        });
-        for (const mentionedUser of mentionedUsers) {
-          if (mentionedUser.id !== userId && !notifyIds.has(mentionedUser.id)) {
-            notificationService.create({
-              userId: mentionedUser.id,
-              type: 'mentioned',
-              title: `You were mentioned in "${issue.title}"`,
-              message: data.content.substring(0, 200),
-              issueId,
-              projectId: issue.projectId,
+      // Notify mentioned users (from validated IDs if provided, else regex fallback)
+      const mentionIdsToNotify = validatedMentionIds.length > 0
+        ? validatedMentionIds
+        : await (async () => {
+            // Regex fallback for clients that don't send mentionedUserIds (e.g. extension)
+            const mentions = data.content.match(/@(\w+)/g);
+            if (!mentions) return [];
+            const mentionNames = mentions.map(m => m.slice(1));
+            const users = await prisma.user.findMany({
+              where: { name: { in: mentionNames, mode: 'insensitive' } },
+              select: { id: true },
             });
-          }
+            return users.map(u => u.id);
+          })();
+
+      for (const mentionedId of mentionIdsToNotify) {
+        if (mentionedId !== userId && !notifyIds.has(mentionedId)) {
+          notificationService.create({
+            userId: mentionedId,
+            type: 'mentioned',
+            title: `You were mentioned in "${issue.title}"`,
+            message: data.content.substring(0, 200),
+            issueId,
+            projectId: issue.projectId,
+          });
         }
       }
 
-      return reply.status(201).send(comment);
+      return reply.status(201).send(enriched);
     } catch (error: any) {
       fastify.log.error(error);
       if (error.name === 'ZodError') {
@@ -186,7 +249,9 @@ export async function commentRoutes(fastify: FastifyInstance) {
         orderBy: { createdAt: 'asc' },
       });
 
-      return reply.send(comments);
+      const enriched = await attachMentionedUsers(comments);
+
+      return reply.send(enriched);
     } catch (error) {
       fastify.log.error(error);
       return reply.status(500).send({ error: 'Failed to fetch comments' });
@@ -215,6 +280,9 @@ export async function commentRoutes(fastify: FastifyInstance) {
 
       const comment = await prisma.comment.findUnique({
         where: { id: commentId },
+        include: {
+          issue: { select: { projectId: true, title: true } },
+        },
       });
 
       if (!comment) {
@@ -225,9 +293,18 @@ export async function commentRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'Only the comment author can update this comment' });
       }
 
+      // Validate mentionedUserIds if the comment is on an issue
+      let validatedMentionIds: string[] = [];
+      if (comment.issue && data.mentionedUserIds.length > 0) {
+        validatedMentionIds = await validateMentionIds(data.mentionedUserIds, comment.issue.projectId);
+      }
+
       const updatedComment = await prisma.comment.update({
         where: { id: commentId },
-        data: { content: data.content },
+        data: {
+          content: data.content,
+          mentionedUserIds: validatedMentionIds,
+        },
         include: {
           user: {
             select: {
@@ -239,7 +316,28 @@ export async function commentRoutes(fastify: FastifyInstance) {
         },
       });
 
-      return reply.send(updatedComment);
+      // Notify newly mentioned users (diff old vs new)
+      if (comment.issue) {
+        const oldIds = new Set(comment.mentionedUserIds || []);
+        const newMentionIds = validatedMentionIds.filter(id => !oldIds.has(id));
+
+        for (const mentionedId of newMentionIds) {
+          if (mentionedId !== userId) {
+            notificationService.create({
+              userId: mentionedId,
+              type: 'mentioned',
+              title: `You were mentioned in "${comment.issue.title}"`,
+              message: data.content.substring(0, 200),
+              issueId: comment.issueId!,
+              projectId: comment.issue.projectId,
+            });
+          }
+        }
+      }
+
+      const [enriched] = await attachMentionedUsers([updatedComment]);
+
+      return reply.send(enriched);
     } catch (error: any) {
       fastify.log.error(error);
       if (error.name === 'ZodError') {

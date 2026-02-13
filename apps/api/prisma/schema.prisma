@@ -160,13 +160,14 @@ model Annotation {
 }
 
 model Comment {
-  id         String   @id @default(uuid())
-  issueId    String?  @map("taskId")
-  feedbackId String?
-  userId     String
-  content    String   @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(uuid())
+  issueId          String?  @map("taskId")
+  feedbackId       String?
+  userId           String
+  content          String   @db.Text
+  mentionedUserIds String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations — exactly one of issue/feedback is set (enforced by DB CHECK constraint)
   issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
