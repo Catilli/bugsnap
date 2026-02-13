@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 
 const APP_VERSION = 'v0.10.7';
-const EXTENSION_VERSION = 'v1.4';
 
 interface ChangelogEntry {
   version: string;
@@ -12,7 +11,7 @@ interface ChangelogEntry {
   changes: string[];
 }
 
-const changelog: ChangelogEntry[] = [
+const webChangelog: ChangelogEntry[] = [
   {
     version: 'v0.10.7',
     date: 'February 14, 2026',
@@ -21,25 +20,6 @@ const changelog: ChangelogEntry[] = [
       'Added "About" link to user menu dropdown',
       'Updated feedback bug icon tooltip to "Report Bug / Request Feature"',
       'Fixed blank Role display on Account page — added missing ADMIN role condition',
-    ],
-  },
-  {
-    version: 'Extensions v1.4',
-    date: 'February 14, 2026',
-    changes: [
-      'Safari extension full feature parity with Chrome — task drawer, task detail panel, annotation editing, screenshot compositing, screen recording, enable/disable toggle, auto-init tasks-only mode',
-      'Safari manifest updated with externally_connectable, Cloudinary host permission',
-      'Remove debug console.log statements from all extensions',
-    ],
-  },
-  {
-    version: 'Extensions v1.2',
-    date: 'February 14, 2026',
-    changes: [
-      'Fix doubled annotations in edit mode — restore _editHasRawScreenshot guard for legacy tasks',
-      'Send rawScreenshotUrl (clean base image) on every annotation save so the DB always has the un-annotated screenshot',
-      'API PATCH handler now accepts and uploads rawScreenshotUrl to Cloudinary alongside composited screenshotUrl',
-      'Legacy tasks (missing rawScreenshotUrl) get it populated on first annotation edit-save cycle',
     ],
   },
   {
@@ -57,8 +37,8 @@ const changelog: ChangelogEntry[] = [
     date: 'February 14, 2026',
     changes: [
       'Store raw (un-annotated) screenshot separately as rawScreenshotUrl on Issue model',
-      'Extension sends original capture before annotation compositing alongside the composited screenshotUrl',
       'Annotation editor loads raw screenshot as clean canvas background — no old burned-in annotations',
+      'API PATCH handler now accepts and uploads rawScreenshotUrl to Cloudinary alongside composited screenshotUrl',
       'Fix Dashboard and Admin status badge colors to match Project Detail page',
       'Fix Tailwind content scan missing providers/ directory — confirm dialog buttons now render correctly',
       'Fix crash when creating task from extension — SSE issue:created event now provides default _count for KanbanCard',
@@ -71,36 +51,33 @@ const changelog: ChangelogEntry[] = [
       '@Mention autocomplete for comments — type @ in comment textarea to search and select project members',
       'Keyboard navigation for mention dropdown — ArrowDown/Up to highlight, Enter to insert, Escape to close',
       'Reusable MentionTextarea component replaces duplicated inline mention logic',
-      'Persistent element pins — blue task pins remain visible after closing the tasks drawer and survive page reloads',
-      'Pin visibility toggle (eye icon) in drawer header with per-project persistence',
-      'SPA navigation detection — pins automatically re-render when URL changes without full page reload',
-      'Hide resolved/closed tasks from extension drawer and pins — only active tasks shown',
+      'IssueDrawer eagerly loads project members on open (no longer requires clicking "Assign" first)',
+      'Screenshot lightbox pin icon updated to blue task pin style (matches extension pins)',
+      'Lightbox close button repositioned to upper-right corner of the image container',
     ],
   },
   {
     version: 'v0.10.2',
     date: 'February 13, 2026',
     changes: [
-      'Clean screenshot capture — hideUIForCapture() hides all UI elements before capture',
       'Removed web app annotation editor — annotations are burned into screenshots by the extension',
       'Restored clickable pin tagging in screenshot lightbox with scaled position',
-      'Extension task drawer — view and manage project tasks from any webpage',
-      'Extension task detail panel — full detail view with status dropdown, screenshot, and comments',
-      'Annotation editing from extension — reopen annotation editor on existing tasks',
-      'Screenshot compositing — annotations are burned into the screenshot image when saving/updating',
+      'Lightbox style matches extension Task Drawer — dark backdrop, centered image, close button',
+      'DialogProvider lightbox no longer scrollable (constrained image fits viewport)',
+      'PATCH /api/issues/:issueId extended to accept annotations array and screenshotUrl',
+      'Fixed Zod validation rejecting null for annotation content and color fields',
     ],
   },
   {
     version: 'v0.9.0',
     date: 'February 12, 2026',
     changes: [
-      'Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3)',
-      'Screen recording in all browser extensions',
       'Public "anyone with link" project sharing with redesigned share dropdown',
+      'Clickable pin in screenshot lightbox (navigate to element on page)',
       'QA Cycle management — create, add/remove issues, status tracking',
       'Cloudflare R2 backup for screenshots',
       'Removed OAuth — simplified to email/password only',
-      'Manual enable/disable toggle for browser extension',
+      'Show user names instead of UUIDs in activity timeline',
     ],
   },
   {
@@ -121,7 +98,6 @@ const changelog: ChangelogEntry[] = [
       'Split notifications by type — bell icon for issues, bug icon for feedback',
       'Extracted shared Drawer component and global DialogProvider',
       'Admin dashboard with system stats, user management, and data export',
-      'Screen recording capability in Chrome and Firefox extensions',
       'Feedback system parity (attachments, share links, comments, activity timeline)',
       'XSS sanitization and security hardening',
       'File attachments with upload and drag-and-drop',
@@ -133,7 +109,6 @@ const changelog: ChangelogEntry[] = [
     date: 'February 07, 2026',
     changes: [
       'Added roles & permissions system (ADMIN, MANAGER, DEVELOPER, VIEWER)',
-      'Global role guards and project-scoped guards',
       'Renamed Task entity to Issue across project',
       'Unified filter components into reusable slot-based FilterBar',
       'Replaced project page grid/list with reusable KanbanBoard (drag-and-drop)',
@@ -173,6 +148,76 @@ const changelog: ChangelogEntry[] = [
       'Initial release with core bug tracking functionality',
       'User authentication and authorization',
       'Project and task management',
+    ],
+  },
+];
+
+const extensionChangelog: ChangelogEntry[] = [
+  {
+    version: 'v1.4',
+    date: 'February 14, 2026',
+    changes: [
+      'Safari extension full feature parity with Chrome — task drawer, annotation editing, screen recording',
+      'Safari manifest updated with externally_connectable, Cloudinary host permission',
+      'Remove debug console.log statements from all extensions',
+    ],
+  },
+  {
+    version: 'v1.2',
+    date: 'February 14, 2026',
+    changes: [
+      'Fix doubled annotations in edit mode — restore _editHasRawScreenshot guard for legacy tasks',
+      'Send rawScreenshotUrl on every annotation save for clean editing',
+      'Legacy tasks get rawScreenshotUrl populated on first annotation edit-save cycle',
+    ],
+  },
+  {
+    version: 'v1.1',
+    date: 'February 13, 2026',
+    changes: [
+      'Extension @mention autocomplete with lazily-fetched project members',
+      'Persistent element pins — survive drawer close and page reloads',
+      'Pin visibility toggle with per-project persistence',
+      'SPA navigation detection — pins re-render on URL change',
+      'XPath fallback for element resolution when CSS selectors break',
+      'Improved screenshot capture timing — hidden UI before captureVisibleTab',
+      'Hide resolved/closed tasks from extension drawer and pins',
+    ],
+  },
+  {
+    version: 'v1.0',
+    date: 'February 13, 2026',
+    changes: [
+      'Extension task drawer — view and manage project tasks from any webpage',
+      'Extension task detail panel — status dropdown, screenshot, and comments',
+      'Annotation editing from extension — reopen editor on existing tasks',
+      'Screenshot compositing — annotations burned into screenshot on save',
+      'Clean screenshot capture — hide all UI elements before capture',
+      'Tasks button visible on matched project pages without enabling tagging mode',
+    ],
+  },
+  {
+    version: 'v0.9.0',
+    date: 'February 12, 2026',
+    changes: [
+      'Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3)',
+      'Screen recording in all browser extensions',
+      'Manual enable/disable toggle for browser extension',
+      'Pin appears at click coordinates (one pin at a time)',
+    ],
+  },
+  {
+    version: 'v0.6.0',
+    date: 'February 10, 2026',
+    changes: [
+      'Screen recording capability in Chrome and Firefox extensions',
+      'Browser extension enhancements',
+    ],
+  },
+  {
+    version: 'v0.1.0',
+    date: 'January 28, 2026',
+    changes: [
       'Browser extension integration',
       'Screenshot capture and annotation',
     ],
@@ -234,10 +279,6 @@ export default function AboutPage() {
             <span className="font-medium text-gray-900">{APP_VERSION}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Extension version</span>
-            <span className="font-medium text-gray-900">{EXTENSION_VERSION}</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-gray-600">Environment</span>
             <span className="font-medium text-gray-900">{environment}</span>
           </div>
@@ -270,9 +311,18 @@ export default function AboutPage() {
       {/* Changelog Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Changelog</h2>
-        <div className="max-h-[500px] overflow-y-auto">
-          {changelog.map((entry, i) => (
-            <ChangelogItem key={entry.version} entry={entry} defaultOpen={i < 3} />
+
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Web App</h3>
+        <div className="max-h-[400px] overflow-y-auto mb-6">
+          {webChangelog.map((entry, i) => (
+            <ChangelogItem key={entry.version} entry={entry} defaultOpen={i < 2} />
+          ))}
+        </div>
+
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Browser Extensions</h3>
+        <div className="max-h-[400px] overflow-y-auto">
+          {extensionChangelog.map((entry, i) => (
+            <ChangelogItem key={entry.version} entry={entry} defaultOpen={i < 2} />
           ))}
         </div>
       </div>

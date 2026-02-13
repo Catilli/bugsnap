@@ -268,40 +268,31 @@ This project is private and proprietary.
 
 ## 📝 Changelog
 
-### v0.10.7 (February 14, 2026)
+### Web App
+
+#### v0.10.7 (February 14, 2026)
 - Added About page (`/dashboard/about`) — version info, tech stack, scrollable changelog, and documentation links
 - Added "About" link to user menu dropdown (between Team and Admin)
 - Updated feedback bug icon tooltip to "Report Bug / Request Feature"
 - Fixed blank Role display on Account page — added missing ADMIN role condition
 
-### Extensions v1.4 (February 14, 2026)
-- Safari extension full feature parity with Chrome — task drawer, task detail panel, annotation editing, screenshot compositing, screen recording, enable/disable toggle, auto-init tasks-only mode
-- Safari manifest updated with `externally_connectable`, Cloudinary host permission
-- Remove debug `console.log` statements from all extensions
-
-### Extensions v1.2 (February 14, 2026)
-- Fix doubled annotations in edit mode — restore `_editHasRawScreenshot` guard for legacy tasks
-- Send `rawScreenshotUrl` (clean base image) on every annotation save so the DB always has the un-annotated screenshot
-- API PATCH handler now accepts and uploads `rawScreenshotUrl` to Cloudinary alongside composited `screenshotUrl`
-- Legacy tasks (missing `rawScreenshotUrl`) get it populated on first annotation edit-save cycle
-
-### v0.10.5 (February 14, 2026)
+#### v0.10.5 (February 14, 2026)
 - Notify user when invited to a project — "You were added to project X" notification in the bell
 - Notify assignee when assigned to an issue at creation time (previously only triggered on PATCH)
 - Self-actions skipped — no notification if you invite yourself or assign an issue to yourself
 - Clicking a notification navigates to the relevant project page or issue detail
 - Issue notifications link to `/dashboard/projects/:id?issue=:issueId`, invitation notifications link to `/dashboard/projects/:id`
 
-### v0.10.4 (February 14, 2026)
+#### v0.10.4 (February 14, 2026)
 - Store raw (un-annotated) screenshot separately as `rawScreenshotUrl` on Issue model
-- Extension sends original capture before annotation compositing alongside the composited `screenshotUrl`
 - Annotation editor loads raw screenshot as clean canvas background — no old burned-in annotations
 - Legacy tasks without `rawScreenshotUrl` fall back to `screenshotUrl` (no regression)
+- API PATCH handler now accepts and uploads `rawScreenshotUrl` to Cloudinary alongside composited `screenshotUrl`
 - Fix Dashboard and Admin status badge colors to match Project Detail page (open → yellow, in progress → blue)
 - Fix Tailwind content scan missing `providers/` directory — confirm dialog buttons now render correctly
 - Fix crash when creating task from extension — SSE `issue:created` event now provides default `_count` for KanbanCard
 
-### v0.10.3 (February 13, 2026)
+#### v0.10.3 (February 13, 2026)
 - @Mention autocomplete for comments — type `@` in comment textarea to search and select project members
 - Keyboard navigation for mention dropdown — ArrowDown/Up to highlight, Enter to insert, Escape to close
 - Reusable `MentionTextarea` component replaces duplicated inline mention logic in add/edit comment modes
@@ -313,9 +304,111 @@ This project is private and proprietary.
 - PATCH comment sends "mentioned" notifications only for newly added user IDs (old vs new diff)
 - Regex fallback preserved for clients that don't send `mentionedUserIds` (backward compatibility)
 - Rendered @mentions show email tooltip on hover; removed/unknown users get gray styling with "User not found"
+- IssueDrawer eagerly loads project members on open (no longer requires clicking "Assign" first)
+- Screenshot lightbox pin icon updated to blue task pin style (matches extension pins)
+- Lightbox close button repositioned to upper-right corner of the image container
+
+#### v0.10.2 (February 13, 2026)
+- Removed web app annotation editor (AnnotationEditorModal + MarkMyImage) — annotations are burned into screenshots by the extension
+- Restored clickable pin tagging in screenshot lightbox with scaled position for constrained 90vw/90vh images
+- Lightbox style matches extension Task Drawer — `rgba(0,0,0,0.9)` backdrop, centered image, `x` close button, 4px border radius
+- Removed SVG annotation overlay rendering from lightbox (redundant since annotations are composited into screenshot)
+- DialogProvider lightbox no longer scrollable (constrained image fits viewport)
+- PATCH `/api/issues/:issueId` extended to accept `annotations` array and `screenshotUrl` (data URL → Cloudinary)
+- Install extension page updated with permanent folder extraction warning and example paths
+- Fixed Zod validation rejecting `null` for annotation `content` and `color` fields (`.optional()` → `.nullish()`)
+
+#### v0.9.0 (February 12, 2026)
+- Public "anyone with link" project sharing with redesigned share dropdown
+- Clickable pin in screenshot lightbox (navigate to element on page)
+- QA Cycle management — create, add/remove issues, status tracking (`QACycle` + `QACycleIssue` models)
+- Cloudflare R2 backup for screenshots (`apps/api/src/lib/r2.ts`)
+- Admin password management for team members
+- Removed OAuth (Google/GitHub) — simplified to email/password only
+- Removed Resend email service — admin creates users with password directly
+- Removed priority and severity fields from issues
+- Show user names instead of UUIDs in activity timeline
+- Screenshot lightbox moved into DialogProvider
+
+#### v0.8.0 (February 11, 2026)
+- Admin-only team member creation — `POST /api/users` with Zod validation, bcrypt password hashing, and duplicate email detection
+- "Add Member" modal on team page — admin-only button, role selection, error handling
+- Fixed missing auth `preHandler` on user routes (`GET /users`, `POST /users`, `PATCH /users/:userId/role`)
+- New users onboard via "Forgot Password" flow (temp password never exposed)
+- URL sanitization (`sanitizeUrl` / `zSanitizedUrl`) rejecting `javascript:`, `data:`, `vbscript:` protocols
+- Replaced `z.any()` on `environmentData` with proper permissive schema
+- Zod validation for all query parameters (issues, feedback, users, notifications)
+- Zod validation for missing body schemas (share, user role update)
+- Fixed email HTML injection in notification service
+- Frontend `safeHref()` guard on all user-provided URL links
+- Sanitization test suite (backend + frontend)
+- Added `SECURITY_INPUT_SANITIZATION.md` internal guide
+
+#### v0.6.0 (February 10, 2026)
+- Split notifications by type — bell icon for issues, bug icon for feedback
+- Extracted shared Drawer component and global DialogProvider (Promise-based confirm dialogs)
+- Removed Resolved kanban column, renamed QA to Ready for QA
+- Admin dashboard with system stats, user management, and data export
+- Team management UI
+- Feedback system parity (attachments, share links, comments, activity timeline)
+- Health check alerting and shared content pages
+- XSS sanitization and screenshot CDN upload
+- Activity timeline and audit logging
+- Notification system with email queue (Resend + Redis)
+- Issue severity field and QA status column
+- File attachments with upload and drag-and-drop
+- Shareable issue and feedback links (token-based, 7-day expiry)
+
+#### v0.4.0 (February 07, 2026)
+- Added roles & permissions system (ADMIN, MANAGER, DEVELOPER, VIEWER)
+- Global role guards (`requireRole`) and project-scoped guards (`requireProjectRole`)
+- Frontend `useRole` / `useProjectRole` hooks and `<RoleGate>` component
+- Fine-grained issue update permissions (DEVELOPER: own/assigned only; MANAGER: full)
+- Renamed Task entity to Issue across project (routes, components, schema)
+- Unified filter components into reusable slot-based FilterBar
+- Extracted reusable PageHeader component with icon support
+- Replaced project page grid/list with reusable KanbanBoard (drag-and-drop)
+
+#### v0.3.1 (February 06, 2026)
+- Migrated auth back to self-hosted JWT + OAuth (Google, GitHub)
+- Zustand auth store with persist middleware
+- OAuth routes conditional on env vars
+- Email service with lazy Resend initialization
+- Password reset flow (crypto token + SHA-256, 1h TTL)
+
+#### v0.3.0 (February 05, 2026)
+- Codebase cleanup: removed unused files, dead code, and stale stubs
+- Fixed wrong cross-dependencies (next in API, fastify in web)
+- Removed commented-out code and unused imports
+- Updated README with accurate tech stack versions (Next.js 16)
+- Version bump to 0.3.0 across all packages
+
+#### v0.2.0 (January 30, 2026)
+- Fixed Vercel deployment configuration (git command syntax in [`vercel.json`](vercel.json:7))
+- Updated deployment documentation with comprehensive guides
+- Enhanced project structure and build configuration
+- Added troubleshooting for common deployment issues
+
+#### v0.1.0 (January 28, 2026)
+- Initial release with core bug tracking functionality
+- User authentication and authorization
+- Project and task management
+
+### Browser Extensions
+
+#### v1.4 (February 14, 2026)
+- Safari extension full feature parity with Chrome — task drawer, task detail panel, annotation editing, screenshot compositing, screen recording, enable/disable toggle, auto-init tasks-only mode
+- Safari manifest updated with `externally_connectable`, Cloudinary host permission
+- Remove debug `console.log` statements from all extensions
+
+#### v1.2 (February 14, 2026)
+- Fix doubled annotations in edit mode — restore `_editHasRawScreenshot` guard for legacy tasks
+- Send `rawScreenshotUrl` (clean base image) on every annotation save so the DB always has the un-annotated screenshot
+- Legacy tasks (missing `rawScreenshotUrl`) get it populated on first annotation edit-save cycle
+
+#### v1.1 (February 13, 2026)
 - Extension comment textarea supports @mention autocomplete with lazily-fetched project members
 - Extension sends `mentionedUserIds` when posting comments
-- IssueDrawer eagerly loads project members on open (no longer requires clicking "Assign" first)
 - Persistent element pins — blue task pins remain visible after closing the tasks drawer and survive page reloads
 - Auto-load task pins on page init without opening the drawer (lightweight background fetch)
 - XPath fallback for element resolution — pins resolve even when CSS selectors break due to DOM changes
@@ -323,112 +416,32 @@ This project is private and proprietary.
 - SPA navigation detection — pins automatically re-render when URL changes without full page reload
 - `resolveElementLocator()` tries CSS selector first, falls back to XPath for robust pin placement
 - Improved screenshot capture timing — double `requestAnimationFrame` + 100ms buffer ensures outline and pins are fully hidden before `captureVisibleTab`
-- Screenshot lightbox pin icon updated to blue task pin style (matches extension pins)
-- Lightbox close button repositioned to upper-right corner of the image container
 - Hide resolved/closed tasks from extension drawer and pins — only active tasks (open, in progress, QA) are shown
 
-### v0.10.2 (February 13, 2026)
-- ✅ Clean screenshot capture — `hideUIForCapture()` hides red pin, blue element outline, tasks button, task pin markers, and tasks drawer/backdrop before capture
-- ✅ `restoreUIAfterCapture()` restores all hidden elements after capture completes (on both success and error paths)
-- ✅ Applied to all three browser variants (Chrome, Firefox, Safari)
-- ✅ Removed web app annotation editor (AnnotationEditorModal + MarkMyImage) — annotations are burned into screenshots by the extension
-- ✅ Restored clickable pin tagging in screenshot lightbox with scaled position for constrained 90vw/90vh images
-- ✅ Lightbox style matches extension Task Drawer — `rgba(0,0,0,0.9)` backdrop, centered image, `x` close button, 4px border radius
-- ✅ Removed SVG annotation overlay rendering from lightbox (redundant since annotations are composited into screenshot)
-- ✅ DialogProvider lightbox no longer scrollable (constrained image fits viewport)
-- ✅ Extension task drawer — view and manage project tasks from any webpage with grouped list, search, and status filters
-- ✅ Extension task detail panel — full detail view with back navigation, status dropdown, screenshot with lightbox, and comments section
-- ✅ Annotation editing from extension — reopen annotation editor on existing tasks with "Update" button, loads existing annotations via `setAnnotations()`
-- ✅ Screenshot compositing — annotations are burned into the screenshot image when saving/updating, uploaded to Cloudinary CDN
-- ✅ PATCH `/api/issues/:issueId` extended to accept `annotations` array and `screenshotUrl` (data URL → Cloudinary)
-- ✅ Background script fetches screenshot as data URL to avoid CORS taint during compositing
-- ✅ Tasks button visible on matched project pages without enabling tagging mode
-- ✅ Install extension page updated with permanent folder extraction warning and example paths
-- ✅ Fixed task status case mismatch preventing tasks from rendering
-- ✅ Fixed Zod validation rejecting `null` for annotation `content` and `color` fields (`.optional()` → `.nullish()`)
-- ✅ Fixed duplicate text annotations from double `saveText()` execution (Enter + blur)
+#### v1.0 (February 13, 2026)
+- Clean screenshot capture — `hideUIForCapture()` hides red pin, blue element outline, tasks button, task pin markers, and tasks drawer/backdrop before capture
+- `restoreUIAfterCapture()` restores all hidden elements after capture completes (on both success and error paths)
+- Applied to all three browser variants (Chrome, Firefox, Safari)
+- Extension task drawer — view and manage project tasks from any webpage with grouped list, search, and status filters
+- Extension task detail panel — full detail view with back navigation, status dropdown, screenshot with lightbox, and comments section
+- Annotation editing from extension — reopen annotation editor on existing tasks with "Update" button, loads existing annotations via `setAnnotations()`
+- Screenshot compositing — annotations are burned into the screenshot image when saving/updating, uploaded to Cloudinary CDN
+- Background script fetches screenshot as data URL to avoid CORS taint during compositing
+- Tasks button visible on matched project pages without enabling tagging mode
+- Fixed task status case mismatch preventing tasks from rendering
+- Fixed duplicate text annotations from double `saveText()` execution (Enter + blur)
 
-### v0.9.0 (February 12, 2026)
-- ✅ Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3) (`extension-safari/`)
-- ✅ Screen recording in all browser extensions (Chrome, Firefox, Safari) (`MediaRecorder` + `getDisplayMedia`)
-- ✅ Public "anyone with link" project sharing with redesigned share dropdown
-- ✅ Clickable pin in screenshot lightbox (navigate to element on page)
-- ✅ QA Cycle management — create, add/remove issues, status tracking (`QACycle` + `QACycleIssue` models)
-- ✅ Cloudflare R2 backup for screenshots (`apps/api/src/lib/r2.ts`)
-- ✅ Admin password management for team members
-- ✅ Removed OAuth (Google/GitHub) — simplified to email/password only
-- ✅ Removed Resend email service — admin creates users with password directly
-- ✅ Removed priority and severity fields from issues
-- ✅ Manual enable/disable toggle for browser extension
-- ✅ Pin appears at click coordinates (one pin at a time)
-- ✅ Readable background behind text annotations
-- ✅ Show user names instead of UUIDs in activity timeline
-- ✅ Screenshot lightbox moved into DialogProvider
+#### v0.9.0 (February 12, 2026)
+- Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3)
+- Screen recording in all browser extensions (`MediaRecorder` + `getDisplayMedia`)
+- Manual enable/disable toggle for browser extension
+- Pin appears at click coordinates (one pin at a time)
+- Readable background behind text annotations
 
-### v0.8.0 (February 11, 2026)
-- ✅ Admin-only team member creation — `POST /api/users` with Zod validation, bcrypt password hashing, and duplicate email detection
-- ✅ "Add Member" modal on team page — admin-only button, role selection, error handling
-- ✅ Fixed missing auth `preHandler` on user routes (`GET /users`, `POST /users`, `PATCH /users/:userId/role`)
-- ✅ New users onboard via "Forgot Password" flow (temp password never exposed)
-- ✅ URL sanitization (`sanitizeUrl` / `zSanitizedUrl`) rejecting `javascript:`, `data:`, `vbscript:` protocols
-- ✅ Replaced `z.any()` on `environmentData` with proper permissive schema
-- ✅ Zod validation for all query parameters (issues, feedback, users, notifications)
-- ✅ Zod validation for missing body schemas (share, user role update)
-- ✅ Fixed email HTML injection in notification service
-- ✅ Frontend `safeHref()` guard on all user-provided URL links
-- ✅ Sanitization test suite (backend + frontend)
-- ✅ Added `SECURITY_INPUT_SANITIZATION.md` internal guide
+#### v0.6.0 (February 10, 2026)
+- Screen recording capability in Chrome and Firefox extensions
+- Browser extension enhancements
 
-### v0.6.0 (February 10, 2026)
-- ✅ Split notifications by type — bell icon for issues, bug icon for feedback
-- ✅ Extracted shared Drawer component and global DialogProvider (Promise-based confirm dialogs)
-- ✅ Removed Resolved kanban column, renamed QA to Ready for QA
-- ✅ Admin dashboard with system stats, user management, and data export
-- ✅ Team management UI
-- ✅ Screen recording capability in Chrome and Firefox extensions
-- ✅ Feedback system parity (attachments, share links, comments, activity timeline)
-- ✅ Health check alerting and shared content pages
-- ✅ XSS sanitization and screenshot CDN upload
-- ✅ Activity timeline and audit logging
-- ✅ Notification system with email queue (Resend + Redis)
-- ✅ Issue severity field and QA status column
-- ✅ File attachments with upload and drag-and-drop
-- ✅ Shareable issue and feedback links (token-based, 7-day expiry)
-- ✅ Browser extension enhancements
-
-### v0.4.0 (February 07, 2026)
-- ✅ Added roles & permissions system (ADMIN, MANAGER, DEVELOPER, VIEWER)
-- ✅ Global role guards (`requireRole`) and project-scoped guards (`requireProjectRole`)
-- ✅ Frontend `useRole` / `useProjectRole` hooks and `<RoleGate>` component
-- ✅ Fine-grained issue update permissions (DEVELOPER: own/assigned only; MANAGER: full)
-- ✅ Renamed Task entity to Issue across project (routes, components, schema)
-- ✅ Unified filter components into reusable slot-based FilterBar
-- ✅ Extracted reusable PageHeader component with icon support
-- ✅ Replaced project page grid/list with reusable KanbanBoard (drag-and-drop)
-
-### v0.3.1 (February 06, 2026)
-- ✅ Migrated auth back to self-hosted JWT + OAuth (Google, GitHub)
-- ✅ Zustand auth store with persist middleware
-- ✅ OAuth routes conditional on env vars
-- ✅ Email service with lazy Resend initialization
-- ✅ Password reset flow (crypto token + SHA-256, 1h TTL)
-
-### v0.3.0 (February 05, 2026)
-- ✅ Codebase cleanup: removed unused files, dead code, and stale stubs
-- ✅ Fixed wrong cross-dependencies (next in API, fastify in web)
-- ✅ Removed commented-out code and unused imports
-- ✅ Updated README with accurate tech stack versions (Next.js 16)
-- ✅ Version bump to 0.3.0 across all packages
-
-### v0.2.0 (January 30, 2026)
-- ✅ Fixed Vercel deployment configuration (git command syntax in [`vercel.json`](vercel.json:7))
-- ✅ Updated deployment documentation with comprehensive guides
-- ✅ Enhanced project structure and build configuration
-- ✅ Added troubleshooting for common deployment issues
-
-### v0.1.0 (January 28, 2026)
-- ✅ Initial release with core bug tracking functionality
-- ✅ User authentication and authorization
-- ✅ Project and task management
-- ✅ Browser extension integration
-- ✅ Screenshot capture and annotation
+#### v0.1.0 (January 28, 2026)
+- Browser extension integration
+- Screenshot capture and annotation
