@@ -256,17 +256,24 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.10.3
+**Current Version**: v0.10.5
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.10.3)**:
-- @Mention autocomplete for comments — type `@` to search and select project members with keyboard navigation
-- `mentionedUserIds` stored on comments for reliable mention tracking and notifications
-- Email tooltips on rendered @mentions, gray styling for removed users
+**Recent Updates (v0.10.5)**:
+- Notification when invited to a project — "You were added to project X" appears in the bell
+- Notification when assigned to an issue at creation time (not just via PATCH)
+- Clicking a notification navigates to the relevant project or issue
 
 
 ## 📝 Changelog
+
+### v0.10.5 (February 14, 2026)
+- Notify user when invited to a project — "You were added to project X" notification in the bell
+- Notify assignee when assigned to an issue at creation time (previously only triggered on PATCH)
+- Self-actions skipped — no notification if you invite yourself or assign an issue to yourself
+- Clicking a notification navigates to the relevant project page or issue detail
+- Issue notifications link to `/dashboard/projects/:id?issue=:issueId`, invitation notifications link to `/dashboard/projects/:id`
 
 ### v0.10.4 (February 14, 2026)
 - Store raw (un-annotated) screenshot separately as `rawScreenshotUrl` on Issue model

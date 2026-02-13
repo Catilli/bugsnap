@@ -283,6 +283,18 @@ export async function issueRoutes(fastify: FastifyInstance) {
         metadata: { title: issue.title },
       });
 
+      // Notify assignee on creation (skip if assigning to yourself)
+      if (data.assignedToId && data.assignedToId !== userId) {
+        notificationService.create({
+          userId: data.assignedToId,
+          type: 'assigned',
+          title: `You were assigned to "${issue.title}"`,
+          message: `You were assigned to the issue "${issue.title}".`,
+          issueId: issue.id,
+          projectId: data.projectId,
+        });
+      }
+
       return reply.status(201).send(issue);
     } catch (error: any) {
       fastify.log.error(error);

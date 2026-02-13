@@ -3,6 +3,7 @@ import { ProjectMemberService } from '../services/projectMemberService';
 import { prisma } from '../lib/prisma';
 import { cacheGet } from '../lib/redis';
 import { z } from 'zod';
+import { notificationService } from '../services/notificationService';
 
 const addMemberSchema = z.object({
   email: z.string().email(),
@@ -113,6 +114,22 @@ export async function projectMemberRoutes(fastify: FastifyInstance) {
       const { email, role } = addMemberSchema.parse(request.body);
 
       const member = await ProjectMemberService.addMember(projectId, email, role);
+
+      // Notify the invited user (skip if adding yourself)
+      if (member.user.id !== userId) {
+        const project = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: { name: true },
+        });
+        notificationService.create({
+          userId: member.user.id,
+          type: 'invited',
+          title: `You were added to project "${project?.name || 'Unknown'}"`,
+          message: `You were added as a member to the project "${project?.name || 'Unknown'}".`,
+          projectId,
+        });
+      }
+
       return reply.status(201).send(member);
     } catch (error: any) {
       fastify.log.error(error);

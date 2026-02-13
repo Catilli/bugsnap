@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { getAuthToken } from '../lib/clerkTokenBridge';
 import { authFetch } from '../lib/api';
@@ -35,6 +36,7 @@ export default function NotificationBell({
   hoverColorClass = 'hover:text-gray-700',
   onIconClick,
 }: NotificationBellProps) {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -175,6 +177,12 @@ export default function NotificationBell({
                   onClick={() => {
                     if (!notification.read) markAsRead(notification.id);
                     setIsOpen(false);
+                    // Navigate to the relevant project/issue
+                    if (notification.issue && notification.project) {
+                      router.push(`/dashboard/projects/${notification.project.id}?issue=${notification.issue.id}`);
+                    } else if (notification.project) {
+                      router.push(`/dashboard/projects/${notification.project.id}`);
+                    }
                   }}
                   className={`w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
                     !notification.read ? 'bg-indigo-50/50' : ''
