@@ -24,6 +24,7 @@ import {
   Server,
   Code,
   ArrowRight,
+  ChevronDown,
   ChevronRight,
   X,
   RefreshCw,
@@ -37,6 +38,118 @@ import {
   Copy,
   Terminal,
 } from 'lucide-react';
+
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  changes: string[];
+}
+
+const extensionChangelog: ChangelogEntry[] = [
+  {
+    version: 'v1.4',
+    date: 'February 14, 2026',
+    changes: [
+      'Safari extension full feature parity with Chrome — task drawer, annotation editing, screen recording',
+      'Safari manifest updated with externally_connectable, Cloudinary host permission',
+      'Remove debug console.log statements from all extensions',
+    ],
+  },
+  {
+    version: 'v1.2',
+    date: 'February 14, 2026',
+    changes: [
+      'Fix doubled annotations in edit mode — restore _editHasRawScreenshot guard for legacy tasks',
+      'Send rawScreenshotUrl on every annotation save for clean editing',
+      'Legacy tasks get rawScreenshotUrl populated on first annotation edit-save cycle',
+    ],
+  },
+  {
+    version: 'v1.1',
+    date: 'February 13, 2026',
+    changes: [
+      'Extension @mention autocomplete with lazily-fetched project members',
+      'Persistent element pins — survive drawer close and page reloads',
+      'Pin visibility toggle with per-project persistence',
+      'SPA navigation detection — pins re-render on URL change',
+      'XPath fallback for element resolution when CSS selectors break',
+      'Improved screenshot capture timing — hidden UI before captureVisibleTab',
+      'Hide resolved/closed tasks from extension drawer and pins',
+    ],
+  },
+  {
+    version: 'v1.0',
+    date: 'February 13, 2026',
+    changes: [
+      'Extension task drawer — view and manage project tasks from any webpage',
+      'Extension task detail panel — status dropdown, screenshot, and comments',
+      'Annotation editing from extension — reopen editor on existing tasks',
+      'Screenshot compositing — annotations burned into screenshot on save',
+      'Clean screenshot capture — hide all UI elements before capture',
+      'Tasks button visible on matched project pages without enabling tagging mode',
+    ],
+  },
+  {
+    version: 'v0.9.0',
+    date: 'February 12, 2026',
+    changes: [
+      'Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3)',
+      'Screen recording in all browser extensions',
+      'Manual enable/disable toggle for browser extension',
+      'Pin appears at click coordinates (one pin at a time)',
+    ],
+  },
+  {
+    version: 'v0.6.0',
+    date: 'February 10, 2026',
+    changes: [
+      'Screen recording capability in Chrome and Firefox extensions',
+      'Browser extension enhancements',
+    ],
+  },
+  {
+    version: 'v0.1.0',
+    date: 'January 28, 2026',
+    changes: [
+      'Browser extension integration',
+      'Screenshot capture and annotation',
+    ],
+  },
+];
+
+function ChangelogItem({ entry, defaultOpen }: { entry: ChangelogEntry; defaultOpen: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-b border-gray-100 last:border-b-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 py-3 text-left hover:bg-gray-50 transition-colors -mx-1 px-1 rounded"
+      >
+        {open ? (
+          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        )}
+        <span className="font-medium text-gray-900 text-sm">{entry.version}</span>
+        {entry === extensionChangelog[0] && (
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Latest</span>
+        )}
+        <span className="text-xs text-gray-500">{entry.date}</span>
+      </button>
+      {open && (
+        <ul className="ml-6 mb-3 space-y-1.5">
+          {entry.changes.map((change, i) => (
+            <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+              <span className="text-indigo-400 mt-1.5 flex-shrink-0">•</span>
+              {change}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function InstallExtensionPage() {
   const [isExtensionInstalled] = useState<boolean | null>(null);
@@ -133,45 +246,10 @@ export default function InstallExtensionPage() {
           <FileText className="w-6 h-6" />
           Extension Changelog
         </h2>
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-              v1.4 <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Latest</span>
-            </h4>
-            <p className="text-xs text-gray-500 mb-1">February 14, 2026</p>
-            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-              <li>Safari extension full feature parity with Chrome and Firefox</li>
-              <li>Task drawer, annotation editing, and screen recording now available on all browsers</li>
-              <li>Remove debug logging from all extensions</li>
-            </ul>
-          </div>
-          <div className="border-t border-gray-100 pt-4">
-            <h4 className="font-semibold text-gray-900">v1.2</h4>
-            <p className="text-xs text-gray-500 mb-1">February 14, 2026</p>
-            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-              <li>Fix doubled annotations in edit mode for legacy tasks</li>
-              <li>Persist raw screenshot on every annotation save for clean editing</li>
-              <li>API now stores both composited and raw screenshots</li>
-            </ul>
-          </div>
-          <div className="border-t border-gray-100 pt-4">
-            <h4 className="font-semibold text-gray-900">v1.1</h4>
-            <p className="text-xs text-gray-500 mb-1">February 14, 2026</p>
-            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-              <li>Firefox extension feature parity with Chrome</li>
-              <li>Task drawer and annotation editing on Firefox</li>
-              <li>Screen recording support on Firefox</li>
-            </ul>
-          </div>
-          <div className="border-t border-gray-100 pt-4">
-            <h4 className="font-semibold text-gray-900">v1.0</h4>
-            <p className="text-xs text-gray-500 mb-1">February 12, 2026</p>
-            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
-              <li>Initial release with Chrome, Firefox, and Safari support</li>
-              <li>Screenshot capture, annotation tools, and task creation</li>
-              <li>Auto-login from web app session</li>
-            </ul>
-          </div>
+        <div className="max-h-[500px] overflow-y-auto">
+          {extensionChangelog.map((entry, i) => (
+            <ChangelogItem key={entry.version} entry={entry} defaultOpen={i < 2} />
+          ))}
         </div>
       </div>
 

@@ -152,78 +152,6 @@ const webChangelog: ChangelogEntry[] = [
   },
 ];
 
-const extensionChangelog: ChangelogEntry[] = [
-  {
-    version: 'v1.4',
-    date: 'February 14, 2026',
-    changes: [
-      'Safari extension full feature parity with Chrome — task drawer, annotation editing, screen recording',
-      'Safari manifest updated with externally_connectable, Cloudinary host permission',
-      'Remove debug console.log statements from all extensions',
-    ],
-  },
-  {
-    version: 'v1.2',
-    date: 'February 14, 2026',
-    changes: [
-      'Fix doubled annotations in edit mode — restore _editHasRawScreenshot guard for legacy tasks',
-      'Send rawScreenshotUrl on every annotation save for clean editing',
-      'Legacy tasks get rawScreenshotUrl populated on first annotation edit-save cycle',
-    ],
-  },
-  {
-    version: 'v1.1',
-    date: 'February 13, 2026',
-    changes: [
-      'Extension @mention autocomplete with lazily-fetched project members',
-      'Persistent element pins — survive drawer close and page reloads',
-      'Pin visibility toggle with per-project persistence',
-      'SPA navigation detection — pins re-render on URL change',
-      'XPath fallback for element resolution when CSS selectors break',
-      'Improved screenshot capture timing — hidden UI before captureVisibleTab',
-      'Hide resolved/closed tasks from extension drawer and pins',
-    ],
-  },
-  {
-    version: 'v1.0',
-    date: 'February 13, 2026',
-    changes: [
-      'Extension task drawer — view and manage project tasks from any webpage',
-      'Extension task detail panel — status dropdown, screenshot, and comments',
-      'Annotation editing from extension — reopen editor on existing tasks',
-      'Screenshot compositing — annotations burned into screenshot on save',
-      'Clean screenshot capture — hide all UI elements before capture',
-      'Tasks button visible on matched project pages without enabling tagging mode',
-    ],
-  },
-  {
-    version: 'v0.9.0',
-    date: 'February 12, 2026',
-    changes: [
-      'Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3)',
-      'Screen recording in all browser extensions',
-      'Manual enable/disable toggle for browser extension',
-      'Pin appears at click coordinates (one pin at a time)',
-    ],
-  },
-  {
-    version: 'v0.6.0',
-    date: 'February 10, 2026',
-    changes: [
-      'Screen recording capability in Chrome and Firefox extensions',
-      'Browser extension enhancements',
-    ],
-  },
-  {
-    version: 'v0.1.0',
-    date: 'January 28, 2026',
-    changes: [
-      'Browser extension integration',
-      'Screenshot capture and annotation',
-    ],
-  },
-];
-
 function ChangelogItem({ entry, defaultOpen }: { entry: ChangelogEntry; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -311,17 +239,8 @@ export default function AboutPage() {
       {/* Changelog Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Changelog</h2>
-
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Web App</h3>
-        <div className="max-h-[400px] overflow-y-auto mb-6">
+        <div className="max-h-[500px] overflow-y-auto">
           {webChangelog.map((entry, i) => (
-            <ChangelogItem key={entry.version} entry={entry} defaultOpen={i < 2} />
-          ))}
-        </div>
-
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Browser Extensions</h3>
-        <div className="max-h-[400px] overflow-y-auto">
-          {extensionChangelog.map((entry, i) => (
             <ChangelogItem key={entry.version} entry={entry} defaultOpen={i < 2} />
           ))}
         </div>
