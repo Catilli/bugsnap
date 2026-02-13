@@ -277,6 +277,7 @@ This project is private and proprietary.
 - Improved screenshot capture timing — double `requestAnimationFrame` + 100ms buffer ensures outline and pins are fully hidden before `captureVisibleTab`
 - Screenshot lightbox pin icon updated to blue task pin style (matches extension pins)
 - Lightbox close button repositioned to upper-right corner of the image container
+- Hide resolved/closed tasks from extension drawer and pins — only active tasks (open, in progress, QA) are shown
 
 ### v0.10.2 (February 13, 2026)
 - ✅ Clean screenshot capture — `hideUIForCapture()` hides red pin, blue element outline, tasks button, task pin markers, and tasks drawer/backdrop before capture
