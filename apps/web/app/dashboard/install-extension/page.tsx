@@ -124,7 +124,7 @@ export default function InstallExtensionPage() {
           <CheckCircle2 className="w-5 h-5 text-green-600" />
           <span className="text-gray-700 font-medium">Auto-login enabled - No need to login again!</span>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Version 1.0.0 • All browsers supported</p>
+        <p className="text-sm text-gray-500 mt-2">Version 1.2 • All browsers supported</p>
       </div>
 
       {/* Quick Start Card */}
