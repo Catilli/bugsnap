@@ -106,7 +106,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <NotificationBell
               category="feedback"
               icon={<Bug className="w-5 h-5" />}
-              title="Feedback Notifications"
+              title="Report Bug / Request Feature"
               emptyMessage="No feedback notifications"
               hoverColorClass="hover:text-red-500"
               onIconClick={() => router.push('/dashboard/feedback')}

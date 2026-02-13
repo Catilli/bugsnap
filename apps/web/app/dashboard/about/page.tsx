@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 
-const APP_VERSION = 'v0.10.6';
+const APP_VERSION = 'v0.10.7';
 const EXTENSION_VERSION = 'v1.4';
 
 interface ChangelogEntry {
@@ -13,6 +13,16 @@ interface ChangelogEntry {
 }
 
 const changelog: ChangelogEntry[] = [
+  {
+    version: 'v0.10.7',
+    date: 'February 14, 2026',
+    changes: [
+      'Added About page with version info, tech stack, scrollable changelog, and documentation links',
+      'Added "About" link to user menu dropdown',
+      'Updated feedback bug icon tooltip to "Report Bug / Request Feature"',
+      'Fixed blank Role display on Account page — added missing ADMIN role condition',
+    ],
+  },
   {
     version: 'Extensions v1.4',
     date: 'February 14, 2026',

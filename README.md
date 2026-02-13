@@ -256,17 +256,23 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.10.6
+**Current Version**: v0.10.7
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.10.6)**:
-- Safari extension full feature parity with Chrome (task drawer, annotation editing, screen recording)
-- Fix doubled annotations — `rawScreenshotUrl` now persisted on every annotation save
-- Extensions v1.4 across all browsers
+**Recent Updates (v0.10.7)**:
+- About page with version info, tech stack, changelog, and documentation links
+- Bug icon tooltip updated to "Report Bug / Request Feature"
+- Fix blank Role field on Account page for Admin users
 
 
 ## 📝 Changelog
+
+### v0.10.7 (February 14, 2026)
+- Added About page (`/dashboard/about`) — version info, tech stack, scrollable changelog, and documentation links
+- Added "About" link to user menu dropdown (between Team and Admin)
+- Updated feedback bug icon tooltip to "Report Bug / Request Feature"
+- Fixed blank Role display on Account page — added missing ADMIN role condition
 
 ### Extensions v1.4 (February 14, 2026)
 - Safari extension full feature parity with Chrome — task drawer, task detail panel, annotation editing, screenshot compositing, screen recording, enable/disable toggle, auto-init tasks-only mode

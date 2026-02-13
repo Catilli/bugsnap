@@ -119,6 +119,7 @@ export default function AccountPage() {
           </p>
           <p>
             <span className="font-medium">Role:</span>{' '}
+            {user?.role === 'ADMIN' && 'Admin'}
             {user?.role === 'MANAGER' && 'Manager'}
             {user?.role === 'DEVELOPER' && 'Developer'}
             {user?.role === 'VIEWER' && 'Viewer'}
