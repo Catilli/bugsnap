@@ -40,6 +40,7 @@ const createIssueSchema = z.object({
   description: z.string().transform(sanitizeString).optional(),
   url: z.string().url().transform(sanitizeUrl).optional(),
   screenshotUrl: z.string().optional(),
+  rawScreenshotUrl: z.string().optional(),
   type: issueTypeEnum.default('TASK'),
   visibility: z.enum(['members', 'members_and_clients']).default('members'),
   assignedToId: z.string().uuid().optional(),
@@ -165,12 +166,23 @@ export async function issueRoutes(fastify: FastifyInstance) {
       // Upload data-URL screenshots to Cloudinary CDN + R2 backup
       let screenshotUrl = data.screenshotUrl;
       let screenshotBackupUrl: string | undefined;
+      let rawScreenshotUrl: string | undefined;
       try {
         const result = await processScreenshotUrl(data.screenshotUrl);
         screenshotUrl = result.screenshotUrl;
         screenshotBackupUrl = result.screenshotBackupUrl;
       } catch (error) {
         fastify.log.error(error, 'Failed to upload screenshot');
+      }
+
+      // Upload raw (un-annotated) screenshot if provided
+      if (data.rawScreenshotUrl) {
+        try {
+          const rawResult = await processScreenshotUrl(data.rawScreenshotUrl);
+          rawScreenshotUrl = rawResult.screenshotUrl;
+        } catch (error) {
+          fastify.log.error(error, 'Failed to upload raw screenshot');
+        }
       }
 
       // Verify user has access to project
@@ -225,6 +237,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
           url: data.url,
           screenshotUrl,
           screenshotBackupUrl,
+          rawScreenshotUrl,
           visibility: data.visibility,
           assignedToId: data.assignedToId,
           environmentData: data.environmentData as any,

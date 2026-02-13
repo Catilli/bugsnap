@@ -114,6 +114,7 @@ model Issue {
   url             String?
   screenshotUrl       String?
   screenshotBackupUrl String?
+  rawScreenshotUrl    String?
   status          String    @default("open") // open, in_progress, resolved, closed
   type            IssueType @default(TASK)   // BUG, FEATURE, TASK
   environmentData Json?
