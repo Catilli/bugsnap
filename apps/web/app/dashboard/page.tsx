@@ -165,11 +165,11 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
           <span className="font-medium">Issue Status:</span>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
             <span>Open</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
             <span>In Progress</span>
           </div>
           <div className="flex items-center gap-1">
@@ -306,12 +306,12 @@ export default function DashboardPage() {
                   <span>Updated {getRelativeTime(project.updatedAt)}</span>
                   <div className="flex gap-1">
                     {(project._count?.open ?? 0) > 0 && (
-                      <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                      <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
                         {project._count!.open}
                       </span>
                     )}
                     {(project._count?.in_progress ?? 0) > 0 && (
-                      <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                      <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
                         {project._count!.in_progress}
                       </span>
                     )}
@@ -376,12 +376,12 @@ export default function DashboardPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-1">
                       {(project._count?.open ?? 0) > 0 && (
-                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium text-xs">
+                        <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium text-xs">
                           {project._count!.open}
                         </span>
                       )}
                       {(project._count?.in_progress ?? 0) > 0 && (
-                        <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium text-xs">
+                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium text-xs">
                           {project._count!.in_progress}
                         </span>
                       )}

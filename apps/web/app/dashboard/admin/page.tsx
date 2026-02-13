@@ -54,8 +54,8 @@ const ROLE_COLORS: Record<UserRole, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  open: 'bg-blue-500',
-  in_progress: 'bg-yellow-500',
+  open: 'bg-yellow-500',
+  in_progress: 'bg-blue-500',
   resolved: 'bg-green-500',
   closed: 'bg-gray-400',
 };
