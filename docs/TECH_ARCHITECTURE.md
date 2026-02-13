@@ -1,6 +1,6 @@
 # BugSnap - Technical Architecture Audit
 
-**Version:** 0.10.2
+**Version:** 0.10.6
 **Audit Date:** 2026-02-12
 **Repository:** Turborepo monorepo with npm workspaces
 
@@ -49,8 +49,8 @@ Browser Extensions  ──capture──>  Fastify API  <──manage──  Next
 | Extension Task Drawer | Implemented | View/manage project tasks from any webpage — grouped list, search, status filters, task detail panel with status dropdown, screenshot lightbox, comments section — `extension/bugsnap-ui.js` |
 | Extension Annotation Editing | Implemented | Edit annotations on existing tasks from the extension — reuses annotation modal with "Update" button, fetches screenshot as data URL via background script to avoid CORS, composites annotations into screenshot on save — `extension/bugsnap-ui.js`, `extension/background.js`. **Note:** Web app annotation editor removed in v0.10.1 (annotations are burned into screenshots by the extension, no in-app editing needed). |
 | Firefox Extension | Implemented | MV2 manifest with `browser.*` Promise-based API — `extension-firefox/manifest.json` |
-| Safari Extension | Implemented | MV3 manifest with screenshot capture — `extension-safari/manifest.json` |
-| Screen Recording | Implemented | `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions |
+| Safari Extension | Implemented | MV3 manifest with full feature parity — task drawer, annotation editing, screenshot compositing, screen recording, enable/disable toggle — `extension-safari/manifest.json` |
+| Screen Recording | Implemented | `MediaRecorder` + `getDisplayMedia` in all browser extensions (Chrome, Firefox, Safari) |
 
 ### Backend
 
@@ -65,7 +65,7 @@ Browser Extensions  ──capture──>  Fastify API  <──manage──  Next
 | Error Handling | Implemented | Custom Fastify error handler plugin — `apps/api/src/plugins/errorHandler.ts` |
 | Input Validation | Implemented | Zod 3.22 for request validation — `apps/api/package.json` |
 | File Upload Support | Implemented | `@fastify/multipart` (10MB limit) + Cloudinary upload route — `apps/api/src/routes/uploads.ts`, `apps/api/src/lib/cloudinary.ts` |
-| Screenshot Compositing | Implemented | PATCH `/api/issues/:issueId` accepts `screenshotUrl` (data URL with annotations burned in) → uploaded to Cloudinary CDN + R2 backup — `apps/api/src/routes/issues.ts`, `apps/api/src/utils/processScreenshot.ts` |
+| Screenshot Compositing | Implemented | PATCH `/api/issues/:issueId` accepts `screenshotUrl` (composited) and `rawScreenshotUrl` (clean base image) → both uploaded to Cloudinary CDN + R2 backup — `apps/api/src/routes/issues.ts`, `apps/api/src/utils/processScreenshot.ts` |
 | Health Check | Implemented | `/health` endpoint with database connectivity check — `apps/api/src/index.ts:81-89` |
 | OAuth (Google/GitHub) | ~~Implemented~~ | **REMOVED** in v0.9.0 — simplified to email/password only. `@fastify/oauth2` and `apps/api/src/routes/oauth.ts` removed. |
 | Real-time (SSE) | Implemented | Server-Sent Events with EventEmitter pub/sub — `apps/api/src/routes/events.ts`, `apps/api/src/lib/eventBus.ts` |

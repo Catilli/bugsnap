@@ -111,7 +111,7 @@ The BugSnap browser extension allows users to capture bugs directly from any web
 ### Browser Extensions
 - **Chrome**: Manifest V3, screenshot capture + screen recording
 - **Firefox**: Manifest V2, screenshot capture + screen recording
-- **Safari**: Manifest V3, screenshot capture
+- **Safari**: Manifest V3, screenshot capture + screen recording (full parity with Chrome)
 - **Language**: JavaScript
 - **Integration**: PostMessage API for web app communication
 
@@ -156,7 +156,7 @@ From the API directory:
 - ✅ Issue filtering and sorting (by date, status, assignee)
 - ✅ Reusable FilterBar and PageHeader components
 - ✅ Multi-browser extension support (Chrome, Firefox, Safari)
-- ✅ Screen recording in Chrome and Firefox extensions
+- ✅ Screen recording in all browser extensions (Chrome, Firefox, Safari)
 - ✅ PostgreSQL database with Prisma ORM
 - ✅ Issue creation with custom titles and auto-numbering
 - ✅ Screenshot capture and annotation tools
@@ -256,24 +256,28 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.10.5
+**Current Version**: v0.10.6
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.10.5)**:
-- Notification when invited to a project — "You were added to project X" appears in the bell
-- Notification when assigned to an issue at creation time (not just via PATCH)
-- Clicking a notification navigates to the relevant project or issue
+**Recent Updates (v0.10.6)**:
+- Safari extension full feature parity with Chrome (task drawer, annotation editing, screen recording)
+- Fix doubled annotations — `rawScreenshotUrl` now persisted on every annotation save
+- Extensions v1.4 across all browsers
 
 
 ## 📝 Changelog
 
+### Extensions v1.4 (February 14, 2026)
+- Safari extension full feature parity with Chrome — task drawer, task detail panel, annotation editing, screenshot compositing, screen recording, enable/disable toggle, auto-init tasks-only mode
+- Safari manifest updated with `externally_connectable`, Cloudinary host permission
+- Remove debug `console.log` statements from all extensions
+
 ### Extensions v1.2 (February 14, 2026)
-- Fix doubled annotations in edit mode — revert `_editHasRawScreenshot` conditional that removed edit capability for legacy tasks
+- Fix doubled annotations in edit mode — restore `_editHasRawScreenshot` guard for legacy tasks
 - Send `rawScreenshotUrl` (clean base image) on every annotation save so the DB always has the un-annotated screenshot
 - API PATCH handler now accepts and uploads `rawScreenshotUrl` to Cloudinary alongside composited `screenshotUrl`
 - Legacy tasks (missing `rawScreenshotUrl`) get it populated on first annotation edit-save cycle
-- Annotations always load as editable shapes regardless of `rawScreenshotUrl` presence
 
 ### v0.10.5 (February 14, 2026)
 - Notify user when invited to a project — "You were added to project X" notification in the bell
@@ -340,7 +344,7 @@ This project is private and proprietary.
 
 ### v0.9.0 (February 12, 2026)
 - ✅ Multi-browser extension support — Chrome (MV3), Firefox (MV2), Safari (MV3) (`extension-safari/`)
-- ✅ Screen recording in Chrome and Firefox extensions (`MediaRecorder` + `getDisplayMedia`)
+- ✅ Screen recording in all browser extensions (Chrome, Firefox, Safari) (`MediaRecorder` + `getDisplayMedia`)
 - ✅ Public "anyone with link" project sharing with redesigned share dropdown
 - ✅ Clickable pin in screenshot lightbox (navigate to element on page)
 - ✅ QA Cycle management — create, add/remove issues, status tracking (`QACycle` + `QACycleIssue` models)

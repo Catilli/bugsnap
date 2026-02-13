@@ -28,7 +28,7 @@
 | Click-to-report on live websites | ✅ Implemented | `extension/bugsnap-ui.js:23-51` — `startTagging()` adds overlay, crosshair cursor, click handler. Element selected via `handleElementTag()` |
 | Pin-based issue placement | ✅ Implemented | `extension/bugsnap-ui.js` — `addPinMarker()` renders persistent red pin at element position after selection. **RESOLVED** — pin markers added |
 | Automatic screenshot capture | ✅ Implemented | `extension/background.js:127` — `chrome.tabs.captureVisibleTab(null, {format:'png'})`. Firefox equivalent at `extension-firefox/background.js:24` |
-| Screen recording | ✅ Implemented | `MediaRecorder` + `getDisplayMedia` in Chrome and Firefox extensions. **RESOLVED** in v0.9.0 |
+| Screen recording | ✅ Implemented | `MediaRecorder` + `getDisplayMedia` in all browser extensions (Chrome, Firefox, Safari). **RESOLVED** in v0.9.0, Safari parity in v1.4 |
 | Extension task drawer | ✅ Implemented | `extension/bugsnap-ui.js` — `openTasksDrawer()` shows grouped task list with search, status filters, and task detail panel. Auto-initializes on matched project URLs via `content.js` |
 | Extension task detail panel | ✅ Implemented | `extension/bugsnap-ui.js` — `renderTaskDetail()` shows status dropdown, screenshot with lightbox, comments section, and "Open in BugSnap" link |
 | Extension annotation editing | ✅ Implemented | `extension/bugsnap-ui.js` — `showAnnotationModalForEdit()` reopens annotation modal on existing tasks with "Update" button, loads existing annotations via `setAnnotations()` |

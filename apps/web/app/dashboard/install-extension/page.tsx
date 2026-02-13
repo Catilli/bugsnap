@@ -124,7 +124,55 @@ export default function InstallExtensionPage() {
           <CheckCircle2 className="w-5 h-5 text-green-600" />
           <span className="text-gray-700 font-medium">Auto-login enabled - No need to login again!</span>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Version 1.3 • All browsers supported</p>
+        <p className="text-sm text-gray-500 mt-2">Version 1.4 • All browsers supported</p>
+      </div>
+
+      {/* Extension Changelog */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <FileText className="w-6 h-6" />
+          Extension Changelog
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+              v1.4 <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Latest</span>
+            </h4>
+            <p className="text-xs text-gray-500 mb-1">February 14, 2026</p>
+            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+              <li>Safari extension full feature parity with Chrome and Firefox</li>
+              <li>Task drawer, annotation editing, and screen recording now available on all browsers</li>
+              <li>Remove debug logging from all extensions</li>
+            </ul>
+          </div>
+          <div className="border-t border-gray-100 pt-4">
+            <h4 className="font-semibold text-gray-900">v1.2</h4>
+            <p className="text-xs text-gray-500 mb-1">February 14, 2026</p>
+            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+              <li>Fix doubled annotations in edit mode for legacy tasks</li>
+              <li>Persist raw screenshot on every annotation save for clean editing</li>
+              <li>API now stores both composited and raw screenshots</li>
+            </ul>
+          </div>
+          <div className="border-t border-gray-100 pt-4">
+            <h4 className="font-semibold text-gray-900">v1.1</h4>
+            <p className="text-xs text-gray-500 mb-1">February 14, 2026</p>
+            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+              <li>Firefox extension feature parity with Chrome</li>
+              <li>Task drawer and annotation editing on Firefox</li>
+              <li>Screen recording support on Firefox</li>
+            </ul>
+          </div>
+          <div className="border-t border-gray-100 pt-4">
+            <h4 className="font-semibold text-gray-900">v1.0</h4>
+            <p className="text-xs text-gray-500 mb-1">February 12, 2026</p>
+            <ul className="text-sm text-gray-700 space-y-1 ml-4 list-disc">
+              <li>Initial release with Chrome, Firefox, and Safari support</li>
+              <li>Screenshot capture, annotation tools, and task creation</li>
+              <li>Auto-login from web app session</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* Quick Start Card */}
