@@ -274,6 +274,9 @@ This project is private and proprietary.
 - Pin visibility toggle (eye icon) in drawer header with per-project persistence via `chrome.storage.local`
 - SPA navigation detection — pins automatically re-render when URL changes without full page reload
 - `resolveElementLocator()` tries CSS selector first, falls back to XPath for robust pin placement
+- Improved screenshot capture timing — double `requestAnimationFrame` + 100ms buffer ensures outline and pins are fully hidden before `captureVisibleTab`
+- Screenshot lightbox pin icon updated to blue task pin style (matches extension pins)
+- Lightbox close button repositioned to upper-right corner of the image container
 
 ### v0.10.2 (February 13, 2026)
 - ✅ Clean screenshot capture — `hideUIForCapture()` hides red pin, blue element outline, tasks button, task pin markers, and tasks drawer/backdrop before capture

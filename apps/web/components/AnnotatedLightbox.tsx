@@ -252,16 +252,31 @@ function PinOverlay({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Teardrop pin SVG */}
-      <svg width="28" height="38" viewBox="0 0 28 38" fill="none">
-        <path
-          d="M14 0C6.268 0 0 6.268 0 14c0 9.8 14 24 14 24s14-14.2 14-24C28 6.268 21.732 0 14 0z"
-          fill="#dc2626"
-          stroke="#fff"
-          strokeWidth="1.5"
+      {/* Blue pin marker (matches extension task pins) */}
+      <div
+        style={{
+          width: 24,
+          height: 24,
+          background: 'rgb(59, 130, 246)',
+          borderRadius: '50% 50% 50% 0',
+          transform: 'rotate(-45deg)',
+          boxShadow: 'rgba(59, 130, 246, 0.4) 0px 2px 6px',
+          position: 'relative',
+        }}
+      >
+        <div
+          style={{
+            width: 10,
+            height: 10,
+            background: 'white',
+            borderRadius: '50%',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
         />
-        <circle cx="14" cy="13" r="5" fill="#fff" />
-      </svg>
+      </div>
 
       {/* Tooltip */}
       {hovered && (

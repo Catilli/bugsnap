@@ -122,30 +122,32 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
               style={{ zIndex, background: 'rgba(0,0,0,0.9)' }}
               onClick={() => dismiss(dialog.id, false)}
             >
-              <button
-                onClick={(e) => { e.stopPropagation(); dismiss(dialog.id, false); }}
-                className="absolute top-4 right-4 text-white text-3xl leading-none bg-transparent border-none cursor-pointer p-1 hover:opacity-80"
-                style={{ zIndex: zIndex + 1 }}
-              >
-                &times;
-              </button>
-              <div className="rounded overflow-hidden">
-                <Suspense fallback={
-                  <LightboxImage
-                    src={dialog.options.src}
-                    backupSrc={dialog.options.backupSrc}
-                    alt={dialog.options.alt || 'Screenshot'}
-                  />
-                }>
-                  <AnnotatedLightbox
-                    src={dialog.options.src}
-                    backupSrc={dialog.options.backupSrc}
-                    alt={dialog.options.alt || 'Screenshot'}
-                    annotations={dialog.options.annotations}
-                    pinData={dialog.options.pinData}
-                    annotationCanvasSize={dialog.options.annotationCanvasSize}
-                  />
-                </Suspense>
+              <div className="relative rounded overflow-visible">
+                <button
+                  onClick={(e) => { e.stopPropagation(); dismiss(dialog.id, false); }}
+                  className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-white text-lg leading-none cursor-pointer border border-gray-600 shadow-lg transition-colors"
+                  style={{ zIndex: zIndex + 1 }}
+                >
+                  &times;
+                </button>
+                <div className="rounded overflow-hidden">
+                  <Suspense fallback={
+                    <LightboxImage
+                      src={dialog.options.src}
+                      backupSrc={dialog.options.backupSrc}
+                      alt={dialog.options.alt || 'Screenshot'}
+                    />
+                  }>
+                    <AnnotatedLightbox
+                      src={dialog.options.src}
+                      backupSrc={dialog.options.backupSrc}
+                      alt={dialog.options.alt || 'Screenshot'}
+                      annotations={dialog.options.annotations}
+                      pinData={dialog.options.pinData}
+                      annotationCanvasSize={dialog.options.annotationCanvasSize}
+                    />
+                  </Suspense>
+                </div>
               </div>
             </div>
           );
