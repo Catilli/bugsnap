@@ -267,6 +267,14 @@ This project is private and proprietary.
 
 ## 📝 Changelog
 
+### v0.10.3 (February 13, 2026)
+- Persistent element pins — blue task pins remain visible after closing the tasks drawer and survive page reloads
+- Auto-load task pins on page init without opening the drawer (lightweight background fetch)
+- XPath fallback for element resolution — pins resolve even when CSS selectors break due to DOM changes
+- Pin visibility toggle (eye icon) in drawer header with per-project persistence via `chrome.storage.local`
+- SPA navigation detection — pins automatically re-render when URL changes without full page reload
+- `resolveElementLocator()` tries CSS selector first, falls back to XPath for robust pin placement
+
 ### v0.10.2 (February 13, 2026)
 - ✅ Clean screenshot capture — `hideUIForCapture()` hides red pin, blue element outline, tasks button, task pin markers, and tasks drawer/backdrop before capture
 - ✅ `restoreUIAfterCapture()` restores all hidden elements after capture completes (on both success and error paths)
