@@ -14,7 +14,7 @@ interface KanbanCardProps {
       id: string;
       name: string;
     };
-    _count: {
+    _count?: {
       comments: number;
     };
   };
@@ -71,10 +71,10 @@ export function KanbanCard({ issue, onClick, onDragStart }: KanbanCardProps) {
             {issue.createdBy.name.charAt(0).toUpperCase()}
           </div>
           {/* Comment count */}
-          {issue._count.comments > 0 && (
+          {(issue._count?.comments ?? 0) > 0 && (
             <div className="flex items-center gap-1 text-gray-400">
               <MessageSquare className="w-3.5 h-3.5" />
-              <span className="text-xs">{issue._count.comments}</span>
+              <span className="text-xs">{issue._count!.comments}</span>
             </div>
           )}
         </div>

@@ -486,7 +486,8 @@ export default function ProjectDetailPage() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'issue:created') {
-          setIssues((prev) => [data.data, ...prev]);
+          const newIssue = { _count: { comments: 0 }, ...data.data };
+          setIssues((prev) => [newIssue, ...prev]);
         } else if (data.type === 'issue:updated') {
           setIssues((prev) => prev.map((i) => (i.id === data.data.id ? { ...i, ...data.data } : i)));
           // Refresh the IssueDrawer if the updated issue is currently open

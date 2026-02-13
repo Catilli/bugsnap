@@ -353,9 +353,9 @@ function ProjectView({ project }: { project: SharedProject }) {
                   <span className="text-xs text-gray-500 flex-shrink-0">{issue.assignedTo.name}</span>
                 )}
                 <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(issue.createdAt)}</span>
-                {issue._count.comments > 0 && (
+                {(issue._count?.comments ?? 0) > 0 && (
                   <span className="flex items-center gap-1 text-xs text-gray-400">
-                    <MessageSquare className="w-3 h-3" />{issue._count.comments}
+                    <MessageSquare className="w-3 h-3" />{issue._count!.comments}
                   </span>
                 )}
               </button>

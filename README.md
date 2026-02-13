@@ -274,6 +274,8 @@ This project is private and proprietary.
 - Annotation editor loads raw screenshot as clean canvas background — no old burned-in annotations
 - Legacy tasks without `rawScreenshotUrl` fall back to `screenshotUrl` (no regression)
 - Fix Dashboard and Admin status badge colors to match Project Detail page (open → yellow, in progress → blue)
+- Fix Tailwind content scan missing `providers/` directory — confirm dialog buttons now render correctly
+- Fix crash when creating task from extension — SSE `issue:created` event now provides default `_count` for KanbanCard
 
 ### v0.10.3 (February 13, 2026)
 - @Mention autocomplete for comments — type `@` in comment textarea to search and select project members
