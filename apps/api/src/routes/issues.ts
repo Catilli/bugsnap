@@ -61,6 +61,7 @@ const updateIssueSchema = z.object({
   visibility: z.enum(['members', 'members_and_clients']).optional(),
   assignedToId: z.string().uuid().nullable().optional(),
   screenshotUrl: z.string().optional(),
+  rawScreenshotUrl: z.string().optional(),
   annotations: z.array(z.object({
     type: z.enum(['pen', 'rectangle', 'arrow', 'text', 'highlighter']),
     coordinates: z.any(),
@@ -583,7 +584,7 @@ export async function issueRoutes(fastify: FastifyInstance) {
       }
 
       // Handle annotation updates: delete old + create new
-      const { annotations: newAnnotations, screenshotUrl: newScreenshotUrl, ...issueUpdateData } = updateData;
+      const { annotations: newAnnotations, screenshotUrl: newScreenshotUrl, rawScreenshotUrl: newRawScreenshotUrl, ...issueUpdateData } = updateData;
       if (newAnnotations) {
         await prisma.annotation.deleteMany({ where: { issueId } });
         if (newAnnotations.length > 0) {
@@ -611,6 +612,18 @@ export async function issueRoutes(fastify: FastifyInstance) {
           }
         } catch (error) {
           console.warn('Screenshot upload failed during update, skipping:', error);
+        }
+      }
+
+      // Handle raw screenshot update (clean, un-annotated base image)
+      if (newRawScreenshotUrl) {
+        try {
+          const rawResult = await processScreenshotUrl(newRawScreenshotUrl);
+          if (rawResult.screenshotUrl) {
+            (issueUpdateData as any).rawScreenshotUrl = rawResult.screenshotUrl;
+          }
+        } catch (error) {
+          console.warn('Raw screenshot upload failed during update, skipping:', error);
         }
       }
 
