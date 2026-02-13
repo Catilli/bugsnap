@@ -256,18 +256,21 @@ This project is private and proprietary.
 
 **Status**: Active Development ✅
 
-**Current Version**: v0.10.1
+**Current Version**: v0.10.2
 
 **Next Steps**: Third-party integrations, issue templates, and admin settings panel
 
-**Recent Updates (v0.10.1)**:
-- Removed web app annotation editor — annotations are burned into screenshots by the extension
-- Restored clickable pin tagging in constrained 90vw/90vh screenshot lightbox
-- Pin position scales correctly to rendered image size in lightbox
-- Lightbox style matches extension Task Drawer (dark backdrop, centered, close button)
+**Recent Updates (v0.10.2)**:
+- Clean screenshot capture — extension hides pin marker, element outline, task pins, and tasks drawer before capturing
+- UI elements are restored after capture (or on error) before the annotation modal opens
 
 
 ## 📝 Changelog
+
+### v0.10.2 (February 13, 2026)
+- ✅ Clean screenshot capture — `hideUIForCapture()` hides red pin, blue element outline, tasks button, task pin markers, and tasks drawer/backdrop before capture
+- ✅ `restoreUIAfterCapture()` restores all hidden elements after capture completes (on both success and error paths)
+- ✅ Applied to all three browser variants (Chrome, Firefox, Safari)
 
 ### v0.10.1 (February 13, 2026)
 - ✅ Removed web app annotation editor (AnnotationEditorModal + MarkMyImage) — annotations are burned into screenshots by the extension
